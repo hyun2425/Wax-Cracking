@@ -24,3 +24,27 @@ a {
   color: inherit;
   text-decoration: none;
 }
+
+@keyframes fragment-burst {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, -50%) rotate(var(--fragment-angle))
+      translateX(20px) rotate(0deg) scale(0.45);
+  }
+
+  65% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(var(--fragment-angle))
+      translateX(var(--fragment-distance)) rotate(var(--fragment-rotate))
+      scale(0.85);
+  }
+}
+
+.wax-fragment {
+  animation: fragment-burst 780ms ease-out forwards;
+  clip-path: polygon(10% 16%, 88% 0, 100% 66%, 52% 100%, 0 74%);
+}

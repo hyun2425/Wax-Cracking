@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { type MouseEvent, useCallback, useEffect, useMemo, useState } from "react";
 
 type ApiState =
   | { status: "checking" }
@@ -15,6 +15,13 @@ type WaxType = {
   ballClassName: string;
   chipClassName: string;
   frequency: number;
+};
+
+type CrackPoint = {
+  id: number;
+  x: number;
+  y: number;
+  rotation: number;
 };
 
 const apiBaseUrl =
@@ -70,6 +77,7 @@ export default function Home() {
   const [freezerMinutes, setFreezerMinutes] = useState(0);
   const [isFreezing, setIsFreezing] = useState(false);
   const [crackProgress, setCrackProgress] = useState(0);
+  const [crackPoints, setCrackPoints] = useState<CrackPoint[]>([]);
   const [apiState, setApiState] = useState<ApiState>({ status: "checking" });
 
   const selectedWax = waxTypes[selectedIndex];
@@ -134,7 +142,7 @@ export default function Home() {
     return () => controller.abort();
   }, [healthUrl]);
 
-  const playCrackSound = useCallback(() => {
+  const playCrackSound = useCallback((isFinal = false) => {
     const AudioContextClass =
       window.AudioContext ??
       (window as typeof window & { webkitAudioContext?: typeof AudioContext })
@@ -145,32 +153,52 @@ export default function Home() {
     }
 
     const audioContext = new AudioContextClass();
-    const gain = audioContext.createGain();
-    gain.gain.setValueAtTime(0.0001, audioContext.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.22, audioContext.currentTime + 0.02);
-    gain.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 0.34);
-    gain.connect(audioContext.destination);
+    const now = audioContext.currentTime;
+    const masterGain = audioContext.createGain();
+    masterGain.gain.setValueAtTime(0.0001, now);
+    masterGain.gain.exponentialRampToValueAtTime(isFinal ? 0.42 : 0.16, now + 0.008);
+    masterGain.gain.exponentialRampToValueAtTime(0.0001, now + (isFinal ? 0.46 : 0.17));
+    masterGain.connect(audioContext.destination);
 
-    [0, 0.055, 0.12].forEach((delay, index) => {
+    const noiseBuffer = audioContext.createBuffer(1, audioContext.sampleRate * 0.5, audioContext.sampleRate);
+    const noiseData = noiseBuffer.getChannelData(0);
+    for (let index = 0; index < noiseData.length; index += 1) {
+      noiseData[index] = (Math.random() * 2 - 1) * (1 - index / noiseData.length);
+    }
+    const noise = audioContext.createBufferSource();
+    const noiseFilter = audioContext.createBiquadFilter();
+    noise.buffer = noiseBuffer;
+    noiseFilter.type = "bandpass";
+    noiseFilter.frequency.value = selectedWax.frequency * (isFinal ? 6 : 8);
+    noiseFilter.Q.value = isFinal ? 0.8 : 1.8;
+    noise.connect(noiseFilter);
+    noiseFilter.connect(masterGain);
+    noise.start(now);
+    noise.stop(now + (isFinal ? 0.4 : 0.12));
+
+    const layers = isFinal ? [0, 0.045, 0.095, 0.17] : [0, 0.035];
+    layers.forEach((delay, index) => {
       const oscillator = audioContext.createOscillator();
       oscillator.type = index === 0 ? "square" : "sawtooth";
       oscillator.frequency.setValueAtTime(
-        selectedWax.frequency + freezerMinutes * 7 + index * 90,
-        audioContext.currentTime + delay,
+        selectedWax.frequency + freezerMinutes * 8 + index * 110,
+        now + delay,
       );
-      oscillator.connect(gain);
-      oscillator.start(audioContext.currentTime + delay);
-      oscillator.stop(audioContext.currentTime + delay + 0.09);
+      oscillator.connect(masterGain);
+      oscillator.start(now + delay);
+      oscillator.stop(now + delay + (isFinal ? 0.105 : 0.055));
     });
   }, [freezerMinutes, selectedWax.frequency]);
 
   function handleSelectWax(index: number) {
     setSelectedIndex(index);
     setCrackProgress(0);
+    setCrackPoints([]);
   }
 
   function handleStartFreezer() {
     setCrackProgress(0);
+    setCrackPoints([]);
     setIsFreezing(true);
   }
 
@@ -178,23 +206,31 @@ export default function Home() {
     setFreezerMinutes(0);
     setIsFreezing(false);
     setCrackProgress(0);
+    setCrackPoints([]);
   }
 
-  function handleCrack() {
+  function handleCrack(event: MouseEvent<HTMLButtonElement>) {
     if (isBroken) {
-      playCrackSound();
+      playCrackSound(true);
       return;
     }
 
-    setCrackProgress((current) => {
-      const next = Math.min(requiredClicks, current + 1);
+    const rect = event.currentTarget.getBoundingClientRect();
+    const next = Math.min(requiredClicks, crackProgress + 1);
+    const isFinal = next >= requiredClicks;
 
-      if (next >= requiredClicks) {
-        window.setTimeout(playCrackSound, 40);
-      }
+    setCrackPoints((current) => [
+      ...current,
+      {
+        id: Date.now(),
+        x: ((event.clientX - rect.left) / rect.width) * 100,
+        y: ((event.clientY - rect.top) / rect.height) * 100,
+        rotation: (current.length * 47) % 110 - 55,
+      },
+    ]);
+    setCrackProgress(next);
+    playCrackSound(isFinal);
 
-      return next;
-    });
   }
 
   return (
@@ -244,10 +280,12 @@ export default function Home() {
           </div>
 
           <WaxPreview
+            crackPoints={crackPoints}
             crackPercent={crackPercent}
             freezerMinutes={freezerMinutes}
             freezerState={freezerState.state}
             isBroken={isBroken}
+            onCrack={handleCrack}
             selectedWax={selectedWax}
           />
         </section>
@@ -285,7 +323,7 @@ export default function Home() {
             ))}
           </div>
 
-          <div className="mt-5 grid grid-cols-3 gap-2 max-sm:grid-cols-1">
+          <div className="mt-5 grid grid-cols-2 gap-2 max-sm:grid-cols-1">
             <button
               className="min-h-12 rounded-lg bg-[#191611] px-4 text-sm font-extrabold text-white disabled:cursor-not-allowed disabled:bg-[#b8aea2]"
               disabled={isFreezing || freezerMinutes >= 20}
@@ -293,13 +331,6 @@ export default function Home() {
               type="button"
             >
               냉동 시작
-            </button>
-            <button
-              className="min-h-12 rounded-lg border border-[#e6ded2] bg-white px-4 text-sm font-extrabold"
-              onClick={handleCrack}
-              type="button"
-            >
-              눌러서 깨기
             </button>
             <button
               className="min-h-12 rounded-lg border border-[#e6ded2] bg-[#f7efe2] px-4 text-sm font-extrabold"
@@ -333,6 +364,9 @@ export default function Home() {
           </div>
           <p className="mt-2 text-sm font-bold text-[#6f685e]">
             1초 = 1분, 최대 냉동 시간은 20분입니다.
+          </p>
+          <p className="mt-3 rounded-md bg-white px-4 py-3 text-sm font-extrabold text-[#3f88c5]">
+            위쪽 왁스볼을 직접 클릭해서 깨뜨려 보세요. 마지막 균열에서 파괴음이 재생됩니다.
           </p>
         </div>
       </section>
@@ -468,46 +502,80 @@ export default function Home() {
 }
 
 function WaxPreview({
+  crackPoints,
   crackPercent,
   freezerMinutes,
   freezerState,
   isBroken,
+  onCrack,
   selectedWax,
 }: {
+  crackPoints: CrackPoint[];
   crackPercent: number;
   freezerMinutes: number;
   freezerState: string;
   isBroken: boolean;
+  onCrack: (event: MouseEvent<HTMLButtonElement>) => void;
   selectedWax: WaxType;
 }) {
   return (
     <div className="grid min-h-[430px] place-items-center max-md:min-h-[340px]">
-      <div className="relative grid aspect-[1/1.08] w-[min(100%,420px)] place-items-center rounded-lg border border-[#9ccce7] bg-white/70 p-6 shadow-[0_22px_70px_rgba(63,136,197,0.18)]">
+      <div className="relative grid aspect-[1/1.08] w-[min(100%,420px)] place-items-center overflow-hidden rounded-lg border border-[#9ccce7] bg-white/70 p-6 shadow-[0_22px_70px_rgba(63,136,197,0.18)]">
         <span className="absolute left-5 top-5 rounded-full border border-[#e6ded2] bg-white px-3 py-2 text-xs font-extrabold">
           {freezerMinutes}분 냉동 · {freezerState}
         </span>
-        <div
-          className={`relative aspect-square w-[min(72%,270px)] overflow-hidden rounded-full bg-gradient-to-br ${selectedWax.ballClassName} shadow-[inset_-28px_-34px_45px_rgba(0,0,0,0.22),0_26px_34px_rgba(58,36,25,0.24)] transition-transform ${isBroken ? "scale-95" : ""}`}
+        <button
+          aria-label={`${selectedWax.name} 직접 깨기`}
+          className={`group relative aspect-square w-[min(72%,270px)] cursor-pointer overflow-hidden rounded-full border-0 bg-gradient-to-br p-0 ${selectedWax.ballClassName} shadow-[inset_-28px_-34px_45px_rgba(0,0,0,0.25),inset_16px_18px_20px_rgba(255,255,255,0.17),0_26px_34px_rgba(58,36,25,0.24)] transition-transform active:scale-[0.97] ${isBroken ? "scale-95" : "hover:scale-[1.02]"}`}
+          onClick={onCrack}
+          type="button"
         >
-          <span className="absolute inset-[17%] rounded-full border-t-8 border-white/45 -rotate-[24deg]" />
-          {crackPercent >= 25 ? (
-            <span className="absolute left-[48%] top-[20%] h-28 w-1 rotate-[15deg] rounded-full bg-[#fff5df] shadow-[0_0_10px_rgba(255,245,223,0.7)]" />
-          ) : null}
-          {crackPercent >= 50 ? (
-            <span className="absolute left-[43%] top-[42%] h-20 w-1 -rotate-[46deg] rounded-full bg-[#fff5df] shadow-[0_0_10px_rgba(255,245,223,0.7)]" />
-          ) : null}
-          {crackPercent >= 75 ? (
-            <span className="absolute right-[34%] top-[45%] h-24 w-1 rotate-[47deg] rounded-full bg-[#fff5df] shadow-[0_0_10px_rgba(255,245,223,0.7)]" />
-          ) : null}
+          <span className="absolute inset-[12%] rounded-full border-t-[10px] border-white/35 -rotate-[24deg]" />
+          <span className="absolute left-[20%] top-[16%] h-[22%] w-[30%] rounded-full bg-white/20 blur-md" />
+          <span className="absolute inset-[23%] rounded-full border border-white/15" />
+          {crackPoints.map((point, index) => (
+            <span
+              className="absolute h-[42%] w-[3px] origin-top bg-[#fff8e9] shadow-[0_0_7px_rgba(255,248,233,0.9)]"
+              key={point.id}
+              style={{
+                left: `${point.x}%`,
+                top: `${point.y}%`,
+                transform: `rotate(${point.rotation}deg)`,
+              }}
+            >
+              <span className="absolute left-0 top-[34%] h-[58%] w-[2px] origin-top rotate-[58deg] bg-[#fff8e9]" />
+              <span className="absolute left-0 top-[58%] h-[42%] w-[2px] origin-top -rotate-[54deg] bg-[#fff8e9]" />
+              {index > 1 ? (
+                <span className="absolute left-0 top-[18%] h-[32%] w-[2px] origin-top -rotate-[72deg] bg-[#fff8e9]" />
+              ) : null}
+            </span>
+          ))}
           {isBroken ? (
             <>
-              <span className={`absolute left-8 top-10 h-12 w-12 rotate-12 ${selectedWax.chipClassName} opacity-80`} />
-              <span className={`absolute bottom-9 right-10 h-14 w-16 -rotate-12 ${selectedWax.chipClassName} opacity-80`} />
+              <span className="absolute inset-[28%] rounded-full bg-[#f3d8a4] shadow-[inset_0_0_24px_rgba(105,65,32,0.32)]" />
+              <span className="absolute inset-[38%] rounded-full bg-[#70492c]/70" />
+              <span className="absolute left-[31%] top-[26%] h-[48%] w-[9%] -rotate-[18deg] bg-[#fff8e9]" />
+              <span className="absolute right-[29%] top-[24%] h-[52%] w-[8%] rotate-[22deg] bg-[#fff8e9]" />
             </>
           ) : null}
-        </div>
+        </button>
+        {isBroken ? (
+          <div aria-hidden="true" className="pointer-events-none absolute inset-0">
+            {Array.from({ length: 12 }, (_, index) => (
+              <span
+                className={`wax-fragment absolute left-1/2 top-1/2 h-7 w-9 ${selectedWax.chipClassName} shadow-md`}
+                key={index}
+                style={{
+                  "--fragment-angle": `${index * 30}deg`,
+                  "--fragment-distance": `${94 + (index % 4) * 16}px`,
+                  "--fragment-rotate": `${index * 41}deg`,
+                } as React.CSSProperties}
+              />
+            ))}
+          </div>
+        ) : null}
         <span className="absolute bottom-5 right-5 rounded-full border border-[#e6ded2] bg-white px-3 py-2 text-xs font-extrabold text-[#3f88c5]">
-          {crackPercent}% 균열
+          {isBroken ? "완전 파괴 · 다시 클릭하면 소리 재생" : `${crackPercent}% 균열 · 공을 직접 클릭`}
         </span>
       </div>
     </div>
