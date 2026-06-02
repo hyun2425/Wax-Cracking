@@ -3,6 +3,8 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --font-nanum-gothic: "Nanum Gothic", "Apple SD Gothic Neo", "Malgun Gothic",
+    Arial, sans-serif;
 }
 
 @theme inline {
