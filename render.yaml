@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: wax-cracking-backend
+    runtime: docker
+    plan: free
+    region: singapore
+    branch: main
+    rootDir: apps/backend
+    dockerfilePath: apps/backend/Dockerfile
+    dockerContext: apps/backend
+    healthCheckPath: /api/health
+    autoDeployTrigger: commit
+    envVars:
+      - key: FRONTEND_ORIGIN_PATTERNS
+        value: https://*.vercel.app,http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001,http://127.0.0.1:3001
