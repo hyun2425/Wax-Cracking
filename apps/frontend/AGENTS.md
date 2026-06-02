@@ -1,5 +1,40 @@
-<!-- BEGIN:nextjs-agent-rules -->
-# This is NOT the Next.js you know
+# 프론트엔드 작업 규칙
 
-This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
-<!-- END:nextjs-agent-rules -->
+이 문서는 프론트엔드 작업자가 참고하는 간단한 규칙입니다.
+
+## 기본 원칙
+
+- 이 앱은 `Next.js App Router`를 사용합니다.
+- 메인 화면은 `src/app/page.tsx`에서 수정합니다.
+- 전체 HTML 언어 설정, 메타데이터, 폰트는 `src/app/layout.tsx`에서 수정합니다.
+- 전역 스타일은 `src/app/globals.css`에서 수정합니다.
+- TailwindCSS를 우선 사용하고, 불필요한 별도 CSS 파일은 만들지 않습니다.
+
+## 디자인 기준
+
+- 화면은 깔끔하고 읽기 쉽게 만듭니다.
+- 버튼과 카드의 둥근 모서리는 과하게 키우지 않습니다.
+- 모바일에서도 텍스트가 잘리지 않도록 확인합니다.
+- 한국어 문구를 기준으로 작성합니다.
+- 현재 폰트는 `Nanum Gothic`을 사용합니다.
+
+## API 연결
+
+프론트엔드는 아래 환경 변수로 백엔드 주소를 읽습니다.
+
+```text
+NEXT_PUBLIC_API_BASE_URL
+```
+
+백엔드 상태 확인 API는 `/api/health`입니다.
+
+## 작업 후 확인
+
+프론트엔드 변경 후에는 아래 명령어를 실행합니다.
+
+```bash
+npm run lint
+npm run build
+```
+
+문제가 생기면 먼저 변경한 파일과 에러 메시지를 비교해서 원인을 찾습니다.
