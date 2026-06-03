@@ -155,39 +155,95 @@ export default function Home() {
     const audioContext = new AudioContextClass();
     const now = audioContext.currentTime;
     const masterGain = audioContext.createGain();
+    const compressor = audioContext.createDynamicsCompressor();
+    compressor.threshold.value = -24;
+    compressor.knee.value = 18;
+    compressor.ratio.value = 5;
+    compressor.attack.value = 0.002;
+    compressor.release.value = 0.18;
     masterGain.gain.setValueAtTime(0.0001, now);
-    masterGain.gain.exponentialRampToValueAtTime(isFinal ? 0.42 : 0.16, now + 0.008);
-    masterGain.gain.exponentialRampToValueAtTime(0.0001, now + (isFinal ? 0.46 : 0.17));
-    masterGain.connect(audioContext.destination);
+    masterGain.gain.exponentialRampToValueAtTime(isFinal ? 0.5 : 0.18, now + 0.006);
+    masterGain.gain.exponentialRampToValueAtTime(0.0001, now + (isFinal ? 0.62 : 0.16));
+    masterGain.connect(compressor);
+    compressor.connect(audioContext.destination);
 
-    const noiseBuffer = audioContext.createBuffer(1, audioContext.sampleRate * 0.5, audioContext.sampleRate);
-    const noiseData = noiseBuffer.getChannelData(0);
-    for (let index = 0; index < noiseData.length; index += 1) {
-      noiseData[index] = (Math.random() * 2 - 1) * (1 - index / noiseData.length);
-    }
-    const noise = audioContext.createBufferSource();
-    const noiseFilter = audioContext.createBiquadFilter();
-    noise.buffer = noiseBuffer;
-    noiseFilter.type = "bandpass";
-    noiseFilter.frequency.value = selectedWax.frequency * (isFinal ? 6 : 8);
-    noiseFilter.Q.value = isFinal ? 0.8 : 1.8;
-    noise.connect(noiseFilter);
-    noiseFilter.connect(masterGain);
-    noise.start(now);
-    noise.stop(now + (isFinal ? 0.4 : 0.12));
+    const highCracks = isFinal
+      ? [0, 0.014, 0.031, 0.052, 0.083, 0.123, 0.176, 0.241, 0.315]
+      : [0, 0.022, 0.047];
 
-    const layers = isFinal ? [0, 0.045, 0.095, 0.17] : [0, 0.035];
-    layers.forEach((delay, index) => {
-      const oscillator = audioContext.createOscillator();
-      oscillator.type = index === 0 ? "square" : "sawtooth";
-      oscillator.frequency.setValueAtTime(
-        selectedWax.frequency + freezerMinutes * 8 + index * 110,
+    highCracks.forEach((delay, index) => {
+      const duration = isFinal ? 0.045 + (index % 3) * 0.018 : 0.026;
+      const buffer = audioContext.createBuffer(
+        1,
+        Math.floor(audioContext.sampleRate * duration),
+        audioContext.sampleRate,
+      );
+      const data = buffer.getChannelData(0);
+
+      for (let sample = 0; sample < data.length; sample += 1) {
+        const fade = 1 - sample / data.length;
+        data[sample] = (Math.random() * 2 - 1) * fade * fade;
+      }
+
+      const source = audioContext.createBufferSource();
+      const bandPass = audioContext.createBiquadFilter();
+      const grainGain = audioContext.createGain();
+      source.buffer = buffer;
+      bandPass.type = "bandpass";
+      bandPass.frequency.setValueAtTime(
+        2200 + freezerMinutes * 80 + index * 360,
         now + delay,
       );
-      oscillator.connect(masterGain);
-      oscillator.start(now + delay);
-      oscillator.stop(now + delay + (isFinal ? 0.105 : 0.055));
+      bandPass.Q.setValueAtTime(isFinal ? 4.5 : 6.5, now + delay);
+      grainGain.gain.setValueAtTime(0.0001, now + delay);
+      grainGain.gain.exponentialRampToValueAtTime(
+        isFinal ? 0.18 + index * 0.012 : 0.1,
+        now + delay + 0.004,
+      );
+      grainGain.gain.exponentialRampToValueAtTime(0.0001, now + delay + duration);
+      source.connect(bandPass);
+      bandPass.connect(grainGain);
+      grainGain.connect(masterGain);
+      source.start(now + delay);
+      source.stop(now + delay + duration);
     });
+
+    const shellSnaps = isFinal ? [0.018, 0.075, 0.154, 0.258] : [0.012];
+    shellSnaps.forEach((delay, index) => {
+      const oscillator = audioContext.createOscillator();
+      const clickGain = audioContext.createGain();
+      oscillator.type = index === 0 ? "triangle" : "square";
+      oscillator.frequency.setValueAtTime(
+        selectedWax.frequency * 8 + freezerMinutes * 28 + index * 430,
+        now + delay,
+      );
+      clickGain.gain.setValueAtTime(0.0001, now + delay);
+      clickGain.gain.exponentialRampToValueAtTime(isFinal ? 0.12 : 0.08, now + delay + 0.003);
+      clickGain.gain.exponentialRampToValueAtTime(0.0001, now + delay + 0.045);
+      oscillator.connect(clickGain);
+      clickGain.connect(masterGain);
+      oscillator.start(now + delay);
+      oscillator.stop(now + delay + 0.05);
+    });
+
+    if (isFinal) {
+      const thump = audioContext.createOscillator();
+      const thumpGain = audioContext.createGain();
+      thump.type = "sine";
+      thump.frequency.setValueAtTime(70 + freezerMinutes * 2, now + 0.02);
+      thump.frequency.exponentialRampToValueAtTime(35, now + 0.26);
+      thumpGain.gain.setValueAtTime(0.0001, now + 0.02);
+      thumpGain.gain.exponentialRampToValueAtTime(0.24, now + 0.04);
+      thumpGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.32);
+      thump.connect(thumpGain);
+      thumpGain.connect(masterGain);
+      thump.start(now + 0.02);
+      thump.stop(now + 0.34);
+    }
+
+    window.setTimeout(() => {
+      void audioContext.close();
+    }, isFinal ? 900 : 300);
   }, [freezerMinutes, selectedWax.frequency]);
 
   function handleSelectWax(index: number) {
@@ -520,56 +576,63 @@ function WaxPreview({
   selectedWax: WaxType;
 }) {
   return (
-    <div className="grid min-h-[430px] place-items-center max-md:min-h-[340px]">
-      <div className="relative grid aspect-[1/1.08] w-[min(100%,420px)] place-items-center overflow-hidden rounded-lg border border-[#9ccce7] bg-white/70 p-6 shadow-[0_22px_70px_rgba(63,136,197,0.18)]">
+    <div className="wax-scene grid min-h-[430px] place-items-center max-md:min-h-[340px]">
+      <div className="relative grid aspect-[1/1.08] w-[min(100%,420px)] place-items-center overflow-hidden rounded-lg border border-[#9ccce7] bg-[linear-gradient(145deg,rgba(255,255,255,0.82),rgba(218,242,250,0.72))] p-6 shadow-[0_22px_70px_rgba(63,136,197,0.18)]">
         <span className="absolute left-5 top-5 rounded-full border border-[#e6ded2] bg-white px-3 py-2 text-xs font-extrabold">
           {freezerMinutes}분 냉동 · {freezerState}
         </span>
         <button
           aria-label={`${selectedWax.name} 직접 깨기`}
-          className={`group relative aspect-square w-[min(72%,270px)] cursor-pointer overflow-hidden rounded-full border-0 bg-gradient-to-br p-0 ${selectedWax.ballClassName} shadow-[inset_-28px_-34px_45px_rgba(0,0,0,0.25),inset_16px_18px_20px_rgba(255,255,255,0.17),0_26px_34px_rgba(58,36,25,0.24)] transition-transform active:scale-[0.97] ${isBroken ? "scale-95" : "hover:scale-[1.02]"}`}
+          className={`wax-ball-3d group relative aspect-square w-[min(72%,270px)] cursor-pointer overflow-hidden rounded-full border-0 bg-gradient-to-br p-0 ${selectedWax.ballClassName} shadow-[inset_-38px_-46px_54px_rgba(0,0,0,0.34),inset_18px_20px_26px_rgba(255,255,255,0.2),0_34px_36px_rgba(58,36,25,0.27)] transition-transform active:scale-[0.97] ${isBroken ? "wax-ball-broken scale-95" : "hover:scale-[1.02]"}`}
           onClick={onCrack}
           type="button"
         >
-          <span className="absolute inset-[12%] rounded-full border-t-[10px] border-white/35 -rotate-[24deg]" />
-          <span className="absolute left-[20%] top-[16%] h-[22%] w-[30%] rounded-full bg-white/20 blur-md" />
-          <span className="absolute inset-[23%] rounded-full border border-white/15" />
+          <span className="absolute inset-0 rounded-full bg-[radial-gradient(circle_at_30%_24%,rgba(255,255,255,0.62),transparent_24%),radial-gradient(circle_at_68%_75%,rgba(0,0,0,0.24),transparent_38%)]" />
+          <span className="wax-shell-texture absolute inset-0 rounded-full opacity-55" />
+          <span className="absolute inset-[10%] rounded-full border-t-[12px] border-white/35 -rotate-[24deg]" />
+          <span className="absolute left-[20%] top-[15%] h-[24%] w-[32%] rounded-full bg-white/25 blur-md" />
+          <span className="absolute inset-[23%] rounded-full border border-white/20 shadow-[inset_0_0_24px_rgba(255,255,255,0.18)]" />
           {crackPoints.map((point, index) => (
             <span
-              className="absolute h-[42%] w-[3px] origin-top bg-[#fff8e9] shadow-[0_0_7px_rgba(255,248,233,0.9)]"
+              className="wax-crack-cluster absolute h-[46%] w-[4px] origin-top bg-[#fff8e9] shadow-[0_0_9px_rgba(255,248,233,0.95)]"
               key={point.id}
               style={{
                 left: `${point.x}%`,
                 top: `${point.y}%`,
-                transform: `rotate(${point.rotation}deg)`,
+                transform: `rotate(${point.rotation}deg) scale(${0.82 + index * 0.05}) translateZ(34px)`,
               }}
             >
-              <span className="absolute left-0 top-[34%] h-[58%] w-[2px] origin-top rotate-[58deg] bg-[#fff8e9]" />
-              <span className="absolute left-0 top-[58%] h-[42%] w-[2px] origin-top -rotate-[54deg] bg-[#fff8e9]" />
+              <span className="absolute left-0 top-[24%] h-[46%] w-[2px] origin-top rotate-[38deg] bg-[#fff8e9]" />
+              <span className="absolute left-0 top-[36%] h-[62%] w-[2px] origin-top rotate-[64deg] bg-[#fff8e9]" />
+              <span className="absolute left-0 top-[54%] h-[48%] w-[2px] origin-top -rotate-[53deg] bg-[#fff8e9]" />
               {index > 1 ? (
-                <span className="absolute left-0 top-[18%] h-[32%] w-[2px] origin-top -rotate-[72deg] bg-[#fff8e9]" />
+                <span className="absolute left-0 top-[18%] h-[36%] w-[2px] origin-top -rotate-[76deg] bg-[#fff8e9]" />
+              ) : null}
+              {index > 3 ? (
+                <span className="absolute left-0 top-[72%] h-[34%] w-[2px] origin-top rotate-[112deg] bg-[#fff8e9]" />
               ) : null}
             </span>
           ))}
           {isBroken ? (
             <>
-              <span className="absolute inset-[28%] rounded-full bg-[#f3d8a4] shadow-[inset_0_0_24px_rgba(105,65,32,0.32)]" />
-              <span className="absolute inset-[38%] rounded-full bg-[#70492c]/70" />
-              <span className="absolute left-[31%] top-[26%] h-[48%] w-[9%] -rotate-[18deg] bg-[#fff8e9]" />
-              <span className="absolute right-[29%] top-[24%] h-[52%] w-[8%] rotate-[22deg] bg-[#fff8e9]" />
+              <span className="absolute inset-[25%] rounded-full bg-[radial-gradient(circle_at_42%_34%,#ffe8b1,#d99051_58%,#6f4528)] shadow-[inset_0_0_32px_rgba(91,52,24,0.48)]" />
+              <span className="absolute inset-[36%] rounded-full bg-[#5f3b24]/80 shadow-[inset_0_0_18px_rgba(0,0,0,0.36)]" />
+              <span className="absolute left-[29%] top-[22%] h-[55%] w-[10%] -rotate-[18deg] bg-[#fff8e9] shadow-[0_0_10px_rgba(255,248,233,0.75)]" />
+              <span className="absolute right-[27%] top-[20%] h-[58%] w-[9%] rotate-[22deg] bg-[#fff8e9] shadow-[0_0_10px_rgba(255,248,233,0.75)]" />
+              <span className="absolute left-[20%] top-[52%] h-[8%] w-[58%] rotate-[8deg] bg-[#fff8e9]/90" />
             </>
           ) : null}
         </button>
         {isBroken ? (
           <div aria-hidden="true" className="pointer-events-none absolute inset-0">
-            {Array.from({ length: 12 }, (_, index) => (
+            {Array.from({ length: 18 }, (_, index) => (
               <span
-                className={`wax-fragment absolute left-1/2 top-1/2 h-7 w-9 ${selectedWax.chipClassName} shadow-md`}
+                className={`wax-fragment absolute left-1/2 top-1/2 h-7 w-10 ${selectedWax.chipClassName} shadow-[0_8px_12px_rgba(0,0,0,0.22)]`}
                 key={index}
                 style={{
-                  "--fragment-angle": `${index * 30}deg`,
-                  "--fragment-distance": `${94 + (index % 4) * 16}px`,
-                  "--fragment-rotate": `${index * 41}deg`,
+                  "--fragment-angle": `${index * 20}deg`,
+                  "--fragment-distance": `${96 + (index % 5) * 15}px`,
+                  "--fragment-rotate": `${index * 43}deg`,
                 } as React.CSSProperties}
               />
             ))}
