@@ -248,7 +248,7 @@ export default function Home() {
             <a href="#features">왁스볼</a>
             <a href="#freezer">냉동 규칙</a>
             <a href="#deploy">연결 상태</a>
-            <a href="/my-page">내가 만들 페이지</a>
+            <a href="/hsj-ver">HSJ.ver</a>
           </div>
         </nav>
 
