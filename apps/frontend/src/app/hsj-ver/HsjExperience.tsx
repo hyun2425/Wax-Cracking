@@ -24,11 +24,94 @@ export default function HsjExperience() {
   const [mode, setMode] = useState("빙결");
   const [hits, setHits] = useState(0);
 
+  const playCrispCrunch = useCallback(() => {
+    const AudioContextClass =
+      window.AudioContext ??
+      (window as typeof window & { webkitAudioContext?: typeof AudioContext })
+        .webkitAudioContext;
+
+    if (!AudioContextClass) {
+      return;
+    }
+
+    const audioContext = new AudioContextClass();
+    const now = audioContext.currentTime;
+    const masterGain = audioContext.createGain();
+    masterGain.gain.setValueAtTime(0.0001, now);
+    masterGain.gain.exponentialRampToValueAtTime(0.35, now + 0.012);
+    masterGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.58);
+    masterGain.connect(audioContext.destination);
+
+    const highPass = audioContext.createBiquadFilter();
+    highPass.type = "highpass";
+    highPass.frequency.setValueAtTime(1400, now);
+    highPass.Q.setValueAtTime(0.72, now);
+    highPass.connect(masterGain);
+
+    const crackleTimes = [0, 0.018, 0.042, 0.071, 0.105, 0.148, 0.205, 0.292];
+
+    crackleTimes.forEach((delay, index) => {
+      const duration = 0.04 + (index % 3) * 0.018;
+      const buffer = audioContext.createBuffer(
+        1,
+        Math.floor(audioContext.sampleRate * duration),
+        audioContext.sampleRate,
+      );
+      const data = buffer.getChannelData(0);
+
+      for (let sample = 0; sample < data.length; sample += 1) {
+        const fade = 1 - sample / data.length;
+        data[sample] = (Math.random() * 2 - 1) * fade * fade;
+      }
+
+      const noise = audioContext.createBufferSource();
+      const bandPass = audioContext.createBiquadFilter();
+      const grainGain = audioContext.createGain();
+      noise.buffer = buffer;
+      bandPass.type = "bandpass";
+      bandPass.frequency.setValueAtTime(2600 + index * 420, now + delay);
+      bandPass.Q.setValueAtTime(3.2, now + delay);
+      grainGain.gain.setValueAtTime(0.0001, now + delay);
+      grainGain.gain.exponentialRampToValueAtTime(
+        0.22 + index * 0.018,
+        now + delay + 0.005,
+      );
+      grainGain.gain.exponentialRampToValueAtTime(
+        0.0001,
+        now + delay + duration,
+      );
+      noise.connect(bandPass);
+      bandPass.connect(grainGain);
+      grainGain.connect(highPass);
+      noise.start(now + delay);
+      noise.stop(now + delay + duration);
+    });
+
+    [0.035, 0.13, 0.24].forEach((delay, index) => {
+      const oscillator = audioContext.createOscillator();
+      const clickGain = audioContext.createGain();
+      oscillator.type = "triangle";
+      oscillator.frequency.setValueAtTime(1800 + index * 520, now + delay);
+      clickGain.gain.setValueAtTime(0.0001, now + delay);
+      clickGain.gain.exponentialRampToValueAtTime(0.09, now + delay + 0.004);
+      clickGain.gain.exponentialRampToValueAtTime(0.0001, now + delay + 0.055);
+      oscillator.connect(clickGain);
+      clickGain.connect(highPass);
+      oscillator.start(now + delay);
+      oscillator.stop(now + delay + 0.06);
+    });
+
+    window.setTimeout(() => {
+      void audioContext.close();
+    }, 850);
+  }, []);
+
   const handleBurst = useCallback(() => {
     handlesRef.current?.burst();
+    playCrispCrunch();
     setHits((current) => current + 1);
     setMode("파열");
-  }, []);
+  }, [playCrispCrunch]);
 
   const handleFreeze = useCallback(() => {
     handlesRef.current?.freeze();
@@ -208,10 +291,10 @@ export default function HsjExperience() {
 
       renderer.setSize(width, height, false);
       camera.aspect = width / height;
-      camera.position.set(0, isMobile ? 0.1 : 0.3, isMobile ? 9.8 : 8.4);
+      camera.position.set(0, isMobile ? 0.08 : 0.28, isMobile ? 12.2 : 9.6);
       camera.updateProjectionMatrix();
-      root.scale.setScalar(isMobile ? 0.74 : 1);
-      root.position.set(0, isMobile ? -0.52 : -0.05, 0);
+      root.scale.setScalar(isMobile ? 0.58 : 0.88);
+      root.position.set(0, isMobile ? -0.38 : -0.05, 0);
     }
 
     function triggerBurst() {
@@ -301,6 +384,7 @@ export default function HsjExperience() {
 
     function handleCanvasClick() {
       triggerBurst();
+      playCrispCrunch();
       setHits((current) => current + 1);
       setMode("파열");
     }
@@ -337,7 +421,7 @@ export default function HsjExperience() {
       });
       starGeometry.dispose();
     };
-  }, []);
+  }, [playCrispCrunch]);
 
   return (
     <section className="relative min-h-[100svh] overflow-hidden pt-16 max-sm:pt-24">
