@@ -145,6 +145,11 @@ export default function HsjExperience() {
     });
     renderer.setClearColor(0x0f1217, 1);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.domElement.style.display = "block";
+    renderer.domElement.style.height = "100%";
+    renderer.domElement.style.inset = "0";
+    renderer.domElement.style.position = "absolute";
+    renderer.domElement.style.width = "100%";
     mount.appendChild(renderer.domElement);
 
     const root = new THREE.Group();
@@ -291,10 +296,10 @@ export default function HsjExperience() {
 
       renderer.setSize(width, height, false);
       camera.aspect = width / height;
-      camera.position.set(0, isMobile ? 0.08 : 0.28, isMobile ? 12.2 : 9.6);
+      camera.position.set(0, isMobile ? 0.05 : 0.22, isMobile ? 10.6 : 8.9);
       camera.updateProjectionMatrix();
-      root.scale.setScalar(isMobile ? 0.58 : 0.88);
-      root.position.set(0, isMobile ? -0.38 : -0.05, 0);
+      root.scale.setScalar(isMobile ? 0.72 : 0.96);
+      root.position.set(0, isMobile ? -0.08 : 0.02, 0);
     }
 
     function triggerBurst() {
