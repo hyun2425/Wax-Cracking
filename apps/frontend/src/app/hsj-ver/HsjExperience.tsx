@@ -204,9 +204,14 @@ export default function HsjExperience() {
       const rect = mount.getBoundingClientRect();
       const width = Math.max(1, rect.width);
       const height = Math.max(1, rect.height);
+      const isMobile = width < 640;
+
       renderer.setSize(width, height, false);
       camera.aspect = width / height;
+      camera.position.set(0, isMobile ? 0.1 : 0.3, isMobile ? 9.8 : 8.4);
       camera.updateProjectionMatrix();
+      root.scale.setScalar(isMobile ? 0.74 : 1);
+      root.position.set(0, isMobile ? -0.52 : -0.05, 0);
     }
 
     function triggerBurst() {
@@ -335,41 +340,41 @@ export default function HsjExperience() {
   }, []);
 
   return (
-    <section className="relative min-h-screen overflow-hidden pt-16 max-sm:pt-28">
+    <section className="relative min-h-[100svh] overflow-hidden pt-16 max-sm:pt-24">
       <div ref={mountRef} className="absolute inset-0" aria-hidden="true" />
 
-      <div className="pointer-events-none absolute inset-x-0 top-16 z-10 mx-auto flex w-[min(1180px,calc(100%-32px))] items-start justify-between gap-5 py-8 max-md:flex-col max-sm:top-28">
-        <div className="pointer-events-auto max-w-[620px]">
+      <div className="pointer-events-none absolute inset-x-0 top-16 z-10 mx-auto flex w-[min(1180px,calc(100%-32px))] items-start justify-between gap-5 py-8 max-md:flex-col max-sm:top-24 max-sm:py-6">
+        <div className="pointer-events-auto max-w-[620px] max-sm:max-w-[260px]">
           <p className="mb-3 text-sm font-extrabold uppercase text-[#7ec9df]">
             Three.js Stage
           </p>
-          <h1 className="text-6xl font-extrabold leading-none text-[#fff8ec] sm:text-7xl lg:text-8xl">
+          <h1 className="text-5xl font-extrabold leading-none text-[#fff8ec] sm:text-7xl lg:text-8xl">
             HSJ.ver
           </h1>
         </div>
 
-        <div className="pointer-events-auto grid w-[min(100%,340px)] gap-3 rounded-lg border border-white/12 bg-[#121821]/78 p-4 shadow-[0_18px_60px_rgba(0,0,0,0.32)] backdrop-blur-md">
-          <div className="grid grid-cols-2 gap-2">
+        <div className="pointer-events-auto fixed bottom-4 left-1/2 grid w-[min(280px,calc(100vw-32px))] -translate-x-1/2 gap-3 rounded-lg border border-white/12 bg-[#121821]/88 p-4 shadow-[0_18px_60px_rgba(0,0,0,0.42)] backdrop-blur-md sm:static sm:w-[340px] sm:translate-x-0 sm:bg-[#121821]/78">
+          <div className="grid min-w-0 grid-cols-2 gap-2">
             <StatusValue label="모드" value={mode} />
             <StatusValue label="파열" value={`${hits}`} />
           </div>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid min-w-0 grid-cols-3 gap-2">
             <button
-              className="min-h-11 rounded-md border border-white/12 bg-[#22303b] px-3 text-sm font-extrabold text-[#f7f2e8] transition hover:bg-[#2b3d49]"
+              className="min-h-11 min-w-0 rounded-md border border-white/12 bg-[#22303b] px-2 text-xs font-extrabold text-[#f7f2e8] transition hover:bg-[#2b3d49] sm:px-3 sm:text-sm"
               onClick={handleFreeze}
               type="button"
             >
               빙결
             </button>
             <button
-              className="min-h-11 rounded-md bg-[#f0c96e] px-3 text-sm font-extrabold text-[#191611] transition hover:bg-[#ffe19a]"
+              className="min-h-11 min-w-0 rounded-md bg-[#f0c96e] px-2 text-xs font-extrabold text-[#191611] transition hover:bg-[#ffe19a] sm:px-3 sm:text-sm"
               onClick={handleBurst}
               type="button"
             >
               파열
             </button>
             <button
-              className="min-h-11 rounded-md border border-white/12 bg-[#22303b] px-3 text-sm font-extrabold text-[#f7f2e8] transition hover:bg-[#2b3d49]"
+              className="min-h-11 min-w-0 rounded-md border border-white/12 bg-[#22303b] px-2 text-xs font-extrabold text-[#f7f2e8] transition hover:bg-[#2b3d49] sm:px-3 sm:text-sm"
               onClick={handleReset}
               type="button"
             >
@@ -384,7 +389,7 @@ export default function HsjExperience() {
 
 function StatusValue({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-md border border-white/10 bg-white/[0.06] p-3">
+    <div className="min-w-0 rounded-md border border-white/10 bg-white/[0.06] p-3">
       <div className="text-xs font-extrabold text-[#9fb3bd]">{label}</div>
       <div className="mt-1 text-xl font-extrabold text-[#fff8ec]">{value}</div>
     </div>
