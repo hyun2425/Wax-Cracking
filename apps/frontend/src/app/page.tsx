@@ -35,10 +35,12 @@ type CrackPoint = {
 };
 
 type ThreePalette = {
-  baseWax: number;
-  brokenPiece: number;
-  gapFilling: number;
+  clay: number;
+  crack: number;
+  patch: number;
   patchColors: number[];
+  shell: number;
+  shellOpacity: number;
   style: "dubai" | "cotton" | "apple";
 };
 
@@ -50,27 +52,6 @@ type ShellPieceSpec = {
   x: number;
   y: number;
 };
-
-const WAX_BALL_COLORS = {
-  apple: {
-    baseWax: 0x8eea22,
-    brokenPiece: 0x8eea22,
-    gapFilling: 0xffffff,
-    marble: [0x8eea22, 0x9af42c, 0x75cb12],
-  },
-  cotton: {
-    baseWax: 0xffffff,
-    brokenPiece: 0xfffbfd,
-    gapFilling: 0xffffff,
-    marble: [0xf7a8c6, 0xa8dcf3, 0xf4e6a8],
-  },
-  dubai: {
-    baseWax: 0x2b1710,
-    brokenPiece: 0x2b1710,
-    gapFilling: 0xc7d88a,
-    marble: [0x4a2618, 0x62341f, 0x7a4328, 0x2f1a12],
-  },
-} as const;
 
 const apiBaseUrl =
   process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ??
@@ -615,13 +596,13 @@ function ThreeWaxBall({
     const shellMaterial = new THREE.MeshPhysicalMaterial({
       clearcoat: 1,
       clearcoatRoughness: 0.045,
-      color: fractureAmount > 0 ? palette.gapFilling : palette.baseWax,
+      color: fractureAmount > 0 && palette.style !== "cotton" ? palette.clay : palette.shell,
       metalness: 0.02,
-      opacity: 1,
+      opacity: fractureAmount > 0 && palette.style !== "cotton" ? 1 : palette.shellOpacity,
       roughness: palette.style === "dubai" ? 0.08 : 0.06,
       sheen: 0.35,
-      transparent: false,
-      transmission: 0,
+      transparent: fractureAmount > 0 && palette.style !== "cotton" ? false : palette.style !== "dubai",
+      transmission: palette.style === "apple" ? 0.14 : palette.style === "cotton" ? 0.18 : 0,
       vertexColors: fractureAmount === 0 && palette.style === "cotton",
     });
 
@@ -653,7 +634,7 @@ function ThreeWaxBall({
       new THREE.SphereGeometry(1.02, 48, 32),
       new THREE.MeshPhysicalMaterial({
         clearcoat: 0.25,
-        color: palette.gapFilling,
+        color: palette.clay,
         roughness: 0.58,
       }),
     );
@@ -718,23 +699,23 @@ function ThreeWaxBall({
         new THREE.MeshPhysicalMaterial({
           clearcoat: palette.style === "cotton" ? 0.5 : 0.2,
           clearcoatRoughness: 0.16,
-          color: palette.gapFilling,
-          opacity: 1,
+          color: palette.style === "cotton" ? 0xffffff : palette.clay,
+          opacity: palette.style === "cotton" ? 0.96 : 1,
           roughness: palette.style === "cotton" ? 0.22 : 0.42,
           side: THREE.DoubleSide,
-          transparent: false,
+          transparent: palette.style === "cotton",
           vertexColors: palette.style === "cotton",
         });
       const makeShellMaterial = () =>
         new THREE.MeshPhysicalMaterial({
           clearcoat: 1,
           clearcoatRoughness: 0.045,
-          color: palette.brokenPiece,
-          opacity: 1,
+          color: palette.style === "cotton" ? 0xfffbfd : palette.shell,
+          opacity: palette.style === "dubai" ? 1 : palette.style === "apple" ? 0.9 : 0.98,
           roughness: palette.style === "cotton" ? 0.08 : 0.1,
           side: THREE.DoubleSide,
-          transparent: false,
-          transmission: 0,
+          transparent: palette.style !== "dubai",
+          transmission: palette.style === "apple" ? 0.1 : palette.style === "cotton" ? 0.02 : 0,
           vertexColors: false,
         });
 
@@ -847,29 +828,35 @@ function ThreeWaxBall({
 function getThreePalette(name: string) {
   if (name.includes("두바이")) {
     return {
-      baseWax: WAX_BALL_COLORS.dubai.baseWax,
-      brokenPiece: WAX_BALL_COLORS.dubai.brokenPiece,
-      gapFilling: WAX_BALL_COLORS.dubai.gapFilling,
-      patchColors: [...WAX_BALL_COLORS.dubai.marble],
+      clay: 0xc7d88a,
+      crack: 0xc7d88a,
+      patch: 0x5b3424,
+      patchColors: [0x4a2618, 0x62341f, 0x7a4328, 0x2f1a12],
+      shell: 0x2b1710,
+      shellOpacity: 1,
       style: "dubai",
     } satisfies ThreePalette;
   }
 
   if (name.includes("솜사탕")) {
     return {
-      baseWax: WAX_BALL_COLORS.cotton.baseWax,
-      brokenPiece: WAX_BALL_COLORS.cotton.brokenPiece,
-      gapFilling: WAX_BALL_COLORS.cotton.gapFilling,
-      patchColors: [...WAX_BALL_COLORS.cotton.marble],
+      clay: 0xf4d8c6,
+      crack: 0xf4d8c6,
+      patch: 0xf7a8c6,
+      patchColors: [0xf7a8c6, 0xa8dcf3, 0xf4e6a8],
+      shell: 0xffffff,
+      shellOpacity: 0.96,
       style: "cotton",
     } satisfies ThreePalette;
   }
 
   return {
-    baseWax: WAX_BALL_COLORS.apple.baseWax,
-    brokenPiece: WAX_BALL_COLORS.apple.brokenPiece,
-    gapFilling: WAX_BALL_COLORS.apple.gapFilling,
-    patchColors: [...WAX_BALL_COLORS.apple.marble],
+    clay: 0xffffff,
+    crack: 0xffffff,
+    patch: 0x8ce000,
+    patchColors: [0x8fd10a, 0x9ee32d, 0x6fb800],
+    shell: 0x8eea22,
+    shellOpacity: 0.86,
     style: "apple",
   } satisfies ThreePalette;
 }
@@ -1013,10 +1000,9 @@ function makeBrokenPieceGeometry(width: number, height: number, seed: number) {
 function applyCottonMarbleColors(geometry: THREE.BufferGeometry) {
   const position = geometry.getAttribute("position");
   const colors: number[] = [];
-  const [pinkColor, skyColor, creamColor] = WAX_BALL_COLORS.cotton.marble;
-  const pink = new THREE.Color(pinkColor);
-  const sky = new THREE.Color(skyColor);
-  const cream = new THREE.Color(creamColor);
+  const pink = new THREE.Color(0xf7a8c6);
+  const sky = new THREE.Color(0xa8dcf3);
+  const cream = new THREE.Color(0xf4e6a8);
   const temp = new THREE.Color();
 
   for (let index = 0; index < position.count; index += 1) {
