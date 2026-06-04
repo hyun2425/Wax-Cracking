@@ -585,6 +585,7 @@ function ThreeWaxBall({
 
     const palette = getThreePalette(selectedWax.name);
     const revealAmount = Math.min(1, crackPoints.length / 6);
+    const pressAmount = Math.min(0.16, crackPoints.length * 0.025);
     const shellMaterial = new THREE.MeshPhysicalMaterial({
       clearcoat: 1,
       clearcoatRoughness: 0.045,
@@ -611,7 +612,7 @@ function ThreeWaxBall({
         clearcoat: 1,
         clearcoatRoughness: 0.018,
         color: 0xffffff,
-        opacity: 0.3,
+        opacity: palette.style === "cotton" ? 0.18 : 0.3,
         roughness: 0.018,
         transparent: true,
         transmission: 0.82,
@@ -634,11 +635,11 @@ function ThreeWaxBall({
 
     if (palette.style === "cotton") {
       innerClay.visible = false;
-      const blobGeometry = new THREE.SphereGeometry(0.78, 64, 40);
+      const blobGeometry = new THREE.SphereGeometry(0.82, 64, 40);
       const blobSet = [
-        { color: 0xff9fc8, from: new THREE.Vector3(-0.48, 0.28, 0.32), to: new THREE.Vector3(-0.24, 0.14, 0.38), scale: new THREE.Vector3(1.18, 1.0, 0.82) },
-        { color: 0x8fd8ff, from: new THREE.Vector3(0.48, 0.2, 0.3), to: new THREE.Vector3(0.22, 0.1, 0.38), scale: new THREE.Vector3(1.12, 0.96, 0.82) },
-        { color: 0xffec86, from: new THREE.Vector3(0.02, -0.54, 0.28), to: new THREE.Vector3(0.0, -0.24, 0.36), scale: new THREE.Vector3(1.18, 0.86, 0.82) },
+        { color: 0xff7fb5, position: new THREE.Vector3(-0.52, 0.34, 0.34), scale: new THREE.Vector3(1.26, 1.05, 0.82) },
+        { color: 0x67cfff, position: new THREE.Vector3(0.52, 0.2, 0.32), scale: new THREE.Vector3(1.18, 1.0, 0.82) },
+        { color: 0xffdf55, position: new THREE.Vector3(0.02, -0.58, 0.3), scale: new THREE.Vector3(1.28, 0.92, 0.82) },
       ];
 
       blobSet.forEach((blob, index) => {
@@ -646,35 +647,18 @@ function ThreeWaxBall({
           clearcoat: 1,
           clearcoatRoughness: 0.018,
           color: blob.color,
-          opacity: 0.96,
+          opacity: 0.98,
           roughness: 0.045,
           transparent: true,
           transmission: 0.04,
         });
         const mesh = new THREE.Mesh(blobGeometry, material);
-        mesh.position.copy(blob.from.clone().lerp(blob.to, revealAmount));
-        mesh.scale.copy(blob.scale).multiplyScalar(1 + revealAmount * 0.04);
+        mesh.position.copy(blob.position);
+        mesh.scale.copy(blob.scale).multiplyScalar(1 + pressAmount * 0.25);
         mesh.rotation.set(index * 0.4, index * 0.72, index * 0.25);
         mesh.castShadow = true;
         root.add(mesh);
       });
-
-      if (revealAmount > 0) {
-        const mixCore = new THREE.Mesh(
-          new THREE.SphereGeometry(0.62 + revealAmount * 0.16, 48, 32),
-          new THREE.MeshPhysicalMaterial({
-            clearcoat: 0.8,
-            clearcoatRoughness: 0.04,
-            color: 0xf5d9ec,
-            opacity: revealAmount * 0.26,
-            roughness: 0.12,
-            transparent: true,
-          }),
-        );
-        mixCore.position.set(0, -0.03, 0.42);
-        mixCore.scale.set(1.2, 0.86, 0.78);
-        root.add(mixCore);
-      }
     }
 
     const patchGeometry = new THREE.CircleGeometry(0.24, 28);
@@ -783,6 +767,47 @@ function ThreeWaxBall({
     cableTieTail.position.set(0.36, 1.37, 0.18);
     cableTieTail.rotation.set(0.22, 0.02, -0.68);
     root.add(cableTieTail);
+
+    const revealGroup = new THREE.Group();
+    root.add(revealGroup);
+    const revealGeometry = new THREE.CircleGeometry(0.24, 7);
+    const cottonRevealColors = [0xff7fb5, 0x67cfff, 0xffdf55];
+    crackPoints.forEach((point, pointIndex) => {
+      const baseX = THREE.MathUtils.clamp((point.x - 50) / 35, -0.88, 0.88);
+      const baseY = THREE.MathUtils.clamp(-(point.y - 50) / 35, -0.82, 0.82);
+      const panelCount = palette.style === "apple" ? 2 : 3;
+
+      for (let panel = 0; panel < panelCount; panel += 1) {
+        const angle = point.rotation * 0.017 + panel * 2.12;
+        const distance = 0.1 + panel * 0.11;
+        const revealColor =
+          palette.style === "cotton"
+            ? cottonRevealColors[(pointIndex + panel) % cottonRevealColors.length]
+            : palette.clay;
+        const material = new THREE.MeshPhysicalMaterial({
+          clearcoat: 0.75,
+          clearcoatRoughness: 0.08,
+          color: revealColor,
+          opacity: 0.42 + revealAmount * 0.28,
+          roughness: 0.18,
+          side: THREE.DoubleSide,
+          transparent: true,
+        });
+        const panelMesh = new THREE.Mesh(revealGeometry, material);
+        panelMesh.position.set(
+          baseX + Math.cos(angle) * distance,
+          baseY + Math.sin(angle) * distance * 0.72,
+          1.47 - panel * 0.015,
+        );
+        panelMesh.rotation.set(0, 0, angle + panel * 0.42);
+        panelMesh.scale.set(
+          0.85 + point.force * 0.36 + panel * 0.12,
+          0.38 + point.force * 0.12,
+          1,
+        );
+        revealGroup.add(panelMesh);
+      }
+    });
 
     const crackGroup = new THREE.Group();
     root.add(crackGroup);
@@ -908,13 +933,11 @@ function ThreeWaxBall({
         const end = center.clone().add(
           new THREE.Vector3(Math.cos(angle) * length, Math.sin(angle) * length, 0.02),
         );
-        if (palette.style === "apple") {
-          const hairline = new THREE.Line(
-            new THREE.BufferGeometry().setFromPoints([center, mid, end]),
-            crackMaterial,
-          );
-          crackGroup.add(hairline);
-        }
+        const hairline = new THREE.Line(
+          new THREE.BufferGeometry().setFromPoints([center, mid, end]),
+          crackMaterial,
+        );
+        crackGroup.add(hairline);
       }
     });
 
@@ -966,14 +989,17 @@ function ThreeWaxBall({
       const elapsed = (performance.now() - start) / 1000;
       root.rotation.y = -0.24 + Math.sin(elapsed * 0.55) * 0.12;
       root.rotation.x = -0.08 + Math.sin(elapsed * 0.42) * 0.05;
+      const pressedScale = new THREE.Vector3(
+        1 + pressAmount * 0.42,
+        1 - pressAmount,
+        1 + pressAmount * 0.18,
+      );
       ball.scale.lerp(
-        new THREE.Vector3(
-          1,
-          1,
-          1,
-        ),
+        pressedScale,
         0.08,
       );
+      clearOuterShell.scale.lerp(pressedScale, 0.08);
+      innerClay.scale.lerp(pressedScale, 0.08);
       renderer.render(scene, camera);
       animationId = window.requestAnimationFrame(animate);
     }
@@ -1019,12 +1045,12 @@ function getThreePalette(name: string) {
 
   if (name.includes("솜사탕")) {
     return {
-      clay: 0xf8dce8,
-      crack: 0xfff3fb,
+      clay: 0xff9fc8,
+      crack: 0xd89ab7,
       patch: 0xf08aa9,
-      patchColors: [0xff9fc8, 0x8fd8ff, 0xffec86, 0xffb6d5, 0xa5e0ff, 0xfff0a8],
-      shell: 0xfff8fb,
-      shellOpacity: 0.24,
+      patchColors: [0xff7fb5, 0x67cfff, 0xffdf55],
+      shell: 0xf8fdff,
+      shellOpacity: 0.12,
       style: "cotton",
     } satisfies ThreePalette;
   }
