@@ -586,7 +586,7 @@ function ThreeWaxBall({
     const mountElement = mount;
 
     const scene = new THREE.Scene();
-    scene.fog = new THREE.Fog(0x211917, 6, 16);
+    scene.fog = new THREE.Fog(0xf8f3ec, 8, 18);
 
     const camera = new THREE.PerspectiveCamera(35, 1, 0.1, 50);
     camera.position.set(0, 0.15, 7.8);
@@ -608,14 +608,14 @@ function ThreeWaxBall({
     const revealAmount = Math.min(1, crackPoints.length / 6);
     const shellMaterial = new THREE.MeshPhysicalMaterial({
       clearcoat: 1,
-      clearcoatRoughness: 0.18,
+      clearcoatRoughness: 0.045,
       color: palette.shell,
       metalness: 0.02,
       opacity: palette.shellOpacity,
-      roughness: palette.style === "apple" || palette.style === "cotton" ? 0.18 : 0.28,
+      roughness: palette.style === "dubai" ? 0.08 : 0.06,
       sheen: 0.35,
       transparent: palette.shellOpacity < 1,
-      transmission: palette.style === "apple" ? 0.12 : palette.style === "cotton" ? 0.18 : 0,
+      transmission: palette.style === "apple" ? 0.12 : palette.style === "cotton" ? 0.34 : 0,
     });
 
     const ball = new THREE.Mesh(
@@ -630,12 +630,12 @@ function ThreeWaxBall({
       new THREE.SphereGeometry(1.58, 96, 64),
       new THREE.MeshPhysicalMaterial({
         clearcoat: 1,
-        clearcoatRoughness: 0.04,
+        clearcoatRoughness: 0.018,
         color: 0xffffff,
-        opacity: 0.22,
-        roughness: 0.05,
+        opacity: 0.3,
+        roughness: 0.018,
         transparent: true,
-        transmission: 0.65,
+        transmission: 0.82,
       }),
     );
     clearOuterShell.castShadow = true;
@@ -665,17 +665,56 @@ function ThreeWaxBall({
     innerClay.castShadow = true;
     root.add(innerClay);
 
+    if (palette.style === "cotton") {
+      innerClay.visible = false;
+      const blobGeometry = new THREE.SphereGeometry(0.68, 48, 32);
+      const blobSet = [
+        { color: 0xff9fc8, from: new THREE.Vector3(-0.46, 0.18, 0.34), to: new THREE.Vector3(-0.18, 0.05, 0.38), scale: new THREE.Vector3(1.06, 0.9, 0.86) },
+        { color: 0x8fd8ff, from: new THREE.Vector3(0.46, 0.12, 0.3), to: new THREE.Vector3(0.18, 0.02, 0.38), scale: new THREE.Vector3(1.02, 0.9, 0.88) },
+        { color: 0xffec86, from: new THREE.Vector3(0.02, -0.48, 0.28), to: new THREE.Vector3(0.02, -0.14, 0.36), scale: new THREE.Vector3(1.08, 0.78, 0.84) },
+        { color: 0xffb6d5, from: new THREE.Vector3(-0.16, 0.58, 0.24), to: new THREE.Vector3(-0.04, 0.28, 0.34), scale: new THREE.Vector3(0.78, 0.56, 0.68) },
+      ];
+
+      blobSet.forEach((blob, index) => {
+        const material = new THREE.MeshPhysicalMaterial({
+          clearcoat: 1,
+          clearcoatRoughness: 0.025,
+          color: blob.color,
+          opacity: 0.88,
+          roughness: 0.08,
+          transparent: true,
+          transmission: 0.08,
+        });
+        const mesh = new THREE.Mesh(blobGeometry, material);
+        mesh.position.copy(blob.from.clone().lerp(blob.to, revealAmount));
+        mesh.scale.copy(blob.scale).multiplyScalar(1 + revealAmount * 0.08);
+        mesh.rotation.set(index * 0.4, index * 0.72, index * 0.25);
+        mesh.castShadow = true;
+        root.add(mesh);
+      });
+
+      if (revealAmount > 0) {
+        const mixCore = new THREE.Mesh(
+          new THREE.SphereGeometry(0.62 + revealAmount * 0.16, 48, 32),
+          new THREE.MeshPhysicalMaterial({
+            clearcoat: 0.8,
+            clearcoatRoughness: 0.04,
+            color: 0xf5d9ec,
+            opacity: revealAmount * 0.48,
+            roughness: 0.12,
+            transparent: true,
+          }),
+        );
+        mixCore.position.set(0, -0.03, 0.42);
+        mixCore.scale.set(1.2, 0.86, 0.78);
+        root.add(mixCore);
+      }
+    }
+
     const patchGeometry = new THREE.CircleGeometry(0.24, 28);
     const patchNormals =
       palette.style === "cotton"
-        ? [
-            new THREE.Vector3(-0.58, 0.42, 0.7),
-            new THREE.Vector3(0.45, 0.42, 0.78),
-            new THREE.Vector3(-0.02, -0.54, 0.84),
-            new THREE.Vector3(0.24, -0.02, 0.97),
-            new THREE.Vector3(-0.44, -0.08, 0.9),
-            new THREE.Vector3(0.7, -0.24, 0.68),
-          ]
+        ? []
         : palette.style === "apple"
         ? [
             new THREE.Vector3(-0.36, 0.5, 0.79),
@@ -914,34 +953,32 @@ function ThreeWaxBall({
     });
 
     const fragmentGroup = new THREE.Group();
-    scene.add(fragmentGroup);
+    root.add(fragmentGroup);
     if (isBroken) {
       const fragmentGeometry =
         palette.style === "dubai" || palette.style === "cotton"
           ? new THREE.BoxGeometry(0.34, 0.045, 0.24)
           : new THREE.TetrahedronGeometry(0.18, 0);
-      for (let index = 0; index < 34; index += 1) {
+      for (let index = 0; index < 26; index += 1) {
         const fragmentMaterial = new THREE.MeshStandardMaterial({
           color: index % 3 === 0 ? palette.clay : palette.shell,
-          roughness: palette.style === "apple" ? 0.22 : 0.52,
-          transparent: palette.style === "apple" && index % 3 !== 0,
-          opacity: palette.style === "apple" && index % 3 !== 0 ? 0.52 : 1,
+          roughness: 0.18,
+          transparent: true,
+          opacity: palette.style === "apple" && index % 3 !== 0 ? 0.42 : 0.62,
         });
         const fragment = new THREE.Mesh(fragmentGeometry, fragmentMaterial);
         const angle = index * 2.399963229728653;
-        const radius = 1.0 + (index % 6) * 0.14;
+        const radius = 0.42 + (index % 6) * 0.07;
         fragment.position.set(
           Math.cos(angle) * radius,
-          Math.sin(angle * 1.2) * radius * 0.72,
-          1.3 + (index % 5) * 0.08,
+          Math.sin(angle * 1.2) * radius * 0.58,
+          1.05 + (index % 5) * 0.035,
         );
         fragment.rotation.set(index * 0.4, index * 0.7, index * 0.2);
-        fragment.scale.setScalar(0.55 + (index % 4) * 0.16);
+        fragment.scale.setScalar(0.42 + (index % 4) * 0.1);
         fragment.castShadow = true;
         fragmentGroup.add(fragment);
       }
-      ball.scale.setScalar(0.78);
-      stem.position.y = 1.28;
       crackMaterial.opacity = 1;
     }
 
@@ -955,9 +992,9 @@ function ThreeWaxBall({
     const floor = new THREE.Mesh(
       new THREE.CircleGeometry(1.55, 72),
       new THREE.MeshBasicMaterial({
-        color: 0x080605,
+        color: 0xd8d1ca,
         transparent: true,
-        opacity: 0.36,
+        opacity: 0.24,
       }),
     );
     floor.position.set(0, -1.86, -0.2);
@@ -974,10 +1011,10 @@ function ThreeWaxBall({
     rimLight.position.set(-3.8, 1.8, 3.2);
     scene.add(rimLight);
 
-    const warmLight = new THREE.PointLight(0xff9b54, 5.6, 9);
+    const warmLight = new THREE.PointLight(0xffffff, 4.8, 9);
     warmLight.position.set(-2.8, -2.1, 3.4);
     scene.add(warmLight);
-    scene.add(new THREE.HemisphereLight(0xffffff, 0x3a1c14, 1.2));
+    scene.add(new THREE.HemisphereLight(0xffffff, 0xd8e8f0, 1.45));
 
     let animationId = 0;
     const start = performance.now();
@@ -998,19 +1035,15 @@ function ThreeWaxBall({
       root.rotation.x = -0.08 + Math.sin(elapsed * 0.42) * 0.05;
       ball.scale.lerp(
         new THREE.Vector3(
-          isBroken ? 0.78 : 1,
-          isBroken ? 0.78 : 1,
-          isBroken ? 0.78 : 1,
+          1,
+          1,
+          1,
         ),
         0.08,
       );
       fragmentGroup.children.forEach((child, index) => {
         child.rotation.x += 0.018 + index * 0.0007;
         child.rotation.y += 0.014 + index * 0.0005;
-        if (isBroken) {
-          child.position.x += Math.cos(index) * 0.004;
-          child.position.y += Math.sin(index * 1.3) * 0.004;
-        }
       });
       renderer.render(scene, camera);
       animationId = window.requestAnimationFrame(animate);
@@ -1062,7 +1095,7 @@ function getThreePalette(name: string) {
       patch: 0xf08aa9,
       patchColors: [0xff9fc8, 0x8fd8ff, 0xffec86, 0xffb6d5, 0xa5e0ff, 0xfff0a8],
       shell: 0xfff8fb,
-      shellOpacity: 0.58,
+      shellOpacity: 0.24,
       style: "cotton",
     } satisfies ThreePalette;
   }
