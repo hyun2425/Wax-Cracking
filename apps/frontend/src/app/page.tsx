@@ -598,11 +598,11 @@ function ThreeWaxBall({
       clearcoatRoughness: 0.045,
       color: fractureAmount > 0 && palette.style !== "cotton" ? palette.clay : palette.shell,
       metalness: 0.02,
-      opacity: 1,
+      opacity: palette.style === "apple" ? 0.84 : 1,
       roughness: palette.style === "dubai" ? 0.08 : 0.06,
       sheen: 0.35,
-      transparent: false,
-      transmission: 0,
+      transparent: palette.style === "apple",
+      transmission: palette.style === "apple" ? 0.12 : 0,
       vertexColors: palette.style === "cotton",
     });
 
@@ -699,11 +699,11 @@ function ThreeWaxBall({
           clearcoat: 1,
           clearcoatRoughness: 0.045,
           color: palette.shell,
-          opacity: 1,
-          roughness: 0.1,
+          opacity: palette.style === "cotton" ? 0.78 : palette.style === "apple" ? 0.84 : 1,
+          roughness: palette.style === "apple" ? 0.07 : 0.1,
           side: THREE.DoubleSide,
-          transparent: false,
-          transmission: 0,
+          transparent: palette.style === "cotton" || palette.style === "apple",
+          transmission: palette.style === "apple" ? 0.12 : palette.style === "cotton" ? 0.04 : 0,
           vertexColors: false,
         });
 
@@ -882,12 +882,12 @@ function getBaseShellPieces(style: ThreePalette["style"]): ShellPieceSpec[] {
 
 function buildSubdividedShellPieces(style: ThreePalette["style"], clickCount: number, impactCenter: THREE.Vector2) {
   const maxPieces = style === "dubai" ? 20 : style === "cotton" ? 26 : 30;
-  const spread = Math.min(1, Math.max(0, clickCount - 1) / 6);
+  const spread = Math.min(1, Math.max(0, clickCount - 1) / 3);
   let pieces = getBaseShellPieces(style).map((piece) => ({ ...piece }));
 
   for (let step = 2; step <= clickCount && pieces.length < maxPieces; step += 1) {
     const splitCount = Math.min(style === "dubai" ? 2 : 3, maxPieces - pieces.length);
-    const centerWeight = Math.max(0, 1 - spread);
+    const centerWeight = Math.max(0, 1 - spread) * 0.3;
     const ordered = pieces
       .map((piece, index) => {
         const impactDistance = new THREE.Vector2(piece.x, piece.y).distanceTo(impactCenter);
