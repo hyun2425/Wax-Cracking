@@ -103,8 +103,8 @@ export default function Home() {
   const selectedWax = waxTypes[selectedIndex];
   const freezerState = getFreezerState(freezerMinutes);
   const healthUrl = useMemo(() => `${apiBaseUrl}/api/health`, []);
-  const requiredClicks = Math.max(3, 8 - Math.floor(freezerMinutes / 4));
-  const crackPercent = Math.min(100, Math.round((crackProgress / requiredClicks) * 100));
+  const fractureThreshold = 15;
+  const crackPercent = Math.min(100, Math.round((crackProgress / fractureThreshold) * 100));
   const isBroken = crackPercent >= 100;
 
   const playReferenceCrunch = useCallback((isFinal = false) => {
@@ -209,17 +209,12 @@ export default function Home() {
   }
 
   function handleCrack(event: MouseEvent<HTMLButtonElement>) {
-    if (isBroken) {
-      playCrackSound(true);
-      return;
-    }
-
     const rect = event.currentTarget.getBoundingClientRect();
-    const next = Math.min(requiredClicks, crackProgress + 1);
-    const isFinal = next >= requiredClicks;
+    const next = crackProgress + 1;
+    const isFinal = next >= fractureThreshold;
     const x = ((event.clientX - rect.left) / rect.width) * 100;
     const y = ((event.clientY - rect.top) / rect.height) * 100;
-    const force = 0.82 + freezerMinutes / 22 + next / requiredClicks / 3;
+    const force = 0.72 + freezerMinutes / 24 + next / fractureThreshold / 2.2;
 
     setCrackPoints((current) => [
       ...current,
@@ -634,11 +629,9 @@ function ThreeWaxBall({
         roughness: 0.58,
       }),
     );
-    innerClay.visible = isBroken;
+    innerClay.visible = false;
     innerClay.castShadow = true;
     root.add(innerClay);
-
-    innerClay.visible = isBroken && palette.style !== "cotton";
 
     const neckMaterial = new THREE.MeshPhysicalMaterial({
       clearcoat: 0.8,
@@ -698,20 +691,63 @@ function ThreeWaxBall({
         transparent: true,
         opacity: 0.96,
       });
+    const makeWaxShardMaterial = (pointIndex = 0, branchIndex = 0) =>
+      new THREE.MeshPhysicalMaterial({
+        clearcoat: 1,
+        clearcoatRoughness: 0.06,
+        color:
+          palette.style === "cotton"
+            ? cottonFillingColors[(pointIndex + branchIndex) % cottonFillingColors.length]
+            : palette.shell,
+        opacity: palette.style === "dubai" ? 0.98 : 0.74,
+        roughness: 0.12,
+        side: THREE.DoubleSide,
+        transparent: palette.style !== "dubai",
+        transmission: palette.style === "apple" ? 0.18 : palette.style === "cotton" ? 0.08 : 0,
+      });
+    const makeShardGeometry = (length: number, width: number, seed: number) => {
+      const wobbleA = Math.sin(seed * 12.9898) * width * 0.2;
+      const wobbleB = Math.cos(seed * 78.233) * width * 0.22;
+      const shape = new THREE.Shape();
+      shape.moveTo(-length / 2, -width * 0.35 + wobbleA);
+      shape.lineTo(-length * 0.18, -width * 0.58 - wobbleB);
+      shape.lineTo(length * 0.18, -width * 0.42 + wobbleA * 0.5);
+      shape.lineTo(length / 2, -width * 0.18 - wobbleA);
+      shape.lineTo(length * 0.46, width * 0.36 + wobbleB);
+      shape.lineTo(length * 0.05, width * 0.58 - wobbleA);
+      shape.lineTo(-length * 0.4, width * 0.4 + wobbleB * 0.4);
+      shape.closePath();
+      return new THREE.ShapeGeometry(shape);
+    };
     const addCrackPlate = (
       startPoint: THREE.Vector3,
       endPoint: THREE.Vector3,
       width: number,
       material: THREE.Material,
+      seed = 0,
     ) => {
       const delta = endPoint.clone().sub(startPoint);
       const length = Math.max(0.06, Math.hypot(delta.x, delta.y));
-      const plate = new THREE.Mesh(new THREE.PlaneGeometry(length, width), material);
+      const angle = Math.atan2(delta.y, delta.x);
+      const plate = new THREE.Mesh(makeShardGeometry(length, width, seed), material);
       plate.position.copy(startPoint.clone().add(endPoint).multiplyScalar(0.5));
       plate.position.z = 1.515;
-      plate.rotation.z = Math.atan2(delta.y, delta.x);
+      plate.rotation.z = angle;
       plate.castShadow = false;
       crackGroup.add(plate);
+
+      const normal = new THREE.Vector3(-Math.sin(angle), Math.cos(angle), 0);
+      [-1, 1].forEach((side) => {
+        const waxPlate = new THREE.Mesh(
+          makeShardGeometry(length * 0.82, width * 0.48, seed + side * 17),
+          makeWaxShardMaterial(seed, side),
+        );
+        waxPlate.position.copy(plate.position).add(normal.clone().multiplyScalar(side * width * 0.42));
+        waxPlate.position.z = 1.535 + side * 0.006;
+        waxPlate.rotation.set(0.08 * side, 0.04 * side, angle + side * 0.035);
+        waxPlate.castShadow = true;
+        crackGroup.add(waxPlate);
+      });
     };
     if (palette.style === "dubai" && revealAmount > 0) {
       const panelSeams = [
@@ -758,7 +794,7 @@ function ThreeWaxBall({
         const curve = new THREE.CatmullRomCurve3(points);
         const curvePoints = curve.getPoints(18);
         curvePoints.slice(1).forEach((point, index) => {
-          addCrackPlate(curvePoints[index], point, 0.035 + revealAmount * 0.025, makeCrackMaterial(index));
+          addCrackPlate(curvePoints[index], point, 0.035 + revealAmount * 0.025, makeCrackMaterial(index), index);
         });
       });
     }
@@ -803,7 +839,7 @@ function ThreeWaxBall({
         const curve = new THREE.CatmullRomCurve3(points);
         const curvePoints = curve.getPoints(16);
         curvePoints.slice(1).forEach((point, segmentIndex) => {
-          addCrackPlate(curvePoints[segmentIndex], point, 0.026 + revealAmount * 0.018, makeCrackMaterial(index, segmentIndex));
+          addCrackPlate(curvePoints[segmentIndex], point, 0.026 + revealAmount * 0.018, makeCrackMaterial(index, segmentIndex), index * 11 + segmentIndex);
         });
       });
     }
@@ -826,15 +862,15 @@ function ThreeWaxBall({
         const end = center.clone().add(
           new THREE.Vector3(Math.cos(angle) * length, Math.sin(angle) * length, 0.02),
         );
-        addCrackPlate(center, mid, 0.038 + revealAmount * 0.02, makeCrackMaterial(pointIndex, branch));
-        addCrackPlate(mid, end, 0.03 + revealAmount * 0.015, makeCrackMaterial(pointIndex, branch + 1));
+        addCrackPlate(center, mid, 0.038 + revealAmount * 0.02, makeCrackMaterial(pointIndex, branch), pointIndex * 31 + branch);
+        addCrackPlate(mid, end, 0.03 + revealAmount * 0.015, makeCrackMaterial(pointIndex, branch + 1), pointIndex * 37 + branch);
 
         if (branch % 2 === 0 || branch % 5 === 0) {
           const forkAngle = angle + 0.42;
           const forkEnd = mid.clone().add(
             new THREE.Vector3(Math.cos(forkAngle) * length * 0.46, Math.sin(forkAngle) * length * 0.46, -0.02),
           );
-          addCrackPlate(mid, forkEnd, 0.022 + revealAmount * 0.012, makeCrackMaterial(pointIndex + 1, branch));
+          addCrackPlate(mid, forkEnd, 0.022 + revealAmount * 0.012, makeCrackMaterial(pointIndex + 1, branch), pointIndex * 41 + branch);
         }
 
         if (branch % 3 === 0) {
@@ -843,7 +879,7 @@ function ThreeWaxBall({
           const chipEnd = chipStart.clone().add(
             new THREE.Vector3(Math.cos(chipAngle) * length * 0.28, Math.sin(chipAngle) * length * 0.28, -0.02),
           );
-          addCrackPlate(chipStart, chipEnd, 0.018 + revealAmount * 0.01, makeCrackMaterial(pointIndex + 2, branch));
+          addCrackPlate(chipStart, chipEnd, 0.018 + revealAmount * 0.01, makeCrackMaterial(pointIndex + 2, branch), pointIndex * 43 + branch);
         }
       }
     });
