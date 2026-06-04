@@ -725,7 +725,7 @@ function ThreeWaxBall({
                 [-0.38, 0.84, 0.3, 0.26, 0.12],
                 [0.42, -0.78, 0.28, 0.28, -0.44],
               ];
-      const initialPieceCount = palette.style === "dubai" ? 5 : palette.style === "cotton" ? 6 : 7;
+      const initialPieceCount = palette.style === "dubai" ? 7 : palette.style === "cotton" ? 9 : 10;
       const pieceCount = Math.min(maxPieceSpecs.length, initialPieceCount + Math.max(0, crackPoints.length - 1) * 2);
       const firstImpact = crackPoints[0];
       const impactCenter = firstImpact
@@ -749,37 +749,34 @@ function ThreeWaxBall({
         new THREE.MeshPhysicalMaterial({
           clearcoat: 0.24,
           color: palette.style === "cotton" ? cottonFillingColors[index % cottonFillingColors.length] : palette.clay,
-          opacity: 0.72,
+          opacity: 0.92,
           roughness: 0.34,
           side: THREE.DoubleSide,
-          transparent: true,
+          transparent: false,
         });
       const makeShellMaterial = () =>
         new THREE.MeshPhysicalMaterial({
           clearcoat: 1,
           clearcoatRoughness: 0.045,
-          color: palette.shell,
-          opacity: palette.style === "dubai" ? 1 : palette.style === "apple" ? 0.82 : 0.9,
+          color: palette.style === "cotton" ? 0xfff8fb : palette.shell,
+          opacity: palette.style === "dubai" ? 1 : palette.style === "apple" ? 0.9 : 0.96,
           roughness: 0.1,
           side: THREE.DoubleSide,
           transparent: palette.style !== "dubai",
-          transmission: palette.style === "apple" ? 0.14 : palette.style === "cotton" ? 0.08 : 0,
-          vertexColors: palette.style === "cotton",
+          transmission: palette.style === "apple" ? 0.1 : palette.style === "cotton" ? 0.02 : 0,
+          vertexColors: false,
         });
 
       pieceSpecs.forEach(([x, y, width, height, rotation], index) => {
         const direction = new THREE.Vector3(x || 0.01, y || 0.01, 0).normalize();
         const separation = fractureAmount * (0.014 + index * 0.001);
-        const fillGeometry = makeBrokenPieceGeometry(width * subdivisionScale * 0.9, height * subdivisionScale * 0.9, index + 40);
+        const fillGeometry = makeBrokenPieceGeometry(width * subdivisionScale * 0.38, height * subdivisionScale * 0.38, index + 40);
         const filling = new THREE.Mesh(fillGeometry, makeFillingMaterial(index));
-        filling.position.set(x, y, 1.505);
+        filling.position.set(x - direction.x * separation * 0.85, y - direction.y * separation * 0.85, 1.512);
         filling.rotation.z = rotation;
         fractureGroup.add(filling);
 
         const shellGeometry = makeBrokenPieceGeometry(width * subdivisionScale, height * subdivisionScale, index);
-        if (palette.style === "cotton") {
-          applyCottonMarbleColors(shellGeometry);
-        }
         const shellPiece = new THREE.Mesh(shellGeometry, makeShellMaterial());
         shellPiece.position.set(x + direction.x * separation, y + direction.y * separation, 1.526 + fractureAmount * 0.012);
         shellPiece.rotation.set(fractureAmount * 0.028 * Math.sign(y || 1), fractureAmount * -0.022 * Math.sign(x || 1), rotation + fractureAmount * 0.012 * Math.sin(index));
