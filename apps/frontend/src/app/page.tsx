@@ -271,7 +271,7 @@ export default function Home() {
             Online Wax-Cracking Ball
           </strong>
           <div className="flex flex-wrap gap-5 text-sm font-bold text-[#6f685e]">
-            <Link href="/">kkm.ver</Link>
+            <Link href="/">mk.ver</Link>
             <Link href="/hsj-ver">hsj.ver</Link>
             <Link href="/njjey-ver">njjey.ver</Link>
           </div>

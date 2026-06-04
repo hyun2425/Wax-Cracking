@@ -3,7 +3,7 @@ import Link from "next/link";
 import HsjExperience from "./HsjExperience";
 
 const versionLinks = [
-  { href: "/", label: "kkm.ver" },
+  { href: "/", label: "mk.ver" },
   { href: "/hsj-ver", label: "hsj.ver" },
   { href: "/njjey-ver", label: "njjey.ver" },
 ];
