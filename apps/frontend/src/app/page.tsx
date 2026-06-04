@@ -611,6 +611,7 @@ function ThreeWaxBall({
       ballGeometry,
       shellMaterial,
     );
+    ball.visible = fractureAmount === 0;
     ball.castShadow = true;
     ball.receiveShadow = true;
     root.add(ball);
@@ -621,10 +622,10 @@ function ThreeWaxBall({
         clearcoat: 1,
         clearcoatRoughness: 0.018,
         color: 0xffffff,
-        opacity: palette.style === "dubai" ? 0.1 : palette.style === "cotton" ? 0.24 : 0.18,
+        opacity: fractureAmount > 0 ? 0.045 : palette.style === "dubai" ? 0.1 : palette.style === "cotton" ? 0.24 : 0.18,
         roughness: 0.018,
         transparent: true,
-        transmission: 0.82,
+        transmission: fractureAmount > 0 ? 0.94 : 0.82,
       }),
     );
     clearOuterShell.castShadow = true;
@@ -695,26 +696,43 @@ function ThreeWaxBall({
         : new THREE.Vector2(0, 0);
       const pieceSpecs = buildSubdividedShellPieces(palette.style, crackPoints.length, impactCenter);
       const gapScale = 1 - Math.min(0.2, Math.max(0, crackPoints.length - 1) * 0.018);
+      const makeBackingMaterial = () =>
+        new THREE.MeshPhysicalMaterial({
+          clearcoat: palette.style === "cotton" ? 0.5 : 0.2,
+          clearcoatRoughness: 0.16,
+          color: palette.style === "cotton" ? 0xffffff : palette.clay,
+          opacity: palette.style === "cotton" ? 0.96 : 1,
+          roughness: palette.style === "cotton" ? 0.22 : 0.42,
+          side: THREE.DoubleSide,
+          transparent: palette.style === "cotton",
+          vertexColors: palette.style === "cotton",
+        });
       const makeShellMaterial = () =>
         new THREE.MeshPhysicalMaterial({
           clearcoat: 1,
           clearcoatRoughness: 0.045,
-          color: palette.shell,
-          opacity: palette.style === "dubai" ? 1 : palette.style === "apple" ? 0.9 : 0.96,
-          roughness: 0.1,
+          color: palette.style === "cotton" ? 0xfffbfd : palette.shell,
+          opacity: palette.style === "dubai" ? 1 : palette.style === "apple" ? 0.9 : 0.98,
+          roughness: palette.style === "cotton" ? 0.08 : 0.1,
           side: THREE.DoubleSide,
           transparent: palette.style !== "dubai",
           transmission: palette.style === "apple" ? 0.1 : palette.style === "cotton" ? 0.02 : 0,
-          vertexColors: palette.style === "cotton",
+          vertexColors: false,
         });
 
       pieceSpecs.forEach(({ height, id, rotation, width, x, y }, index) => {
         const direction = new THREE.Vector3(x || 0.01, y || 0.01, 0).normalize();
         const separation = fractureAmount * (0.012 + Math.min(index, 18) * 0.00055);
-        const shellGeometry = makeBrokenPieceGeometry(width * gapScale, height * gapScale, id);
+        const backingGeometry = makeBrokenPieceGeometry(width * 1.08, height * 1.08, id + 300);
         if (palette.style === "cotton") {
-          applyCottonMarbleColors(shellGeometry);
+          applyCottonMarbleColors(backingGeometry);
         }
+        const backingPiece = new THREE.Mesh(backingGeometry, makeBackingMaterial());
+        backingPiece.position.set(x, y, 1.506);
+        backingPiece.rotation.z = rotation;
+        fractureGroup.add(backingPiece);
+
+        const shellGeometry = makeBrokenPieceGeometry(width * gapScale, height * gapScale, id);
         const shellPiece = new THREE.Mesh(shellGeometry, makeShellMaterial());
         shellPiece.position.set(x + direction.x * separation, y + direction.y * separation, 1.526 + fractureAmount * 0.012);
         shellPiece.rotation.set(fractureAmount * 0.024 * Math.sign(y || 1), fractureAmount * -0.02 * Math.sign(x || 1), rotation + fractureAmount * 0.01 * Math.sin(id));
@@ -847,32 +865,40 @@ function getThreePalette(name: string) {
 function getBaseShellPieces(style: ThreePalette["style"]): ShellPieceSpec[] {
   if (style === "dubai") {
     return [
-      { id: 1, x: -0.48, y: 0.46, width: 0.72, height: 0.58, rotation: -0.26 },
-      { id: 2, x: 0.24, y: 0.5, width: 0.72, height: 0.54, rotation: 0.14 },
-      { id: 3, x: 0.56, y: 0.02, width: 0.58, height: 0.7, rotation: 0.56 },
-      { id: 4, x: -0.6, y: -0.08, width: 0.6, height: 0.72, rotation: -0.56 },
-      { id: 5, x: -0.08, y: -0.1, width: 0.78, height: 0.66, rotation: 0.3 },
+      { id: 1, x: -0.5, y: 0.48, width: 0.7, height: 0.58, rotation: -0.26 },
+      { id: 2, x: 0.22, y: 0.56, width: 0.68, height: 0.54, rotation: 0.12 },
+      { id: 3, x: 0.66, y: 0.04, width: 0.56, height: 0.66, rotation: 0.56 },
+      { id: 4, x: -0.68, y: -0.04, width: 0.56, height: 0.7, rotation: -0.56 },
+      { id: 5, x: -0.1, y: -0.06, width: 0.72, height: 0.62, rotation: 0.3 },
+      { id: 6, x: 0.38, y: -0.58, width: 0.6, height: 0.48, rotation: -0.22 },
+      { id: 7, x: -0.46, y: -0.6, width: 0.58, height: 0.46, rotation: 0.24 },
     ];
   }
 
   if (style === "cotton") {
     return [
-      { id: 11, x: -0.5, y: 0.46, width: 0.66, height: 0.52, rotation: -0.22 },
-      { id: 12, x: 0.02, y: 0.52, width: 0.66, height: 0.48, rotation: 0.12 },
-      { id: 13, x: 0.5, y: 0.24, width: 0.58, height: 0.58, rotation: 0.5 },
-      { id: 14, x: -0.62, y: -0.04, width: 0.56, height: 0.66, rotation: -0.6 },
-      { id: 15, x: -0.08, y: 0, width: 0.7, height: 0.62, rotation: 0.3 },
-      { id: 16, x: 0.42, y: -0.34, width: 0.58, height: 0.62, rotation: -0.3 },
+      { id: 11, x: -0.52, y: 0.5, width: 0.64, height: 0.5, rotation: -0.22 },
+      { id: 12, x: 0.08, y: 0.58, width: 0.64, height: 0.48, rotation: 0.12 },
+      { id: 13, x: 0.62, y: 0.22, width: 0.56, height: 0.56, rotation: 0.5 },
+      { id: 14, x: -0.68, y: -0.06, width: 0.54, height: 0.62, rotation: -0.6 },
+      { id: 15, x: -0.08, y: 0.04, width: 0.68, height: 0.6, rotation: 0.3 },
+      { id: 16, x: 0.48, y: -0.34, width: 0.56, height: 0.6, rotation: -0.3 },
+      { id: 17, x: -0.38, y: -0.58, width: 0.62, height: 0.46, rotation: 0.18 },
+      { id: 18, x: 0.22, y: -0.68, width: 0.54, height: 0.42, rotation: -0.12 },
     ];
   }
 
   return [
     { id: 21, x: -0.5, y: 0.54, width: 0.58, height: 0.44, rotation: -0.24 },
-    { id: 22, x: -0.02, y: 0.58, width: 0.56, height: 0.42, rotation: 0.08 },
-    { id: 23, x: 0.46, y: 0.44, width: 0.52, height: 0.48, rotation: 0.4 },
-    { id: 24, x: 0.66, y: 0.08, width: 0.42, height: 0.54, rotation: 0.78 },
-    { id: 25, x: -0.66, y: 0.06, width: 0.44, height: 0.58, rotation: -0.68 },
-    { id: 26, x: -0.24, y: 0.02, width: 0.58, height: 0.52, rotation: 0.28 },
+    { id: 22, x: 0.02, y: 0.6, width: 0.56, height: 0.42, rotation: 0.08 },
+    { id: 23, x: 0.5, y: 0.44, width: 0.52, height: 0.48, rotation: 0.4 },
+    { id: 24, x: 0.68, y: 0.02, width: 0.42, height: 0.54, rotation: 0.78 },
+    { id: 25, x: -0.68, y: 0.02, width: 0.44, height: 0.58, rotation: -0.68 },
+    { id: 26, x: -0.2, y: 0, width: 0.58, height: 0.52, rotation: 0.28 },
+    { id: 27, x: 0.3, y: -0.16, width: 0.54, height: 0.5, rotation: -0.34 },
+    { id: 28, x: -0.48, y: -0.5, width: 0.54, height: 0.44, rotation: 0.16 },
+    { id: 29, x: 0.02, y: -0.62, width: 0.56, height: 0.42, rotation: -0.18 },
+    { id: 30, x: 0.5, y: -0.52, width: 0.48, height: 0.44, rotation: 0.28 },
   ];
 }
 
