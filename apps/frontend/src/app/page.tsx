@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import {
   type MouseEvent,
   useRef,
@@ -251,9 +252,9 @@ export default function Home() {
             Online Wax-Cracking Ball
           </strong>
           <div className="flex flex-wrap gap-5 text-sm font-bold text-[#6f685e]">
-            <a href="/">kkm.ver</a>
-            <a href="/hsj-ver">hsj.ver</a>
-            <a href="/njjey-ver">njjey.ver</a>
+            <Link href="/">kkm.ver</Link>
+            <Link href="/hsj-ver">hsj.ver</Link>
+            <Link href="/njjey-ver">njjey.ver</Link>
           </div>
         </nav>
 

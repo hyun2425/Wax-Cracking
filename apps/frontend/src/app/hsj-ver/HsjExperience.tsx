@@ -23,7 +23,7 @@ type SceneHandles = {
   reset: () => void;
 };
 
-const fragmentColors = [0x4a241a, 0xb9f0c8, 0xafd8f8, 0xf5d1e2, 0xf4f7ed];
+const fragmentColors = [0x5b102c, 0xf4a7c5, 0x9fd5ef, 0xffefd5, 0xf6fbff];
 
 function seeded(index: number) {
   return Math.sin(index * 127.1 + 31.7) * 43758.5453 % 1;
@@ -245,13 +245,13 @@ export default function HsjExperience() {
     root.add(ballGroup, crackGroup, thumbGroup);
 
     const innerMaterial = new THREE.MeshPhysicalMaterial({
-      clearcoat: 0.55,
-      clearcoatRoughness: 0.16,
-      color: 0xb7f2c9,
-      emissive: 0x183b2a,
-      emissiveIntensity: 0.16,
+      clearcoat: 0.72,
+      clearcoatRoughness: 0.14,
+      color: 0xf8bfd6,
+      emissive: 0x351624,
+      emissiveIntensity: 0.08,
       metalness: 0.02,
-      roughness: 0.28,
+      roughness: 0.24,
       sheen: 0.45,
       transmission: 0.12,
     });
@@ -262,12 +262,72 @@ export default function HsjExperience() {
     innerCore.scale.set(1.02, 0.98, 0.9);
     ballGroup.add(innerCore);
 
-    const gelMaterial = new THREE.MeshPhysicalMaterial({
+    const blueBlobMaterial = new THREE.MeshPhysicalMaterial({
+      clearcoat: 0.82,
+      clearcoatRoughness: 0.12,
+      color: 0xa7d8ef,
+      emissive: 0x102a3c,
+      emissiveIntensity: 0.08,
+      metalness: 0,
+      opacity: 0.94,
+      roughness: 0.22,
+      transparent: true,
+      transmission: 0.08,
+    });
+    const blueBlob = new THREE.Mesh(
+      new THREE.SphereGeometry(0.92, 48, 32),
+      blueBlobMaterial,
+    );
+    blueBlob.position.set(0.52, -0.34, 0.44);
+    blueBlob.scale.set(1.0, 0.72, 0.78);
+    ballGroup.add(blueBlob);
+
+    const creamBlobMaterial = new THREE.MeshPhysicalMaterial({
+      clearcoat: 0.78,
+      clearcoatRoughness: 0.18,
+      color: 0xffefd2,
+      emissive: 0x3a2a15,
+      emissiveIntensity: 0.06,
+      metalness: 0,
+      opacity: 0.86,
+      roughness: 0.24,
+      transparent: true,
+      transmission: 0.05,
+    });
+    const creamBlob = new THREE.Mesh(
+      new THREE.SphereGeometry(0.58, 40, 24),
+      creamBlobMaterial,
+    );
+    creamBlob.position.set(-0.68, -0.5, 0.72);
+    creamBlob.scale.set(1.12, 0.82, 0.68);
+    ballGroup.add(creamBlob);
+
+    const burgundyFillingMaterial = new THREE.MeshPhysicalMaterial({
       clearcoat: 0.9,
-      color: 0xc2f0dc,
+      clearcoatRoughness: 0.1,
+      color: 0x5a1430,
+      emissive: 0x210612,
+      emissiveIntensity: 0.1,
+      metalness: 0.02,
+      opacity: 0.58,
+      roughness: 0.18,
+      transparent: true,
+      transmission: 0.04,
+    });
+    const burgundyFilling = new THREE.Mesh(
+      new THREE.SphereGeometry(0.46, 36, 20),
+      burgundyFillingMaterial,
+    );
+    burgundyFilling.position.set(0.18, 0.36, 0.94);
+    burgundyFilling.scale.set(1.2, 0.74, 0.55);
+    ballGroup.add(burgundyFilling);
+
+    const gelMaterial = new THREE.MeshPhysicalMaterial({
+      clearcoat: 0.95,
+      color: 0xffd6e6,
       ior: 1.25,
       metalness: 0,
-      opacity: 0.78,
+      opacity: 0.7,
       roughness: 0.18,
       transparent: true,
       transmission: 0.22,
@@ -283,13 +343,13 @@ export default function HsjExperience() {
     const capsuleMaterial = new THREE.MeshPhysicalMaterial({
       clearcoat: 1,
       clearcoatRoughness: 0.04,
-      color: 0xdff4ff,
+      color: 0xf5fbff,
       ior: 1.45,
       metalness: 0,
-      opacity: 0.3,
+      opacity: 0.42,
       roughness: 0.04,
       transparent: true,
-      transmission: 0.62,
+      transmission: 0.72,
     });
     const capsule = new THREE.Mesh(
       new THREE.SphereGeometry(1.68, 72, 48),
@@ -327,34 +387,46 @@ export default function HsjExperience() {
 
     const plateMaterials = [
       new THREE.MeshPhysicalMaterial({
-        clearcoat: 0.92,
-        clearcoatRoughness: 0.08,
-        color: 0x4a241a,
+        clearcoat: 1,
+        clearcoatRoughness: 0.06,
+        color: 0x5b102c,
         metalness: 0.02,
-        roughness: 0.22,
-      }),
-      new THREE.MeshPhysicalMaterial({
-        clearcoat: 0.82,
-        color: 0x6b3322,
-        roughness: 0.2,
-      }),
-      new THREE.MeshPhysicalMaterial({
-        clearcoat: 0.78,
-        color: 0xc8f2d1,
-        roughness: 0.24,
-      }),
-      new THREE.MeshPhysicalMaterial({
-        clearcoat: 0.85,
-        color: 0xcfe5fb,
-        opacity: 0.78,
         roughness: 0.16,
+      }),
+      new THREE.MeshPhysicalMaterial({
+        clearcoat: 1,
+        clearcoatRoughness: 0.07,
+        color: 0x7b173b,
+        metalness: 0.02,
+        roughness: 0.14,
+      }),
+      new THREE.MeshPhysicalMaterial({
+        clearcoat: 0.95,
+        clearcoatRoughness: 0.1,
+        color: 0xf4a7c5,
+        roughness: 0.18,
+      }),
+      new THREE.MeshPhysicalMaterial({
+        clearcoat: 0.95,
+        clearcoatRoughness: 0.1,
+        color: 0xa9d8ee,
+        opacity: 0.84,
+        roughness: 0.14,
+        transparent: true,
+      }),
+      new THREE.MeshPhysicalMaterial({
+        clearcoat: 0.9,
+        clearcoatRoughness: 0.12,
+        color: 0xffefd5,
+        opacity: 0.88,
+        roughness: 0.18,
         transparent: true,
       }),
     ];
     const plates: PlateBody[] = [];
 
-    for (let index = 0; index < 42; index += 1) {
-      const band = index % 7;
+    for (let index = 0; index < 54; index += 1) {
+      const band = index % 9;
       const x = (positiveSeed(index * 11) - 0.5) * 2.85;
       const y = (positiveSeed(index * 13 + 4) - 0.5) * 2.55;
 
@@ -365,8 +437,10 @@ export default function HsjExperience() {
       const normal = spherePoint(x, y, 1.72).normalize();
       const home = normal.clone().multiplyScalar(1.73);
       const plate = new THREE.Mesh(
-        makePlateGeometry(index, 0.22 + positiveSeed(index * 19) * 0.16),
-        plateMaterials[band === 0 ? 2 : band === 1 ? 3 : index % 2],
+        makePlateGeometry(index, 0.18 + positiveSeed(index * 19) * 0.18),
+        plateMaterials[
+          band === 0 ? 2 : band === 1 ? 3 : band === 2 ? 4 : index % 2
+        ],
       );
       plate.position.copy(home);
       plate.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), normal);
@@ -394,7 +468,7 @@ export default function HsjExperience() {
           [0.64, -0.43],
         ],
         1.75,
-        0x9df0bf,
+        0xffd9ea,
         0.016,
       ),
       makeSurfaceTube(
@@ -406,7 +480,7 @@ export default function HsjExperience() {
           [0.84, -0.92],
         ],
         1.75,
-        0x9df0bf,
+        0xeaf8ff,
         0.014,
       ),
       makeSurfaceTube(
@@ -417,7 +491,7 @@ export default function HsjExperience() {
           [0.4, -0.12],
         ],
         1.75,
-        0xb6f7cf,
+        0xffe1ef,
         0.013,
       ),
       makeSurfaceTube(
@@ -428,7 +502,7 @@ export default function HsjExperience() {
           [0.16, -0.2],
         ],
         1.75,
-        0x6bb6ff,
+        0x91d8ff,
         0.014,
       ),
       makeSurfaceTube(
@@ -439,7 +513,7 @@ export default function HsjExperience() {
           [0.02, -0.24],
         ],
         1.75,
-        0xb6f7cf,
+        0xf9fbff,
         0.012,
       ),
     ];
@@ -593,6 +667,9 @@ export default function HsjExperience() {
       burstEnergy = 1;
       squeeze = 1;
       innerCore.scale.set(1.1, 0.86, 0.82);
+      blueBlob.scale.set(1.16, 0.62, 0.72);
+      creamBlob.scale.set(1.28, 0.72, 0.62);
+      burgundyFilling.scale.set(1.34, 0.64, 0.48);
       gelOpening.scale.set(1.28, 0.78, 0.22);
 
       fragments.forEach((fragment, index) => {
@@ -611,17 +688,21 @@ export default function HsjExperience() {
     function freeze() {
       burstEnergy = 0.42;
       squeeze = 0.7;
-      innerMaterial.color.setHex(0xc7f8d7);
-      gelMaterial.color.setHex(0xd1fae8);
-      capsuleMaterial.opacity = 0.38;
+      innerMaterial.color.setHex(0xfbd0df);
+      blueBlobMaterial.color.setHex(0xb8e5f6);
+      creamBlobMaterial.color.setHex(0xfff3dc);
+      gelMaterial.color.setHex(0xffe0ec);
+      capsuleMaterial.opacity = 0.48;
     }
 
     function reset() {
       burstEnergy = 0;
       squeeze = 0.15;
-      innerMaterial.color.setHex(0xb7f2c9);
-      gelMaterial.color.setHex(0xc2f0dc);
-      capsuleMaterial.opacity = 0.3;
+      innerMaterial.color.setHex(0xf8bfd6);
+      blueBlobMaterial.color.setHex(0xa7d8ef);
+      creamBlobMaterial.color.setHex(0xffefd2);
+      gelMaterial.color.setHex(0xffd6e6);
+      capsuleMaterial.opacity = 0.42;
       fragments.forEach((fragment) => {
         fragment.mesh.position.copy(fragment.home);
         fragment.velocity.set(0, 0, 0);
@@ -650,6 +731,18 @@ export default function HsjExperience() {
         0.9 - squeeze * 0.03,
       );
       innerCore.scale.lerp(targetCoreScale, 0.08);
+      blueBlob.scale.lerp(
+        new THREE.Vector3(1.0 + squeeze * 0.18, 0.72 - squeeze * 0.08, 0.78),
+        0.08,
+      );
+      creamBlob.scale.lerp(
+        new THREE.Vector3(1.12 + squeeze * 0.18, 0.82 - squeeze * 0.1, 0.68),
+        0.08,
+      );
+      burgundyFilling.scale.lerp(
+        new THREE.Vector3(1.2 + squeeze * 0.18, 0.74 - squeeze * 0.12, 0.55),
+        0.08,
+      );
       capsule.scale.lerp(
         new THREE.Vector3(1.03 + squeeze * 0.05, 0.98 - squeeze * 0.07, 0.92),
         0.07,
@@ -733,6 +826,12 @@ export default function HsjExperience() {
       mount.removeChild(renderer.domElement);
       innerCore.geometry.dispose();
       innerMaterial.dispose();
+      blueBlob.geometry.dispose();
+      blueBlobMaterial.dispose();
+      creamBlob.geometry.dispose();
+      creamBlobMaterial.dispose();
+      burgundyFilling.geometry.dispose();
+      burgundyFillingMaterial.dispose();
       gelOpening.geometry.dispose();
       gelMaterial.dispose();
       capsule.geometry.dispose();
