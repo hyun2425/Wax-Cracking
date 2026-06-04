@@ -43,6 +43,15 @@ type ThreePalette = {
   style: "dubai" | "cotton" | "apple";
 };
 
+type ShellPieceSpec = {
+  height: number;
+  id: number;
+  rotation: number;
+  width: number;
+  x: number;
+  y: number;
+};
+
 const apiBaseUrl =
   process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ??
   "http://localhost:8080";
@@ -588,14 +597,14 @@ function ThreeWaxBall({
     const shellMaterial = new THREE.MeshPhysicalMaterial({
       clearcoat: 1,
       clearcoatRoughness: 0.045,
-      color: palette.shell,
+      color: fractureAmount > 0 && palette.style !== "cotton" ? palette.clay : palette.shell,
       metalness: 0.02,
-      opacity: palette.shellOpacity,
+      opacity: fractureAmount > 0 && palette.style !== "cotton" ? 1 : palette.shellOpacity,
       roughness: palette.style === "dubai" ? 0.08 : 0.06,
       sheen: 0.35,
-      transparent: palette.style !== "dubai",
+      transparent: fractureAmount > 0 && palette.style !== "cotton" ? false : palette.style !== "dubai",
       transmission: palette.style === "apple" ? 0.14 : palette.style === "cotton" ? 0.18 : 0,
-      vertexColors: palette.style === "cotton",
+      vertexColors: fractureAmount === 0 && palette.style === "cotton",
     });
 
     const ball = new THREE.Mesh(
@@ -677,56 +686,6 @@ function ThreeWaxBall({
     const fractureGroup = new THREE.Group();
     root.add(fractureGroup);
     if (fractureAmount > 0) {
-      const cottonFillingColors = [0xf7a8c6, 0xa8dcf3, 0xf4e6a8];
-      const maxPieceSpecs =
-        palette.style === "dubai"
-          ? [
-              [-0.42, 0.46, 0.62, 0.52, -0.22],
-              [0.22, 0.5, 0.6, 0.48, 0.16],
-              [0.58, 0.05, 0.48, 0.58, 0.62],
-              [-0.58, -0.06, 0.5, 0.62, -0.58],
-              [-0.1, -0.1, 0.64, 0.58, 0.34],
-              [0.28, -0.55, 0.54, 0.44, -0.18],
-              [-0.42, -0.52, 0.48, 0.42, 0.24],
-              [0.56, -0.38, 0.38, 0.36, 0.48],
-              [-0.02, 0.82, 0.38, 0.3, -0.05],
-              [-0.72, 0.36, 0.34, 0.34, -0.38],
-            ]
-          : palette.style === "cotton"
-            ? [
-                [-0.48, 0.44, 0.56, 0.46, -0.22],
-                [0.02, 0.5, 0.58, 0.42, 0.14],
-                [0.5, 0.24, 0.5, 0.5, 0.52],
-                [-0.62, -0.04, 0.48, 0.58, -0.62],
-                [-0.08, 0.0, 0.6, 0.56, 0.34],
-                [0.46, -0.26, 0.48, 0.54, -0.3],
-                [-0.36, -0.48, 0.54, 0.42, 0.2],
-                [0.08, -0.58, 0.56, 0.42, -0.18],
-                [0.58, -0.56, 0.38, 0.36, 0.46],
-                [-0.0, 0.84, 0.38, 0.28, -0.1],
-                [-0.78, 0.28, 0.32, 0.34, -0.42],
-                [0.76, -0.02, 0.3, 0.34, 0.58],
-              ]
-            : [
-                [-0.5, 0.54, 0.48, 0.38, -0.24],
-                [-0.04, 0.58, 0.46, 0.36, 0.08],
-                [0.44, 0.44, 0.44, 0.42, 0.4],
-                [0.66, 0.1, 0.34, 0.44, 0.82],
-                [-0.66, 0.08, 0.36, 0.5, -0.7],
-                [-0.28, 0.04, 0.5, 0.46, 0.28],
-                [0.22, -0.08, 0.48, 0.48, -0.36],
-                [-0.56, -0.36, 0.42, 0.4, 0.16],
-                [-0.14, -0.5, 0.48, 0.36, -0.2],
-                [0.38, -0.48, 0.44, 0.42, 0.3],
-                [0.68, -0.32, 0.32, 0.34, -0.5],
-                [0.02, -0.78, 0.34, 0.3, 0.12],
-                [-0.82, -0.1, 0.28, 0.32, 0.44],
-                [0.8, 0.34, 0.28, 0.28, -0.2],
-                [-0.38, 0.84, 0.3, 0.26, 0.12],
-                [0.42, -0.78, 0.28, 0.28, -0.44],
-              ];
-      const initialPieceCount = palette.style === "dubai" ? 7 : palette.style === "cotton" ? 9 : 10;
-      const pieceCount = Math.min(maxPieceSpecs.length, initialPieceCount + Math.max(0, crackPoints.length - 1) * 2);
       const firstImpact = crackPoints[0];
       const impactCenter = firstImpact
         ? new THREE.Vector2(
@@ -734,52 +693,31 @@ function ThreeWaxBall({
             THREE.MathUtils.clamp(-(firstImpact.y - 50) / 35, -0.85, 0.85),
           )
         : new THREE.Vector2(0, 0);
-      const spreadBias = Math.min(1, Math.max(0, crackPoints.length - 1) / 8);
-      const pieceSpecs = [...maxPieceSpecs]
-        .sort((left, right) => {
-          const leftDistance = new THREE.Vector2(left[0], left[1]).distanceTo(impactCenter);
-          const rightDistance = new THREE.Vector2(right[0], right[1]).distanceTo(impactCenter);
-          const leftScore = leftDistance * (1 - spreadBias) + maxPieceSpecs.indexOf(left) * 0.018 * spreadBias;
-          const rightScore = rightDistance * (1 - spreadBias) + maxPieceSpecs.indexOf(right) * 0.018 * spreadBias;
-          return leftScore - rightScore;
-        })
-        .slice(0, pieceCount);
-      const subdivisionScale = 1 - Math.min(0.28, Math.max(0, crackPoints.length - 1) * 0.035);
-      const makeFillingMaterial = (index: number) =>
-        new THREE.MeshPhysicalMaterial({
-          clearcoat: 0.24,
-          color: palette.style === "cotton" ? cottonFillingColors[index % cottonFillingColors.length] : palette.clay,
-          opacity: 0.92,
-          roughness: 0.34,
-          side: THREE.DoubleSide,
-          transparent: false,
-        });
+      const pieceSpecs = buildSubdividedShellPieces(palette.style, crackPoints.length, impactCenter);
+      const gapScale = 1 - Math.min(0.2, Math.max(0, crackPoints.length - 1) * 0.018);
       const makeShellMaterial = () =>
         new THREE.MeshPhysicalMaterial({
           clearcoat: 1,
           clearcoatRoughness: 0.045,
-          color: palette.style === "cotton" ? 0xfff8fb : palette.shell,
+          color: palette.shell,
           opacity: palette.style === "dubai" ? 1 : palette.style === "apple" ? 0.9 : 0.96,
           roughness: 0.1,
           side: THREE.DoubleSide,
           transparent: palette.style !== "dubai",
           transmission: palette.style === "apple" ? 0.1 : palette.style === "cotton" ? 0.02 : 0,
-          vertexColors: false,
+          vertexColors: palette.style === "cotton",
         });
 
-      pieceSpecs.forEach(([x, y, width, height, rotation], index) => {
+      pieceSpecs.forEach(({ height, id, rotation, width, x, y }, index) => {
         const direction = new THREE.Vector3(x || 0.01, y || 0.01, 0).normalize();
-        const separation = fractureAmount * (0.014 + index * 0.001);
-        const fillGeometry = makeBrokenPieceGeometry(width * subdivisionScale * 0.38, height * subdivisionScale * 0.38, index + 40);
-        const filling = new THREE.Mesh(fillGeometry, makeFillingMaterial(index));
-        filling.position.set(x - direction.x * separation * 0.85, y - direction.y * separation * 0.85, 1.512);
-        filling.rotation.z = rotation;
-        fractureGroup.add(filling);
-
-        const shellGeometry = makeBrokenPieceGeometry(width * subdivisionScale, height * subdivisionScale, index);
+        const separation = fractureAmount * (0.012 + Math.min(index, 18) * 0.00055);
+        const shellGeometry = makeBrokenPieceGeometry(width * gapScale, height * gapScale, id);
+        if (palette.style === "cotton") {
+          applyCottonMarbleColors(shellGeometry);
+        }
         const shellPiece = new THREE.Mesh(shellGeometry, makeShellMaterial());
         shellPiece.position.set(x + direction.x * separation, y + direction.y * separation, 1.526 + fractureAmount * 0.012);
-        shellPiece.rotation.set(fractureAmount * 0.028 * Math.sign(y || 1), fractureAmount * -0.022 * Math.sign(x || 1), rotation + fractureAmount * 0.012 * Math.sin(index));
+        shellPiece.rotation.set(fractureAmount * 0.024 * Math.sign(y || 1), fractureAmount * -0.02 * Math.sign(x || 1), rotation + fractureAmount * 0.01 * Math.sin(id));
         shellPiece.castShadow = true;
         fractureGroup.add(shellPiece);
       });
@@ -904,6 +842,118 @@ function getThreePalette(name: string) {
     shellOpacity: 0.86,
     style: "apple",
   } satisfies ThreePalette;
+}
+
+function getBaseShellPieces(style: ThreePalette["style"]): ShellPieceSpec[] {
+  if (style === "dubai") {
+    return [
+      { id: 1, x: -0.48, y: 0.46, width: 0.72, height: 0.58, rotation: -0.26 },
+      { id: 2, x: 0.24, y: 0.5, width: 0.72, height: 0.54, rotation: 0.14 },
+      { id: 3, x: 0.56, y: 0.02, width: 0.58, height: 0.7, rotation: 0.56 },
+      { id: 4, x: -0.6, y: -0.08, width: 0.6, height: 0.72, rotation: -0.56 },
+      { id: 5, x: -0.08, y: -0.1, width: 0.78, height: 0.66, rotation: 0.3 },
+    ];
+  }
+
+  if (style === "cotton") {
+    return [
+      { id: 11, x: -0.5, y: 0.46, width: 0.66, height: 0.52, rotation: -0.22 },
+      { id: 12, x: 0.02, y: 0.52, width: 0.66, height: 0.48, rotation: 0.12 },
+      { id: 13, x: 0.5, y: 0.24, width: 0.58, height: 0.58, rotation: 0.5 },
+      { id: 14, x: -0.62, y: -0.04, width: 0.56, height: 0.66, rotation: -0.6 },
+      { id: 15, x: -0.08, y: 0, width: 0.7, height: 0.62, rotation: 0.3 },
+      { id: 16, x: 0.42, y: -0.34, width: 0.58, height: 0.62, rotation: -0.3 },
+    ];
+  }
+
+  return [
+    { id: 21, x: -0.5, y: 0.54, width: 0.58, height: 0.44, rotation: -0.24 },
+    { id: 22, x: -0.02, y: 0.58, width: 0.56, height: 0.42, rotation: 0.08 },
+    { id: 23, x: 0.46, y: 0.44, width: 0.52, height: 0.48, rotation: 0.4 },
+    { id: 24, x: 0.66, y: 0.08, width: 0.42, height: 0.54, rotation: 0.78 },
+    { id: 25, x: -0.66, y: 0.06, width: 0.44, height: 0.58, rotation: -0.68 },
+    { id: 26, x: -0.24, y: 0.02, width: 0.58, height: 0.52, rotation: 0.28 },
+  ];
+}
+
+function buildSubdividedShellPieces(style: ThreePalette["style"], clickCount: number, impactCenter: THREE.Vector2) {
+  const maxPieces = style === "dubai" ? 20 : style === "cotton" ? 26 : 30;
+  const spread = Math.min(1, Math.max(0, clickCount - 1) / 6);
+  let pieces = getBaseShellPieces(style).map((piece) => ({ ...piece }));
+
+  for (let step = 2; step <= clickCount && pieces.length < maxPieces; step += 1) {
+    const splitCount = Math.min(style === "dubai" ? 2 : 3, maxPieces - pieces.length);
+    const centerWeight = Math.max(0, 1 - spread);
+    const ordered = pieces
+      .map((piece, index) => {
+        const impactDistance = new THREE.Vector2(piece.x, piece.y).distanceTo(impactCenter);
+        const wholeBallOrder = Math.abs(Math.sin(piece.id * 4.81 + step * 1.73)) + index * 0.004;
+        return {
+          piece,
+          score: impactDistance * centerWeight + wholeBallOrder * (1 - centerWeight),
+        };
+      })
+      .sort((left, right) => {
+        const leftArea = left.piece.width * left.piece.height;
+        const rightArea = right.piece.width * right.piece.height;
+        return left.score - right.score || rightArea - leftArea;
+      });
+    const selectedIds = new Set(ordered.slice(0, splitCount).map(({ piece }) => piece.id));
+    const nextPieces: ShellPieceSpec[] = [];
+
+    pieces.forEach((piece) => {
+      if (selectedIds.has(piece.id)) {
+        nextPieces.push(...splitShellPiece(piece, step));
+      } else {
+        nextPieces.push(piece);
+      }
+    });
+    pieces = nextPieces;
+  }
+
+  return pieces;
+}
+
+function splitShellPiece(piece: ShellPieceSpec, step: number): ShellPieceSpec[] {
+  const splitVertical = (piece.id + step) % 2 === 0;
+  const offset = splitVertical ? piece.width * 0.18 : piece.height * 0.18;
+  const rotationOffset = 0.08 + ((piece.id + step) % 3) * 0.025;
+
+  if (splitVertical) {
+    return [
+      {
+        ...piece,
+        id: piece.id * 2 + step,
+        width: piece.width * 0.58,
+        x: piece.x - offset,
+        rotation: piece.rotation - rotationOffset,
+      },
+      {
+        ...piece,
+        id: piece.id * 2 + step + 1,
+        width: piece.width * 0.52,
+        x: piece.x + offset * 0.9,
+        rotation: piece.rotation + rotationOffset,
+      },
+    ];
+  }
+
+  return [
+    {
+      ...piece,
+      height: piece.height * 0.58,
+      id: piece.id * 2 + step,
+      rotation: piece.rotation - rotationOffset,
+      y: piece.y - offset,
+    },
+    {
+      ...piece,
+      height: piece.height * 0.52,
+      id: piece.id * 2 + step + 1,
+      rotation: piece.rotation + rotationOffset,
+      y: piece.y + offset * 0.9,
+    },
+  ];
 }
 
 function makeBrokenPieceGeometry(width: number, height: number, seed: number) {
