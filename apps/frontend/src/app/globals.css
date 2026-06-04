@@ -30,13 +30,21 @@ a {
 }
 
 .wax-ball-3d {
+  background-position: center;
+  background-size: 130% 130%;
   transform-style: preserve-3d;
 }
 
 .wax-ball-3d::before {
   background:
-    linear-gradient(115deg, rgba(255, 255, 255, 0.25), transparent 34%),
-    radial-gradient(circle at 52% 58%, transparent 42%, rgba(0, 0, 0, 0.26) 100%);
+    radial-gradient(
+      circle at var(--press-x, 50%) var(--press-y, 50%),
+      rgba(0, 0, 0, 0.28) 0 7%,
+      rgba(255, 255, 255, 0.24) 8%,
+      transparent 19%
+    ),
+    linear-gradient(115deg, rgba(255, 255, 255, 0.28), transparent 34%),
+    radial-gradient(circle at 52% 58%, transparent 40%, rgba(0, 0, 0, 0.32) 100%);
   border-radius: 999px;
   content: "";
   inset: 0;
@@ -46,7 +54,9 @@ a {
 }
 
 .wax-ball-3d::after {
-  background: rgba(255, 255, 255, 0.18);
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.08) 68%),
+    linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.42), transparent);
   border-radius: 50%;
   content: "";
   filter: blur(8px);
@@ -65,10 +75,60 @@ a {
 
 .wax-shell-texture {
   background-image:
+    linear-gradient(118deg, transparent 0 46%, rgba(255, 255, 255, 0.18) 48%, transparent 51%),
     radial-gradient(circle at 16% 22%, rgba(255, 255, 255, 0.28) 0 1px, transparent 2px),
     radial-gradient(circle at 68% 36%, rgba(255, 255, 255, 0.2) 0 1px, transparent 2px),
     radial-gradient(circle at 42% 74%, rgba(0, 0, 0, 0.14) 0 1px, transparent 2px);
-  background-size: 28px 28px, 34px 34px, 24px 24px;
+  background-size: 90px 90px, 28px 28px, 34px 34px, 24px 24px;
+}
+
+@keyframes press-dent {
+  0% {
+    opacity: 0.85;
+    transform: translate(-50%, -50%) scale(0.36);
+  }
+
+  60% {
+    opacity: 0.5;
+    transform: translate(-50%, -50%) scale(1.08);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.35);
+  }
+}
+
+.wax-press-dent {
+  animation: press-dent 220ms ease-out forwards;
+  background:
+    radial-gradient(circle, rgba(0, 0, 0, 0.38) 0 18%, rgba(255, 255, 255, 0.34) 21% 31%, transparent 52%),
+    radial-gradient(circle, rgba(255, 248, 233, 0.56), transparent 62%);
+  box-shadow:
+    inset 0 0 18px rgba(0, 0, 0, 0.28),
+    0 0 20px rgba(255, 248, 233, 0.45);
+}
+
+@keyframes crack-grow {
+  0% {
+    clip-path: inset(0 0 100% 0);
+    opacity: 0;
+  }
+
+  30% {
+    opacity: 1;
+  }
+
+  100% {
+    clip-path: inset(0 0 0 0);
+    opacity: 1;
+  }
+}
+
+.wax-crack-cluster {
+  animation: crack-grow 180ms ease-out both;
+  border-radius: 999px;
+  filter: drop-shadow(0 0 4px rgba(255, 248, 233, 0.8));
 }
 
 @keyframes fragment-burst {
@@ -86,11 +146,12 @@ a {
     opacity: 0;
     transform: translate(-50%, -50%) rotate(var(--fragment-angle))
       translateX(var(--fragment-distance)) rotate(var(--fragment-rotate))
-      scale(0.85);
+      rotateY(120deg) scale(0.85);
   }
 }
 
 .wax-fragment {
-  animation: fragment-burst 780ms ease-out forwards;
+  animation: fragment-burst 920ms cubic-bezier(0.17, 0.84, 0.27, 1) forwards;
   clip-path: polygon(10% 16%, 88% 0, 100% 66%, 52% 100%, 0 74%);
+  transform-style: preserve-3d;
 }

@@ -1,6 +1,13 @@
 "use client";
 
-import { type MouseEvent, useCallback, useEffect, useMemo, useState } from "react";
+import {
+  type CSSProperties,
+  type MouseEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 
 type ApiState =
   | { status: "checking" }
@@ -22,6 +29,13 @@ type CrackPoint = {
   x: number;
   y: number;
   rotation: number;
+  force: number;
+};
+
+type ImpactPoint = {
+  x: number;
+  y: number;
+  id: number;
 };
 
 const apiBaseUrl =
@@ -78,6 +92,7 @@ export default function Home() {
   const [isFreezing, setIsFreezing] = useState(false);
   const [crackProgress, setCrackProgress] = useState(0);
   const [crackPoints, setCrackPoints] = useState<CrackPoint[]>([]);
+  const [impactPoint, setImpactPoint] = useState<ImpactPoint | null>(null);
   const [apiState, setApiState] = useState<ApiState>({ status: "checking" });
 
   const selectedWax = waxTypes[selectedIndex];
@@ -227,6 +242,33 @@ export default function Home() {
     });
 
     if (isFinal) {
+      const crumbleBuffer = audioContext.createBuffer(
+        1,
+        Math.floor(audioContext.sampleRate * 0.5),
+        audioContext.sampleRate,
+      );
+      const crumbleData = crumbleBuffer.getChannelData(0);
+      for (let sample = 0; sample < crumbleData.length; sample += 1) {
+        const fade = Math.pow(1 - sample / crumbleData.length, 1.8);
+        const grain = sample % 31 < 3 ? 1 : 0.2;
+        crumbleData[sample] = (Math.random() * 2 - 1) * fade * grain;
+      }
+
+      const crumble = audioContext.createBufferSource();
+      const crumbleFilter = audioContext.createBiquadFilter();
+      const crumbleGain = audioContext.createGain();
+      crumble.buffer = crumbleBuffer;
+      crumbleFilter.type = "highpass";
+      crumbleFilter.frequency.setValueAtTime(900, now + 0.16);
+      crumbleGain.gain.setValueAtTime(0.0001, now + 0.16);
+      crumbleGain.gain.exponentialRampToValueAtTime(0.16, now + 0.2);
+      crumbleGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.58);
+      crumble.connect(crumbleFilter);
+      crumbleFilter.connect(crumbleGain);
+      crumbleGain.connect(masterGain);
+      crumble.start(now + 0.16);
+      crumble.stop(now + 0.62);
+
       const thump = audioContext.createOscillator();
       const thumpGain = audioContext.createGain();
       thump.type = "sine";
@@ -250,11 +292,13 @@ export default function Home() {
     setSelectedIndex(index);
     setCrackProgress(0);
     setCrackPoints([]);
+    setImpactPoint(null);
   }
 
   function handleStartFreezer() {
     setCrackProgress(0);
     setCrackPoints([]);
+    setImpactPoint(null);
     setIsFreezing(true);
   }
 
@@ -263,6 +307,7 @@ export default function Home() {
     setIsFreezing(false);
     setCrackProgress(0);
     setCrackPoints([]);
+    setImpactPoint(null);
   }
 
   function handleCrack(event: MouseEvent<HTMLButtonElement>) {
@@ -274,14 +319,23 @@ export default function Home() {
     const rect = event.currentTarget.getBoundingClientRect();
     const next = Math.min(requiredClicks, crackProgress + 1);
     const isFinal = next >= requiredClicks;
+    const x = ((event.clientX - rect.left) / rect.width) * 100;
+    const y = ((event.clientY - rect.top) / rect.height) * 100;
+    const force = 0.82 + freezerMinutes / 22 + next / requiredClicks / 3;
+
+    setImpactPoint({ id: Date.now(), x, y });
+    window.setTimeout(() => {
+      setImpactPoint(null);
+    }, 210);
 
     setCrackPoints((current) => [
       ...current,
       {
-        id: Date.now(),
-        x: ((event.clientX - rect.left) / rect.width) * 100,
-        y: ((event.clientY - rect.top) / rect.height) * 100,
-        rotation: (current.length * 47) % 110 - 55,
+        id: Date.now() + current.length,
+        x,
+        y,
+        rotation: (current.length * 47 + Math.round(x - y)) % 126 - 63,
+        force,
       },
     ]);
     setCrackProgress(next);
@@ -341,6 +395,7 @@ export default function Home() {
             crackPercent={crackPercent}
             freezerMinutes={freezerMinutes}
             freezerState={freezerState.state}
+            impactPoint={impactPoint}
             isBroken={isBroken}
             onCrack={handleCrack}
             selectedWax={selectedWax}
@@ -563,6 +618,7 @@ function WaxPreview({
   crackPercent,
   freezerMinutes,
   freezerState,
+  impactPoint,
   isBroken,
   onCrack,
   selectedWax,
@@ -571,6 +627,7 @@ function WaxPreview({
   crackPercent: number;
   freezerMinutes: number;
   freezerState: string;
+  impactPoint: ImpactPoint | null;
   isBroken: boolean;
   onCrack: (event: MouseEvent<HTMLButtonElement>) => void;
   selectedWax: WaxType;
@@ -585,6 +642,12 @@ function WaxPreview({
           aria-label={`${selectedWax.name} 직접 깨기`}
           className={`wax-ball-3d group relative aspect-square w-[min(72%,270px)] cursor-pointer overflow-hidden rounded-full border-0 bg-gradient-to-br p-0 ${selectedWax.ballClassName} shadow-[inset_-38px_-46px_54px_rgba(0,0,0,0.34),inset_18px_20px_26px_rgba(255,255,255,0.2),0_34px_36px_rgba(58,36,25,0.27)] transition-transform active:scale-[0.97] ${isBroken ? "wax-ball-broken scale-95" : "hover:scale-[1.02]"}`}
           onClick={onCrack}
+          style={
+            {
+              "--press-x": `${impactPoint?.x ?? 50}%`,
+              "--press-y": `${impactPoint?.y ?? 50}%`,
+            } as CSSProperties
+          }
           type="button"
         >
           <span className="absolute inset-0 rounded-full bg-[radial-gradient(circle_at_30%_24%,rgba(255,255,255,0.62),transparent_24%),radial-gradient(circle_at_68%_75%,rgba(0,0,0,0.24),transparent_38%)]" />
@@ -592,6 +655,13 @@ function WaxPreview({
           <span className="absolute inset-[10%] rounded-full border-t-[12px] border-white/35 -rotate-[24deg]" />
           <span className="absolute left-[20%] top-[15%] h-[24%] w-[32%] rounded-full bg-white/25 blur-md" />
           <span className="absolute inset-[23%] rounded-full border border-white/20 shadow-[inset_0_0_24px_rgba(255,255,255,0.18)]" />
+          {impactPoint ? (
+            <span
+              className="wax-press-dent absolute h-24 w-24 -translate-x-1/2 -translate-y-1/2 rounded-full"
+              key={impactPoint.id}
+              style={{ left: `${impactPoint.x}%`, top: `${impactPoint.y}%` }}
+            />
+          ) : null}
           {crackPoints.map((point, index) => (
             <span
               className="wax-crack-cluster absolute h-[46%] w-[4px] origin-top bg-[#fff8e9] shadow-[0_0_9px_rgba(255,248,233,0.95)]"
@@ -599,7 +669,7 @@ function WaxPreview({
               style={{
                 left: `${point.x}%`,
                 top: `${point.y}%`,
-                transform: `rotate(${point.rotation}deg) scale(${0.82 + index * 0.05}) translateZ(34px)`,
+                transform: `rotate(${point.rotation}deg) scale(${point.force + index * 0.04}) translateZ(34px)`,
               }}
             >
               <span className="absolute left-0 top-[24%] h-[46%] w-[2px] origin-top rotate-[38deg] bg-[#fff8e9]" />
