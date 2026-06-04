@@ -590,7 +590,7 @@ function ThreeWaxBall({
       clearcoatRoughness: 0.045,
       color: palette.shell,
       metalness: 0.02,
-      opacity: Math.max(0.18, palette.shellOpacity * (1 - fractureAmount * 0.74)),
+      opacity: palette.shellOpacity,
       roughness: palette.style === "dubai" ? 0.08 : 0.06,
       sheen: 0.35,
       transparent: true,
@@ -612,7 +612,7 @@ function ThreeWaxBall({
         clearcoat: 1,
         clearcoatRoughness: 0.018,
         color: 0xffffff,
-        opacity: Math.max(0.08, (palette.style === "cotton" ? 0.16 : palette.style === "apple" ? 0.24 : 0.3) * (1 - fractureAmount * 0.55)),
+        opacity: palette.style === "cotton" ? 0.28 : palette.style === "apple" ? 0.34 : 0.36,
         roughness: 0.018,
         transparent: true,
         transmission: 0.82,
@@ -678,23 +678,48 @@ function ThreeWaxBall({
     root.add(fractureGroup);
     if (fractureAmount > 0) {
       const cottonFillingColors = [0xf7a8c6, 0xa8dcf3, 0xf4e6a8];
-      const pieceSpecs = [
-        [-0.44, 0.55, 0.9, 0.62, -0.28],
-        [0.2, 0.55, 0.82, 0.56, 0.18],
-        [0.66, 0.24, 0.62, 0.7, 0.74],
-        [-0.72, 0.06, 0.68, 0.78, -0.82],
-        [-0.18, 0.1, 0.82, 0.74, 0.48],
-        [0.36, -0.1, 0.74, 0.72, -0.42],
-        [-0.52, -0.48, 0.78, 0.58, 0.28],
-        [0.08, -0.56, 0.86, 0.62, -0.2],
-        [0.62, -0.5, 0.64, 0.56, 0.54],
-        [0.0, 0.92, 0.58, 0.38, -0.08],
-      ];
+      const pieceSpecs =
+        palette.style === "dubai"
+          ? [
+              [-0.42, 0.46, 0.62, 0.52, -0.22],
+              [0.22, 0.5, 0.6, 0.48, 0.16],
+              [0.58, 0.05, 0.48, 0.58, 0.62],
+              [-0.58, -0.06, 0.5, 0.62, -0.58],
+              [-0.1, -0.1, 0.64, 0.58, 0.34],
+              [0.28, -0.55, 0.54, 0.44, -0.18],
+              [-0.42, -0.52, 0.48, 0.42, 0.24],
+            ]
+          : palette.style === "cotton"
+            ? [
+                [-0.48, 0.44, 0.56, 0.46, -0.22],
+                [0.02, 0.5, 0.58, 0.42, 0.14],
+                [0.5, 0.24, 0.5, 0.5, 0.52],
+                [-0.62, -0.04, 0.48, 0.58, -0.62],
+                [-0.08, 0.0, 0.6, 0.56, 0.34],
+                [0.46, -0.26, 0.48, 0.54, -0.3],
+                [-0.36, -0.48, 0.54, 0.42, 0.2],
+                [0.08, -0.58, 0.56, 0.42, -0.18],
+                [0.58, -0.56, 0.38, 0.36, 0.46],
+              ]
+            : [
+                [-0.5, 0.54, 0.48, 0.38, -0.24],
+                [-0.04, 0.58, 0.46, 0.36, 0.08],
+                [0.44, 0.44, 0.44, 0.42, 0.4],
+                [0.66, 0.1, 0.34, 0.44, 0.82],
+                [-0.66, 0.08, 0.36, 0.5, -0.7],
+                [-0.28, 0.04, 0.5, 0.46, 0.28],
+                [0.22, -0.08, 0.48, 0.48, -0.36],
+                [-0.56, -0.36, 0.42, 0.4, 0.16],
+                [-0.14, -0.5, 0.48, 0.36, -0.2],
+                [0.38, -0.48, 0.44, 0.42, 0.3],
+                [0.68, -0.32, 0.32, 0.34, -0.5],
+                [0.02, -0.78, 0.34, 0.3, 0.12],
+              ];
       const makeFillingMaterial = (index: number) =>
         new THREE.MeshPhysicalMaterial({
           clearcoat: 0.24,
           color: palette.style === "cotton" ? cottonFillingColors[index % cottonFillingColors.length] : palette.clay,
-          opacity: 0.9,
+          opacity: 0.72,
           roughness: 0.34,
           side: THREE.DoubleSide,
           transparent: true,
@@ -704,7 +729,7 @@ function ThreeWaxBall({
           clearcoat: 1,
           clearcoatRoughness: 0.045,
           color: palette.shell,
-          opacity: palette.style === "dubai" ? 0.98 : 0.78,
+          opacity: palette.style === "dubai" ? 1 : palette.style === "apple" ? 0.82 : 0.9,
           roughness: 0.1,
           side: THREE.DoubleSide,
           transparent: palette.style !== "dubai",
@@ -713,11 +738,11 @@ function ThreeWaxBall({
         });
 
       pieceSpecs.forEach(([x, y, width, height, rotation], index) => {
-        const direction = new THREE.Vector3(x, y, 0).normalize();
-        const separation = fractureAmount * (0.07 + index * 0.004);
-        const fillGeometry = makeBrokenPieceGeometry(width * 1.08, height * 1.08, index + 40);
+        const direction = new THREE.Vector3(x || 0.01, y || 0.01, 0).normalize();
+        const separation = fractureAmount * (0.022 + index * 0.0018);
+        const fillGeometry = makeBrokenPieceGeometry(width * 0.92, height * 0.92, index + 40);
         const filling = new THREE.Mesh(fillGeometry, makeFillingMaterial(index));
-        filling.position.set(x, y, 1.48);
+        filling.position.set(x, y, 1.505);
         filling.rotation.z = rotation;
         fractureGroup.add(filling);
 
@@ -726,8 +751,8 @@ function ThreeWaxBall({
           applyCottonMarbleColors(shellGeometry);
         }
         const shellPiece = new THREE.Mesh(shellGeometry, makeShellMaterial());
-        shellPiece.position.set(x + direction.x * separation, y + direction.y * separation, 1.54 + fractureAmount * 0.06);
-        shellPiece.rotation.set(fractureAmount * 0.16 * Math.sign(y || 1), fractureAmount * -0.1 * Math.sign(x || 1), rotation + fractureAmount * 0.04 * Math.sin(index));
+        shellPiece.position.set(x + direction.x * separation, y + direction.y * separation, 1.535 + fractureAmount * 0.018);
+        shellPiece.rotation.set(fractureAmount * 0.045 * Math.sign(y || 1), fractureAmount * -0.035 * Math.sign(x || 1), rotation + fractureAmount * 0.018 * Math.sin(index));
         shellPiece.castShadow = true;
         fractureGroup.add(shellPiece);
       });
