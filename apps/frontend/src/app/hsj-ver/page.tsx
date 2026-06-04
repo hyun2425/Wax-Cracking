@@ -3,14 +3,14 @@ import Link from "next/link";
 import HsjExperience from "./HsjExperience";
 
 export const metadata: Metadata = {
-  title: "HSJ.ver | 온라인 왁스볼",
-  description: "Three.js로 만든 HSJ.ver 왁스볼 애니메이션 페이지",
+  title: "HSJ.ver | 온라인 왁스뿌볼",
+  description: "Three.js로 만든 HSJ.ver 왁스뿌볼 파열 시뮬레이션",
 };
 
 export default function HsjVerPage() {
   return (
-    <main className="min-h-screen bg-[#0f1217] text-[#f7f2e8]">
-      <header className="fixed inset-x-0 top-0 z-20 border-b border-white/10 bg-[#0f1217]/78 backdrop-blur-md">
+    <main className="min-h-screen bg-[#101317] text-[#f7f2e8]">
+      <header className="fixed inset-x-0 top-0 z-20 border-b border-white/10 bg-[#101317]/78 backdrop-blur-md">
         <nav
           aria-label="주요 메뉴"
           className="mx-auto flex min-h-16 w-[min(1180px,calc(100%-32px))] items-center justify-between gap-4 max-sm:flex-col max-sm:items-start max-sm:justify-center max-sm:py-4"
