@@ -4,7 +4,7 @@ import HsjExperience from "./HsjExperience";
 
 const versionLinks = [
   { href: "/hsj-ver", label: "hsj.ver" },
-  { href: "/hsj-ver2", label: "hsj.ver2" },
+  { href: "/njjey-ver", label: "njjey.ver" },
 ];
 
 export const metadata: Metadata = {
@@ -20,7 +20,7 @@ export default function HsjVerPage() {
           aria-label="버전 메뉴"
           className="mx-auto flex min-h-16 w-[min(1180px,calc(100%-32px))] items-center justify-between gap-4 max-sm:flex-col max-sm:items-start max-sm:justify-center max-sm:py-4"
         >
-          <Link className="text-[15px] font-extrabold" href="/hsj-ver">
+          <Link className="text-[15px] font-extrabold" href="/">
             Online Wax-Cracking Ball
           </Link>
           <div className="flex flex-wrap gap-5 text-sm font-extrabold text-[#c6d3da]">
