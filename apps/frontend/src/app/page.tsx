@@ -39,6 +39,16 @@ type ImpactPoint = {
   id: number;
 };
 
+type ThreePalette = {
+  clay: number;
+  crack: number;
+  patch: number;
+  patchColors: number[];
+  shell: number;
+  shellOpacity: number;
+  style: "dubai" | "cotton" | "apple";
+};
+
 const apiBaseUrl =
   process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ??
   "http://localhost:8080";
@@ -780,8 +790,11 @@ function ThreeWaxBall({
       clearcoatRoughness: 0.18,
       color: palette.shell,
       metalness: 0.02,
-      roughness: 0.28,
+      opacity: palette.shellOpacity,
+      roughness: palette.style === "apple" ? 0.18 : 0.28,
       sheen: 0.35,
+      transparent: palette.shellOpacity < 1,
+      transmission: palette.style === "apple" ? 0.12 : 0,
     });
 
     const ball = new THREE.Mesh(
@@ -804,14 +817,16 @@ function ThreeWaxBall({
     innerClay.castShadow = true;
     root.add(innerClay);
 
-    const patchMaterial = new THREE.MeshPhysicalMaterial({
-      clearcoat: 0.9,
-      clearcoatRoughness: 0.12,
-      color: palette.patch,
-      roughness: 0.22,
-    });
     const patchGeometry = new THREE.CircleGeometry(0.24, 28);
-    const patchNormals = [
+    const patchNormals =
+      palette.style === "apple"
+        ? [
+            new THREE.Vector3(-0.36, 0.5, 0.79),
+            new THREE.Vector3(0.52, 0.38, 0.77),
+            new THREE.Vector3(-0.48, -0.24, 0.84),
+            new THREE.Vector3(0.34, -0.5, 0.8),
+          ]
+        : [
       new THREE.Vector3(-0.62, 0.54, 0.58),
       new THREE.Vector3(-0.18, 0.7, 0.68),
       new THREE.Vector3(0.38, 0.55, 0.74),
@@ -824,18 +839,54 @@ function ThreeWaxBall({
       new THREE.Vector3(0.18, -0.02, 0.98),
       new THREE.Vector3(-0.5, -0.56, 0.66),
       new THREE.Vector3(0.48, 0.0, 0.88),
-    ];
+          ];
 
     patchNormals.forEach((normal, index) => {
       const unit = normal.normalize();
+      const patchMaterial = new THREE.MeshPhysicalMaterial({
+        clearcoat: 0.95,
+        clearcoatRoughness: 0.1,
+        color: palette.patchColors[index % palette.patchColors.length],
+        opacity: palette.style === "apple" ? 0.18 : 0.98,
+        roughness: palette.style === "dubai" ? 0.2 : 0.18,
+        transparent: palette.style === "apple",
+        transmission: palette.style === "apple" ? 0.35 : 0,
+      });
       const patch = new THREE.Mesh(patchGeometry, patchMaterial);
       patch.position.copy(unit.clone().multiplyScalar(1.505));
       patch.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), unit);
       patch.rotation.z = index * 0.8;
-      patch.scale.set(1.25 + (index % 3) * 0.28, 0.58 + (index % 4) * 0.12, 1);
+      if (palette.style === "dubai") {
+        patch.scale.set(1.42 + (index % 3) * 0.38, 0.7 + (index % 4) * 0.16, 1);
+      } else if (palette.style === "cotton") {
+        patch.scale.set(1.55 + (index % 3) * 0.34, 0.92 + (index % 4) * 0.2, 1);
+      } else {
+        patch.scale.set(1.15 + (index % 3) * 0.2, 0.7 + (index % 2) * 0.12, 1);
+      }
       patch.castShadow = true;
       root.add(patch);
     });
+
+    if (palette.style === "dubai" || palette.style === "cotton") {
+      const ribbonMaterial = new THREE.MeshPhysicalMaterial({
+        clearcoat: 0.6,
+        clearcoatRoughness: 0.22,
+        color: palette.clay,
+        roughness: 0.42,
+      });
+      const ribbonCount = palette.style === "dubai" ? 9 : 5;
+      for (let index = 0; index < ribbonCount; index += 1) {
+        const angle = (index / ribbonCount) * Math.PI * 2;
+        const ribbon = new THREE.Mesh(
+          new THREE.CapsuleGeometry(0.035, 1.36 + (index % 3) * 0.22, 8, 12),
+          ribbonMaterial,
+        );
+        ribbon.position.set(Math.cos(angle) * 0.45, Math.sin(angle * 1.4) * 0.36, 1.32);
+        ribbon.rotation.set(1.08, 0.15 + Math.sin(angle) * 0.28, angle + 0.38);
+        ribbon.scale.set(1, palette.style === "dubai" ? 1.14 : 0.74, 1);
+        root.add(ribbon);
+      }
+    }
 
     const stem = new THREE.Mesh(
       new THREE.CylinderGeometry(0.16, 0.24, 0.58, 9),
@@ -852,9 +903,13 @@ function ThreeWaxBall({
     const crackGroup = new THREE.Group();
     root.add(crackGroup);
     const crackMaterial = new THREE.LineBasicMaterial({
-      color: 0xfff4d7,
+      color: palette.crack,
       transparent: true,
       opacity: 0.95,
+    });
+    const crackTubeMaterial = new THREE.MeshStandardMaterial({
+      color: palette.crack,
+      roughness: 0.5,
     });
     crackPoints.forEach((point, pointIndex) => {
       const baseX = (point.x - 50) / 35;
@@ -875,11 +930,26 @@ function ThreeWaxBall({
         const end = center.clone().add(
           new THREE.Vector3(Math.cos(angle) * length, Math.sin(angle) * length, 0.02),
         );
-        const line = new THREE.Line(
-          new THREE.BufferGeometry().setFromPoints([center, mid, end]),
-          crackMaterial,
+        const curve = new THREE.CatmullRomCurve3([center, mid, end]);
+        const tube = new THREE.Mesh(
+          new THREE.TubeGeometry(
+            curve,
+            10,
+            palette.style === "dubai" ? 0.026 + pointIndex * 0.003 : 0.014,
+            8,
+            false,
+          ),
+          crackTubeMaterial,
         );
-        crackGroup.add(line);
+        crackGroup.add(tube);
+
+        if (palette.style !== "dubai") {
+          const hairline = new THREE.Line(
+            new THREE.BufferGeometry().setFromPoints([center, mid, end]),
+            crackMaterial,
+          );
+          crackGroup.add(hairline);
+        }
       }
     });
 
@@ -890,7 +960,9 @@ function ThreeWaxBall({
       for (let index = 0; index < 34; index += 1) {
         const fragmentMaterial = new THREE.MeshStandardMaterial({
           color: index % 3 === 0 ? palette.clay : palette.shell,
-          roughness: 0.52,
+          roughness: palette.style === "apple" ? 0.22 : 0.52,
+          transparent: palette.style === "apple" && index % 3 !== 0,
+          opacity: palette.style === "apple" && index % 3 !== 0 ? 0.52 : 1,
         });
         const fragment = new THREE.Mesh(fragmentGeometry, fragmentMaterial);
         const angle = index * 2.399963229728653;
@@ -1009,14 +1081,38 @@ function ThreeWaxBall({
 
 function getThreePalette(name: string) {
   if (name.includes("두바이")) {
-    return { clay: 0xa9d96b, patch: 0x5b3424, shell: 0x3a2116 };
+    return {
+      clay: 0xb9d8aa,
+      crack: 0xc7e5bd,
+      patch: 0x5b3424,
+      patchColors: [0x4a2618, 0x62341f, 0x7a4328, 0x2f1a12],
+      shell: 0x3a2116,
+      shellOpacity: 1,
+      style: "dubai",
+    } satisfies ThreePalette;
   }
 
   if (name.includes("솜사탕")) {
-    return { clay: 0xf7c2d6, patch: 0xf08aa9, shell: 0xf8ecff };
+    return {
+      clay: 0xf8d7e4,
+      crack: 0xfff6fb,
+      patch: 0xf08aa9,
+      patchColors: [0xf5a9c4, 0x9ed9ed, 0xf5e7a8, 0xd9c1f2],
+      shell: 0xfbeef8,
+      shellOpacity: 0.94,
+      style: "cotton",
+    } satisfies ThreePalette;
   }
 
-  return { clay: 0xb6e96f, patch: 0x8ce000, shell: 0xf5f1df };
+  return {
+    clay: 0xa9de49,
+    crack: 0xedffd8,
+    patch: 0x8ce000,
+    patchColors: [0x8fd10a, 0x9ee32d, 0x6fb800],
+    shell: 0x8fd10a,
+    shellOpacity: 0.9,
+    style: "apple",
+  } satisfies ThreePalette;
 }
 
 function createImpactRing(x: number, y: number) {
