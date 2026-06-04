@@ -1,13 +1,14 @@
 "use client";
 
 import {
-  type CSSProperties,
   type MouseEvent,
+  useRef,
   useCallback,
   useEffect,
   useMemo,
   useState,
 } from "react";
+import * as THREE from "three";
 
 type ApiState =
   | { status: "checking" }
@@ -177,14 +178,14 @@ export default function Home() {
     compressor.attack.value = 0.002;
     compressor.release.value = 0.18;
     masterGain.gain.setValueAtTime(0.0001, now);
-    masterGain.gain.exponentialRampToValueAtTime(isFinal ? 0.5 : 0.18, now + 0.006);
-    masterGain.gain.exponentialRampToValueAtTime(0.0001, now + (isFinal ? 0.62 : 0.16));
+    masterGain.gain.exponentialRampToValueAtTime(isFinal ? 0.86 : 0.36, now + 0.006);
+    masterGain.gain.exponentialRampToValueAtTime(0.0001, now + (isFinal ? 0.74 : 0.24));
     masterGain.connect(compressor);
     compressor.connect(audioContext.destination);
 
     const highCracks = isFinal
-      ? [0, 0.014, 0.031, 0.052, 0.083, 0.123, 0.176, 0.241, 0.315]
-      : [0, 0.022, 0.047];
+      ? [0, 0.018, 0.039, 0.066, 0.104, 0.152, 0.206, 0.274, 0.36, 0.43]
+      : [0, 0.025, 0.058, 0.096];
 
     highCracks.forEach((delay, index) => {
       const duration = isFinal ? 0.045 + (index % 3) * 0.018 : 0.026;
@@ -212,7 +213,7 @@ export default function Home() {
       bandPass.Q.setValueAtTime(isFinal ? 4.5 : 6.5, now + delay);
       grainGain.gain.setValueAtTime(0.0001, now + delay);
       grainGain.gain.exponentialRampToValueAtTime(
-        isFinal ? 0.18 + index * 0.012 : 0.1,
+        isFinal ? 0.26 + index * 0.014 : 0.16,
         now + delay + 0.004,
       );
       grainGain.gain.exponentialRampToValueAtTime(0.0001, now + delay + duration);
@@ -223,7 +224,40 @@ export default function Home() {
       source.stop(now + delay + duration);
     });
 
-    const shellSnaps = isFinal ? [0.018, 0.075, 0.154, 0.258] : [0.012];
+    const crunchBursts = isFinal ? [0, 0.09, 0.19, 0.33] : [0];
+    crunchBursts.forEach((delay, index) => {
+      const duration = isFinal ? 0.13 : 0.09;
+      const buffer = audioContext.createBuffer(
+        1,
+        Math.floor(audioContext.sampleRate * duration),
+        audioContext.sampleRate,
+      );
+      const data = buffer.getChannelData(0);
+
+      for (let sample = 0; sample < data.length; sample += 1) {
+        const fade = 1 - sample / data.length;
+        const chunk = sample % 97 < 32 ? 1 : 0.35;
+        data[sample] = (Math.random() * 2 - 1) * fade * chunk;
+      }
+
+      const source = audioContext.createBufferSource();
+      const lowPass = audioContext.createBiquadFilter();
+      const gain = audioContext.createGain();
+      source.buffer = buffer;
+      lowPass.type = "bandpass";
+      lowPass.frequency.setValueAtTime(520 + freezerMinutes * 18 + index * 130, now + delay);
+      lowPass.Q.setValueAtTime(1.25, now + delay);
+      gain.gain.setValueAtTime(0.0001, now + delay);
+      gain.gain.exponentialRampToValueAtTime(isFinal ? 0.44 : 0.28, now + delay + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + delay + duration);
+      source.connect(lowPass);
+      lowPass.connect(gain);
+      gain.connect(masterGain);
+      source.start(now + delay);
+      source.stop(now + delay + duration);
+    });
+
+    const shellSnaps = isFinal ? [0.018, 0.092, 0.188, 0.334, 0.47] : [0.012, 0.075];
     shellSnaps.forEach((delay, index) => {
       const oscillator = audioContext.createOscillator();
       const clickGain = audioContext.createGain();
@@ -233,7 +267,7 @@ export default function Home() {
         now + delay,
       );
       clickGain.gain.setValueAtTime(0.0001, now + delay);
-      clickGain.gain.exponentialRampToValueAtTime(isFinal ? 0.12 : 0.08, now + delay + 0.003);
+      clickGain.gain.exponentialRampToValueAtTime(isFinal ? 0.2 : 0.14, now + delay + 0.003);
       clickGain.gain.exponentialRampToValueAtTime(0.0001, now + delay + 0.045);
       oscillator.connect(clickGain);
       clickGain.connect(masterGain);
@@ -275,17 +309,30 @@ export default function Home() {
       thump.frequency.setValueAtTime(70 + freezerMinutes * 2, now + 0.02);
       thump.frequency.exponentialRampToValueAtTime(35, now + 0.26);
       thumpGain.gain.setValueAtTime(0.0001, now + 0.02);
-      thumpGain.gain.exponentialRampToValueAtTime(0.24, now + 0.04);
+      thumpGain.gain.exponentialRampToValueAtTime(0.44, now + 0.04);
       thumpGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.32);
       thump.connect(thumpGain);
       thumpGain.connect(masterGain);
       thump.start(now + 0.02);
       thump.stop(now + 0.34);
+    } else {
+      const thump = audioContext.createOscillator();
+      const thumpGain = audioContext.createGain();
+      thump.type = "sine";
+      thump.frequency.setValueAtTime(92 + freezerMinutes * 2.5, now);
+      thump.frequency.exponentialRampToValueAtTime(48, now + 0.13);
+      thumpGain.gain.setValueAtTime(0.0001, now);
+      thumpGain.gain.exponentialRampToValueAtTime(0.18, now + 0.012);
+      thumpGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.16);
+      thump.connect(thumpGain);
+      thumpGain.connect(masterGain);
+      thump.start(now);
+      thump.stop(now + 0.17);
     }
 
     window.setTimeout(() => {
       void audioContext.close();
-    }, isFinal ? 900 : 300);
+    }, isFinal ? 1100 : 420);
   }, [freezerMinutes, selectedWax.frequency]);
 
   function handleSelectWax(index: number) {
@@ -633,87 +680,321 @@ function WaxPreview({
   selectedWax: WaxType;
 }) {
   return (
-    <div className="wax-scene grid min-h-[430px] place-items-center max-md:min-h-[340px]">
-      <div className="relative grid aspect-[1/1.08] w-[min(100%,420px)] place-items-center overflow-hidden rounded-lg border border-[#9ccce7] bg-[linear-gradient(145deg,rgba(255,255,255,0.82),rgba(218,242,250,0.72))] p-6 shadow-[0_22px_70px_rgba(63,136,197,0.18)]">
-        <span className="absolute left-5 top-5 rounded-full border border-[#e6ded2] bg-white px-3 py-2 text-xs font-extrabold">
+    <div className="grid min-h-[460px] place-items-center max-md:min-h-[360px]">
+      <div className="relative aspect-[1/1.08] w-[min(100%,440px)] overflow-hidden rounded-lg border border-[#2d241f] bg-[#211917] shadow-[0_24px_80px_rgba(25,16,12,0.34)]">
+        <span className="absolute left-5 top-5 z-10 rounded-full border border-white/10 bg-black/45 px-3 py-2 text-xs font-extrabold text-white backdrop-blur">
           {freezerMinutes}분 냉동 · {freezerState}
         </span>
         <button
           aria-label={`${selectedWax.name} 직접 깨기`}
-          className={`wax-ball-3d group relative aspect-square w-[min(72%,270px)] cursor-pointer overflow-hidden rounded-full border-0 bg-gradient-to-br p-0 ${selectedWax.ballClassName} shadow-[inset_-38px_-46px_54px_rgba(0,0,0,0.34),inset_18px_20px_26px_rgba(255,255,255,0.2),0_34px_36px_rgba(58,36,25,0.27)] transition-transform active:scale-[0.97] ${isBroken ? "wax-ball-broken scale-95" : "hover:scale-[1.02]"}`}
+          className="absolute inset-0 cursor-pointer border-0 bg-transparent p-0"
           onClick={onCrack}
-          style={
-            {
-              "--press-x": `${impactPoint?.x ?? 50}%`,
-              "--press-y": `${impactPoint?.y ?? 50}%`,
-            } as CSSProperties
-          }
           type="button"
         >
-          <span className="absolute inset-0 rounded-full bg-[radial-gradient(circle_at_30%_24%,rgba(255,255,255,0.62),transparent_24%),radial-gradient(circle_at_68%_75%,rgba(0,0,0,0.24),transparent_38%)]" />
-          <span className="wax-shell-texture absolute inset-0 rounded-full opacity-55" />
-          <span className="absolute inset-[10%] rounded-full border-t-[12px] border-white/35 -rotate-[24deg]" />
-          <span className="absolute left-[20%] top-[15%] h-[24%] w-[32%] rounded-full bg-white/25 blur-md" />
-          <span className="absolute inset-[23%] rounded-full border border-white/20 shadow-[inset_0_0_24px_rgba(255,255,255,0.18)]" />
-          {impactPoint ? (
-            <span
-              className="wax-press-dent absolute h-24 w-24 -translate-x-1/2 -translate-y-1/2 rounded-full"
-              key={impactPoint.id}
-              style={{ left: `${impactPoint.x}%`, top: `${impactPoint.y}%` }}
-            />
-          ) : null}
-          {crackPoints.map((point, index) => (
-            <span
-              className="wax-crack-cluster absolute h-[46%] w-[4px] origin-top bg-[#fff8e9] shadow-[0_0_9px_rgba(255,248,233,0.95)]"
-              key={point.id}
-              style={{
-                left: `${point.x}%`,
-                top: `${point.y}%`,
-                transform: `rotate(${point.rotation}deg) scale(${point.force + index * 0.04}) translateZ(34px)`,
-              }}
-            >
-              <span className="absolute left-0 top-[24%] h-[46%] w-[2px] origin-top rotate-[38deg] bg-[#fff8e9]" />
-              <span className="absolute left-0 top-[36%] h-[62%] w-[2px] origin-top rotate-[64deg] bg-[#fff8e9]" />
-              <span className="absolute left-0 top-[54%] h-[48%] w-[2px] origin-top -rotate-[53deg] bg-[#fff8e9]" />
-              {index > 1 ? (
-                <span className="absolute left-0 top-[18%] h-[36%] w-[2px] origin-top -rotate-[76deg] bg-[#fff8e9]" />
-              ) : null}
-              {index > 3 ? (
-                <span className="absolute left-0 top-[72%] h-[34%] w-[2px] origin-top rotate-[112deg] bg-[#fff8e9]" />
-              ) : null}
-            </span>
-          ))}
-          {isBroken ? (
-            <>
-              <span className="absolute inset-[25%] rounded-full bg-[radial-gradient(circle_at_42%_34%,#ffe8b1,#d99051_58%,#6f4528)] shadow-[inset_0_0_32px_rgba(91,52,24,0.48)]" />
-              <span className="absolute inset-[36%] rounded-full bg-[#5f3b24]/80 shadow-[inset_0_0_18px_rgba(0,0,0,0.36)]" />
-              <span className="absolute left-[29%] top-[22%] h-[55%] w-[10%] -rotate-[18deg] bg-[#fff8e9] shadow-[0_0_10px_rgba(255,248,233,0.75)]" />
-              <span className="absolute right-[27%] top-[20%] h-[58%] w-[9%] rotate-[22deg] bg-[#fff8e9] shadow-[0_0_10px_rgba(255,248,233,0.75)]" />
-              <span className="absolute left-[20%] top-[52%] h-[8%] w-[58%] rotate-[8deg] bg-[#fff8e9]/90" />
-            </>
-          ) : null}
+          <ThreeWaxBall
+            crackPoints={crackPoints}
+            freezerMinutes={freezerMinutes}
+            impactPoint={impactPoint}
+            isBroken={isBroken}
+            selectedWax={selectedWax}
+          />
         </button>
-        {isBroken ? (
-          <div aria-hidden="true" className="pointer-events-none absolute inset-0">
-            {Array.from({ length: 18 }, (_, index) => (
-              <span
-                className={`wax-fragment absolute left-1/2 top-1/2 h-7 w-10 ${selectedWax.chipClassName} shadow-[0_8px_12px_rgba(0,0,0,0.22)]`}
-                key={index}
-                style={{
-                  "--fragment-angle": `${index * 20}deg`,
-                  "--fragment-distance": `${96 + (index % 5) * 15}px`,
-                  "--fragment-rotate": `${index * 43}deg`,
-                } as React.CSSProperties}
-              />
-            ))}
-          </div>
-        ) : null}
-        <span className="absolute bottom-5 right-5 rounded-full border border-[#e6ded2] bg-white px-3 py-2 text-xs font-extrabold text-[#3f88c5]">
-          {isBroken ? "완전 파괴 · 다시 클릭하면 소리 재생" : `${crackPercent}% 균열 · 공을 직접 클릭`}
+        <span className="absolute bottom-5 right-5 z-10 rounded-full border border-white/10 bg-black/45 px-3 py-2 text-xs font-extrabold text-[#b8ff4d] backdrop-blur">
+          {isBroken ? "완전 파괴 · 콰작 다시 듣기" : `${crackPercent}% 균열 · 3D 공 직접 클릭`}
         </span>
       </div>
     </div>
   );
+}
+
+function ThreeWaxBall({
+  crackPoints,
+  freezerMinutes,
+  impactPoint,
+  isBroken,
+  selectedWax,
+}: {
+  crackPoints: CrackPoint[];
+  freezerMinutes: number;
+  impactPoint: ImpactPoint | null;
+  isBroken: boolean;
+  selectedWax: WaxType;
+}) {
+  const mountRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const mount = mountRef.current;
+
+    if (!mount) {
+      return;
+    }
+    const mountElement = mount;
+
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.Fog(0x211917, 6, 16);
+
+    const camera = new THREE.PerspectiveCamera(35, 1, 0.1, 50);
+    camera.position.set(0, 0.15, 7.8);
+
+    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.domElement.style.display = "block";
+    renderer.domElement.style.height = "100%";
+    renderer.domElement.style.width = "100%";
+    mountElement.appendChild(renderer.domElement);
+
+    const root = new THREE.Group();
+    root.rotation.set(-0.1, -0.25, 0.03);
+    scene.add(root);
+
+    const palette = getThreePalette(selectedWax.name);
+    const shellMaterial = new THREE.MeshPhysicalMaterial({
+      clearcoat: 1,
+      clearcoatRoughness: 0.18,
+      color: palette.shell,
+      metalness: 0.02,
+      roughness: 0.28,
+      sheen: 0.35,
+    });
+
+    const ball = new THREE.Mesh(
+      new THREE.SphereGeometry(1.48, 72, 48),
+      shellMaterial,
+    );
+    ball.castShadow = true;
+    ball.receiveShadow = true;
+    root.add(ball);
+
+    const patchMaterial = new THREE.MeshPhysicalMaterial({
+      clearcoat: 0.9,
+      clearcoatRoughness: 0.12,
+      color: palette.patch,
+      roughness: 0.22,
+    });
+    const patchGeometry = new THREE.CircleGeometry(0.24, 28);
+    const patchNormals = [
+      new THREE.Vector3(-0.62, 0.54, 0.58),
+      new THREE.Vector3(-0.18, 0.7, 0.68),
+      new THREE.Vector3(0.38, 0.55, 0.74),
+      new THREE.Vector3(0.72, 0.14, 0.67),
+      new THREE.Vector3(-0.72, -0.02, 0.68),
+      new THREE.Vector3(-0.32, -0.34, 0.88),
+      new THREE.Vector3(0.28, -0.42, 0.86),
+      new THREE.Vector3(0.68, -0.36, 0.64),
+      new THREE.Vector3(-0.04, 0.18, 0.98),
+      new THREE.Vector3(0.18, -0.02, 0.98),
+      new THREE.Vector3(-0.5, -0.56, 0.66),
+      new THREE.Vector3(0.48, 0.0, 0.88),
+    ];
+
+    patchNormals.forEach((normal, index) => {
+      const unit = normal.normalize();
+      const patch = new THREE.Mesh(patchGeometry, patchMaterial);
+      patch.position.copy(unit.clone().multiplyScalar(1.505));
+      patch.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), unit);
+      patch.rotation.z = index * 0.8;
+      patch.scale.set(1.25 + (index % 3) * 0.28, 0.58 + (index % 4) * 0.12, 1);
+      patch.castShadow = true;
+      root.add(patch);
+    });
+
+    const stem = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.16, 0.24, 0.58, 9),
+      new THREE.MeshStandardMaterial({
+        color: 0xe8d8bd,
+        roughness: 0.76,
+      }),
+    );
+    stem.position.set(0.1, 1.55, 0.16);
+    stem.rotation.set(0.22, -0.18, 0.1);
+    stem.castShadow = true;
+    root.add(stem);
+
+    const crackGroup = new THREE.Group();
+    root.add(crackGroup);
+    const crackMaterial = new THREE.LineBasicMaterial({
+      color: 0xfff4d7,
+      transparent: true,
+      opacity: 0.95,
+    });
+    crackPoints.forEach((point, pointIndex) => {
+      const baseX = (point.x - 50) / 35;
+      const baseY = -(point.y - 50) / 35;
+      const center = new THREE.Vector3(
+        THREE.MathUtils.clamp(baseX, -0.9, 0.9),
+        THREE.MathUtils.clamp(baseY, -0.85, 0.85),
+        1.18,
+      );
+      const branches = 4 + Math.min(3, pointIndex);
+
+      for (let branch = 0; branch < branches; branch += 1) {
+        const angle = (branch / branches) * Math.PI * 2 + point.rotation * 0.02;
+        const length = 0.35 + point.force * 0.18 + branch * 0.04;
+        const mid = center.clone().add(
+          new THREE.Vector3(Math.cos(angle) * length * 0.5, Math.sin(angle) * length * 0.5, 0.08),
+        );
+        const end = center.clone().add(
+          new THREE.Vector3(Math.cos(angle) * length, Math.sin(angle) * length, 0.02),
+        );
+        const line = new THREE.Line(
+          new THREE.BufferGeometry().setFromPoints([center, mid, end]),
+          crackMaterial,
+        );
+        crackGroup.add(line);
+      }
+    });
+
+    const fragmentGroup = new THREE.Group();
+    scene.add(fragmentGroup);
+    if (isBroken) {
+      const fragmentGeometry = new THREE.TetrahedronGeometry(0.18, 0);
+      for (let index = 0; index < 34; index += 1) {
+        const fragmentMaterial = new THREE.MeshStandardMaterial({
+          color: index % 3 === 0 ? palette.patch : palette.shell,
+          roughness: 0.52,
+        });
+        const fragment = new THREE.Mesh(fragmentGeometry, fragmentMaterial);
+        const angle = index * 2.399963229728653;
+        const radius = 1.0 + (index % 6) * 0.14;
+        fragment.position.set(
+          Math.cos(angle) * radius,
+          Math.sin(angle * 1.2) * radius * 0.72,
+          1.3 + (index % 5) * 0.08,
+        );
+        fragment.rotation.set(index * 0.4, index * 0.7, index * 0.2);
+        fragment.scale.setScalar(0.55 + (index % 4) * 0.16);
+        fragment.castShadow = true;
+        fragmentGroup.add(fragment);
+      }
+      ball.scale.setScalar(0.78);
+      stem.position.y = 1.28;
+      crackMaterial.opacity = 1;
+    }
+
+    const impactMark = impactPoint
+      ? createImpactRing((impactPoint.x - 50) / 35, -(impactPoint.y - 50) / 35)
+      : null;
+    if (impactMark) {
+      root.add(impactMark);
+    }
+
+    const floor = new THREE.Mesh(
+      new THREE.CircleGeometry(1.55, 72),
+      new THREE.MeshBasicMaterial({
+        color: 0x080605,
+        transparent: true,
+        opacity: 0.36,
+      }),
+    );
+    floor.position.set(0, -1.86, -0.2);
+    floor.rotation.x = -Math.PI / 2;
+    floor.scale.set(1.35, 0.38, 1);
+    scene.add(floor);
+
+    const keyLight = new THREE.DirectionalLight(0xffffff, 3.2);
+    keyLight.position.set(3.6, 4.2, 5.8);
+    keyLight.castShadow = true;
+    scene.add(keyLight);
+
+    const rimLight = new THREE.DirectionalLight(0xc8f7ff, 2.2);
+    rimLight.position.set(-3.8, 1.8, 3.2);
+    scene.add(rimLight);
+
+    const warmLight = new THREE.PointLight(0xff9b54, 5.6, 9);
+    warmLight.position.set(-2.8, -2.1, 3.4);
+    scene.add(warmLight);
+    scene.add(new THREE.HemisphereLight(0xffffff, 0x3a1c14, 1.2));
+
+    let animationId = 0;
+    const start = performance.now();
+
+    function resize() {
+      const rect = mountElement.getBoundingClientRect();
+      const width = Math.max(1, rect.width);
+      const height = Math.max(1, rect.height);
+      renderer.setSize(width, height, false);
+      camera.aspect = width / height;
+      camera.updateProjectionMatrix();
+      root.scale.setScalar(width < 380 ? 0.76 : 0.92);
+    }
+
+    function animate() {
+      const elapsed = (performance.now() - start) / 1000;
+      root.rotation.y = -0.24 + Math.sin(elapsed * 0.55) * 0.12;
+      root.rotation.x = -0.08 + Math.sin(elapsed * 0.42) * 0.05;
+      ball.scale.lerp(
+        new THREE.Vector3(
+          isBroken ? 0.78 : 1,
+          isBroken ? 0.78 : 1,
+          isBroken ? 0.78 : 1,
+        ),
+        0.08,
+      );
+      fragmentGroup.children.forEach((child, index) => {
+        child.rotation.x += 0.018 + index * 0.0007;
+        child.rotation.y += 0.014 + index * 0.0005;
+        if (isBroken) {
+          child.position.x += Math.cos(index) * 0.004;
+          child.position.y += Math.sin(index * 1.3) * 0.004;
+        }
+      });
+      renderer.render(scene, camera);
+      animationId = window.requestAnimationFrame(animate);
+    }
+
+    resize();
+    animate();
+    window.addEventListener("resize", resize);
+
+    return () => {
+      window.removeEventListener("resize", resize);
+      window.cancelAnimationFrame(animationId);
+      renderer.dispose();
+      mountElement.removeChild(renderer.domElement);
+      scene.traverse((object) => {
+        if (object instanceof THREE.Mesh) {
+          object.geometry.dispose();
+          const material = object.material;
+          if (Array.isArray(material)) {
+            material.forEach((item) => item.dispose());
+          } else {
+            material.dispose();
+          }
+        }
+      });
+    };
+  }, [crackPoints, freezerMinutes, impactPoint, isBroken, selectedWax.name]);
+
+  return <div ref={mountRef} className="h-full w-full" />;
+}
+
+function getThreePalette(name: string) {
+  if (name.includes("두바이")) {
+    return { patch: 0xd8a942, shell: 0x3a251a };
+  }
+
+  if (name.includes("솜사탕")) {
+    return { patch: 0xf08aa9, shell: 0xf8ecff };
+  }
+
+  return { patch: 0x8ce000, shell: 0xf5f1df };
+}
+
+function createImpactRing(x: number, y: number) {
+  const ring = new THREE.Mesh(
+    new THREE.RingGeometry(0.08, 0.32, 32),
+    new THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      opacity: 0.65,
+      transparent: true,
+      side: THREE.DoubleSide,
+    }),
+  );
+  ring.position.set(THREE.MathUtils.clamp(x, -1, 1), THREE.MathUtils.clamp(y, -1, 1), 1.55);
+  ring.lookAt(0, 0, 4);
+  return ring;
 }
 
 function SectionHeading({ eyebrow, title }: { eyebrow: string; title: string }) {
