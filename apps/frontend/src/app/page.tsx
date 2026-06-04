@@ -593,16 +593,17 @@ function ThreeWaxBall({
     if (palette.style === "cotton") {
       applyCottonMarbleColors(ballGeometry);
     }
+    applyPressedClayDeformation(ballGeometry, crackPoints);
     const shellMaterial = new THREE.MeshPhysicalMaterial({
       clearcoat: 1,
       clearcoatRoughness: 0.045,
       color: fractureAmount > 0 && palette.style !== "cotton" ? palette.clay : palette.shell,
       metalness: 0.02,
-      opacity: palette.style === "apple" ? 0.94 : 1,
-      roughness: palette.style === "dubai" ? 0.08 : 0.06,
+      opacity: 1,
+      roughness: palette.style === "apple" ? 0.045 : palette.style === "dubai" ? 0.08 : 0.06,
       sheen: 0.35,
-      transparent: palette.style === "apple",
-      transmission: palette.style === "apple" ? 0.03 : 0,
+      transparent: false,
+      transmission: 0,
       vertexColors: palette.style === "cotton",
     });
 
@@ -620,10 +621,10 @@ function ThreeWaxBall({
         clearcoat: 1,
         clearcoatRoughness: 0.018,
         color: 0xffffff,
-        opacity: fractureAmount > 0 ? 0.045 : palette.style === "dubai" ? 0.1 : palette.style === "cotton" ? 0.24 : 0.18,
+        opacity: fractureAmount > 0 ? 0.018 : palette.style === "dubai" ? 0.1 : palette.style === "cotton" ? 0.24 : 0.18,
         roughness: 0.018,
         transparent: true,
-        transmission: fractureAmount > 0 ? 0.94 : 0.82,
+        transmission: fractureAmount > 0 ? 0.72 : 0.82,
       }),
     );
     clearOuterShell.castShadow = true;
@@ -700,21 +701,22 @@ function ThreeWaxBall({
           clearcoatRoughness: 0.045,
           color: palette.shell,
           depthWrite: true,
-          opacity: palette.style === "cotton" ? 0.9 : palette.style === "apple" ? 0.92 : 1,
-          roughness: palette.style === "apple" ? 0.07 : 0.1,
+          opacity: 1,
+          roughness: palette.style === "apple" ? 0.055 : 0.1,
           side: THREE.DoubleSide,
-          transparent: palette.style === "cotton" || palette.style === "apple",
+          transparent: false,
           transmission: 0,
           vertexColors: false,
         });
 
       pieceSpecs.forEach(({ height, id, rotation, width, x, y }, index) => {
         const direction = new THREE.Vector3(x || 0.01, y || 0.01, 0).normalize();
-        const separation = fractureAmount * (0.006 + Math.min(index, 18) * 0.00032);
+        const separation = fractureAmount * (0.003 + Math.min(index, 18) * 0.00016);
+        const pressOffset = getPressOffsetForPiece(x, y, crackPoints);
         const shellGeometry = makeBrokenPieceGeometry(width * gapScale, height * gapScale, id);
         const shellPiece = new THREE.Mesh(shellGeometry, makeShellMaterial());
-        shellPiece.position.set(x + direction.x * separation, y + direction.y * separation, 1.512 + fractureAmount * 0.004);
-        shellPiece.rotation.set(fractureAmount * 0.01 * Math.sign(y || 1), fractureAmount * -0.008 * Math.sign(x || 1), rotation + fractureAmount * 0.004 * Math.sin(id));
+        shellPiece.position.set(x + direction.x * separation, y + direction.y * separation, 1.49 - pressOffset);
+        shellPiece.rotation.set(fractureAmount * 0.004 * Math.sign(y || 1), fractureAmount * -0.003 * Math.sign(x || 1), rotation + fractureAmount * 0.002 * Math.sin(id));
         shellPiece.castShadow = true;
         fractureGroup.add(shellPiece);
       });
@@ -841,6 +843,63 @@ function getThreePalette(name: string) {
   } satisfies ThreePalette;
 }
 
+function getPressCenters(crackPoints: CrackPoint[]) {
+  return crackPoints.slice(-8).map((point, index) => ({
+    force: Math.min(1.45, point.force) * (0.72 + index * 0.045),
+    x: THREE.MathUtils.clamp((point.x - 50) / 35, -1, 1),
+    y: THREE.MathUtils.clamp(-(point.y - 50) / 35, -0.95, 0.95),
+  }));
+}
+
+function getPressOffsetForPiece(x: number, y: number, crackPoints: CrackPoint[]) {
+  return getPressCenters(crackPoints).reduce((offset, point) => {
+    const distanceSq = (x - point.x) ** 2 + (y - point.y) ** 2;
+    return offset + Math.exp(-distanceSq / 0.16) * 0.055 * point.force;
+  }, 0);
+}
+
+function applyPressedClayDeformation(geometry: THREE.BufferGeometry, crackPoints: CrackPoint[]) {
+  if (crackPoints.length === 0) {
+    return;
+  }
+
+  const centers = getPressCenters(crackPoints);
+  const position = geometry.getAttribute("position");
+
+  for (let index = 0; index < position.count; index += 1) {
+    const x = position.getX(index);
+    const y = position.getY(index);
+    const z = position.getZ(index);
+
+    if (z < 0.2) {
+      continue;
+    }
+
+    let dent = 0;
+    let smearX = 0;
+    let smearY = 0;
+
+    centers.forEach((point) => {
+      const dx = x - point.x;
+      const dy = y - point.y;
+      const influence = Math.exp(-(dx * dx + dy * dy) / 0.24) * point.force;
+      dent += influence * 0.18;
+      smearX += dx * influence * 0.026;
+      smearY += dy * influence * 0.02;
+    });
+
+    position.setXYZ(
+      index,
+      x + smearX,
+      y + smearY,
+      Math.max(0.86, z - dent),
+    );
+  }
+
+  position.needsUpdate = true;
+  geometry.computeVertexNormals();
+}
+
 function getBaseShellPieces(style: ThreePalette["style"]): ShellPieceSpec[] {
   if (style === "dubai") {
     return [
@@ -854,6 +913,9 @@ function getBaseShellPieces(style: ThreePalette["style"]): ShellPieceSpec[] {
       { id: 8, x: 0.86, y: 0.36, width: 0.36, height: 0.4, rotation: -0.36 },
       { id: 9, x: 0.82, y: -0.34, width: 0.42, height: 0.46, rotation: 0.42 },
       { id: 10, x: 0.18, y: -0.84, width: 0.48, height: 0.34, rotation: -0.08 },
+      { id: 34, x: 0.96, y: 0.02, width: 0.28, height: 0.36, rotation: 0.08 },
+      { id: 35, x: -0.86, y: 0.32, width: 0.3, height: 0.34, rotation: 0.2 },
+      { id: 36, x: 0.48, y: 0.78, width: 0.34, height: 0.3, rotation: -0.12 },
     ];
   }
 
@@ -870,6 +932,9 @@ function getBaseShellPieces(style: ThreePalette["style"]): ShellPieceSpec[] {
       { id: 19, x: 0.86, y: 0.44, width: 0.34, height: 0.38, rotation: -0.34 },
       { id: 20, x: 0.88, y: -0.08, width: 0.36, height: 0.44, rotation: 0.38 },
       { id: 31, x: 0.72, y: -0.62, width: 0.4, height: 0.36, rotation: -0.2 },
+      { id: 32, x: 0.98, y: 0.18, width: 0.28, height: 0.34, rotation: 0.12 },
+      { id: 33, x: -0.88, y: 0.28, width: 0.3, height: 0.34, rotation: -0.24 },
+      { id: 34, x: 0.36, y: 0.82, width: 0.36, height: 0.3, rotation: 0.1 },
     ];
   }
 
@@ -887,17 +952,20 @@ function getBaseShellPieces(style: ThreePalette["style"]): ShellPieceSpec[] {
     { id: 31, x: 0.86, y: 0.34, width: 0.34, height: 0.38, rotation: -0.32 },
     { id: 32, x: 0.86, y: -0.2, width: 0.36, height: 0.42, rotation: 0.36 },
     { id: 33, x: 0.68, y: -0.74, width: 0.36, height: 0.32, rotation: -0.22 },
+    { id: 34, x: 0.98, y: 0.08, width: 0.28, height: 0.34, rotation: 0.14 },
+    { id: 35, x: -0.86, y: 0.32, width: 0.3, height: 0.34, rotation: -0.26 },
+    { id: 36, x: 0.34, y: 0.82, width: 0.36, height: 0.3, rotation: 0.06 },
   ];
 }
 
 function buildSubdividedShellPieces(style: ThreePalette["style"], clickCount: number, impactCenter: THREE.Vector2) {
-  const maxPieces = style === "dubai" ? 20 : style === "cotton" ? 26 : 30;
-  const spread = Math.min(1, Math.max(0, clickCount - 1) / 3);
+  const maxPieces = style === "dubai" ? 28 : style === "cotton" ? 34 : 36;
+  const spread = Math.min(1, Math.max(0, clickCount - 1) / 2);
   let pieces = getBaseShellPieces(style).map((piece) => ({ ...piece }));
 
   for (let step = 2; step <= clickCount && pieces.length < maxPieces; step += 1) {
-    const splitCount = Math.min(style === "dubai" ? 2 : 3, maxPieces - pieces.length);
-    const centerWeight = Math.max(0, 1 - spread) * 0.3;
+    const splitCount = Math.min(style === "dubai" ? 3 : 4, maxPieces - pieces.length);
+    const centerWeight = Math.max(0, 1 - spread) * 0.16;
     const ordered = pieces
       .map((piece, index) => {
         const impactDistance = new THREE.Vector2(piece.x, piece.y).distanceTo(impactCenter);
