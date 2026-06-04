@@ -744,11 +744,15 @@ function ThreeWaxBall({
 
     const crackGroup = new THREE.Group();
     root.add(crackGroup);
-    const makeCrackMaterial = () =>
+    const cottonCrackColors = [0xffd84a, 0x49cfff];
+    const makeCrackMaterial = (pointIndex = 0, branchIndex = 0) =>
       new THREE.LineBasicMaterial({
-        color: palette.crack,
+        color:
+          palette.style === "cotton"
+            ? cottonCrackColors[(pointIndex + branchIndex) % cottonCrackColors.length]
+            : palette.crack,
         transparent: true,
-        opacity: 0.98,
+        opacity: 1,
       });
     const crackMaterial = new THREE.LineBasicMaterial({
       color: palette.crack,
@@ -843,9 +847,9 @@ function ThreeWaxBall({
           new THREE.Vector3(0.44, -0.7, 1.0),
         ],
       ];
-      panelSeams.slice(0, Math.min(panelSeams.length, 3 + crackPoints.length)).forEach((points) => {
+      panelSeams.slice(0, Math.min(panelSeams.length, 3 + crackPoints.length)).forEach((points, index) => {
         const curve = new THREE.CatmullRomCurve3(points);
-        crackGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(curve.getPoints(16)), makeCrackMaterial()));
+        crackGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(curve.getPoints(16)), makeCrackMaterial(index)));
       });
     }
     crackPoints.forEach((point, pointIndex) => {
@@ -856,11 +860,11 @@ function ThreeWaxBall({
         THREE.MathUtils.clamp(baseY, -0.85, 0.85),
         1.18,
       );
-      const branches = 8 + Math.min(6, pointIndex * 2);
+      const branches = 14 + Math.min(10, pointIndex * 3);
 
       for (let branch = 0; branch < branches; branch += 1) {
         const angle = (branch / branches) * Math.PI * 2 + point.rotation * 0.02;
-        const length = 0.28 + point.force * 0.15 + (branch % 4) * 0.035;
+        const length = 0.34 + point.force * 0.2 + (branch % 5) * 0.045;
         const mid = center.clone().add(
           new THREE.Vector3(Math.cos(angle) * length * 0.5, Math.sin(angle) * length * 0.5, 0.08),
         );
@@ -869,19 +873,33 @@ function ThreeWaxBall({
         );
         const hairline = new THREE.Line(
           new THREE.BufferGeometry().setFromPoints([center, mid, end]),
-          makeCrackMaterial(),
+          makeCrackMaterial(pointIndex, branch),
         );
         crackGroup.add(hairline);
 
-        if (branch % 2 === 0) {
+        if (branch % 2 === 0 || branch % 5 === 0) {
           const forkAngle = angle + 0.42;
           const forkEnd = mid.clone().add(
-            new THREE.Vector3(Math.cos(forkAngle) * length * 0.38, Math.sin(forkAngle) * length * 0.38, -0.02),
+            new THREE.Vector3(Math.cos(forkAngle) * length * 0.46, Math.sin(forkAngle) * length * 0.46, -0.02),
           );
           crackGroup.add(
             new THREE.Line(
               new THREE.BufferGeometry().setFromPoints([mid, forkEnd]),
-              makeCrackMaterial(),
+              makeCrackMaterial(pointIndex + 1, branch),
+            ),
+          );
+        }
+
+        if (branch % 3 === 0) {
+          const chipAngle = angle - 0.34;
+          const chipStart = center.clone().lerp(end, 0.42);
+          const chipEnd = chipStart.clone().add(
+            new THREE.Vector3(Math.cos(chipAngle) * length * 0.28, Math.sin(chipAngle) * length * 0.28, -0.02),
+          );
+          crackGroup.add(
+            new THREE.Line(
+              new THREE.BufferGeometry().setFromPoints([chipStart, chipEnd]),
+              makeCrackMaterial(pointIndex + 2, branch),
             ),
           );
         }
