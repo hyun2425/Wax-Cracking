@@ -674,7 +674,7 @@ export default function HsjVer2RapierExperience() {
             RAPIER PHYSICS
           </p>
           <h1 className="text-5xl font-extrabold leading-none text-[#fff8ec] sm:text-7xl lg:text-8xl">
-            njjey.ver
+            hsj.ver2
           </h1>
         </div>
 
