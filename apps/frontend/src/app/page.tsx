@@ -55,8 +55,8 @@ const apiBaseUrl =
 
 const waxTypes: WaxType[] = [
   {
-    name: "두바이 왁스볼",
-    description: "초콜릿빛 외피와 금빛 라인이 있는 묵직한 왁스볼입니다.",
+    name: "두바이 왁뿌볼",
+    description: "매끈한 초콜릿 코팅 안에 진한 피스타치오 클레이가 들어 있는 왁뿌볼입니다.",
     tone: "묵직한 파열음",
     accent: "고급스럽고 단단한 이미지",
     ballClassName: "from-[#2d1c15] via-[#7b4b31] to-[#d7a948]",
@@ -64,8 +64,8 @@ const waxTypes: WaxType[] = [
     frequency: 150,
   },
   {
-    name: "솜사탕 왁스볼",
-    description: "분홍, 하늘, 보라색이 섞인 부드러운 왁스볼입니다.",
+    name: "솜사탕 왁뿌볼",
+    description: "분홍, 하늘, 연노랑 색이 부드럽게 섞이는 말랑한 왁뿌볼입니다.",
     tone: "가벼운 바스락 소리",
     accent: "부드럽고 가벼운 이미지",
     ballClassName: "from-[#f08aa9] via-[#98d8ef] to-[#a487df]",
@@ -73,8 +73,8 @@ const waxTypes: WaxType[] = [
     frequency: 310,
   },
   {
-    name: "청사과 왁스볼",
-    description: "연두색 표면이 시원하고 산뜻한 왁스볼입니다.",
+    name: "청사과 왁뿌볼",
+    description: "선명한 연두색 유광 코팅이 시원하게 보이는 왁뿌볼입니다.",
     tone: "깨끗한 크랙 사운드",
     accent: "산뜻하고 시원한 이미지",
     ballClassName: "from-[#d9ff8f] via-[#9bd66a] to-[#4e9b70]",
@@ -438,7 +438,7 @@ export default function Home() {
           </strong>
           <div className="flex flex-wrap gap-5 text-sm font-bold text-[#6f685e]">
             <a href="#simulator">시뮬레이터</a>
-            <a href="#features">왁스볼</a>
+            <a href="#features">왁뿌볼</a>
             <a href="#freezer">냉동 규칙</a>
             <a href="#deploy">연결 상태</a>
             <a href="/hsj-ver">HSJ.ver</a>
@@ -450,20 +450,14 @@ export default function Home() {
             <p className="mb-3 text-sm font-extrabold uppercase text-[#3f88c5]">
               ASMR Simulation Service
             </p>
-            <h1 className="max-w-3xl text-6xl font-extrabold leading-none text-[#191611] sm:text-7xl lg:text-8xl">
-              온라인 왁스볼
+            <h1 className="max-w-3xl whitespace-nowrap text-5xl font-extrabold leading-none text-[#191611] sm:text-6xl lg:text-7xl">
+              온라인 왁뿌볼
             </h1>
             <p className="mt-6 max-w-2xl text-lg leading-8 text-[#6f685e]">
-              왁스볼을 고르고 냉동실에 넣은 뒤 마우스로 눌러 깨뜨리는
+              왁뿌볼을 고르고 냉동실에 넣은 뒤 마우스로 눌러 깨뜨리는
               반복 플레이형 ASMR 시뮬레이션입니다.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <a
-                className="inline-flex min-h-12 items-center justify-center rounded-lg bg-[#191611] px-5 text-sm font-extrabold text-white"
-                href="#simulator"
-              >
-                바로 체험하기
-              </a>
               <a
                 className="inline-flex min-h-12 items-center justify-center rounded-lg border border-[#e6ded2] bg-white/70 px-5 text-sm font-extrabold text-[#191611]"
                 href="#freezer"
@@ -491,7 +485,7 @@ export default function Home() {
         id="simulator"
       >
         <div className="rounded-lg border border-[#e6ded2] bg-white p-5 shadow-sm">
-          <SectionHeading eyebrow="Play" title="왁스볼 깨기 체험" />
+          <SectionHeading eyebrow="Play" title="왁뿌볼 깨기 체험" />
 
           <div className="grid gap-3">
             {waxTypes.map((wax, index) => (
@@ -539,7 +533,7 @@ export default function Home() {
 
         <div className="rounded-lg border border-[#e6ded2] bg-[#f7efe2] p-5">
           <div className="grid gap-4">
-            <StatusMetric label="선택한 왁스볼" value={selectedWax.name} />
+            <StatusMetric label="선택한 왁뿌볼" value={selectedWax.name} />
             <StatusMetric
               label="냉동 시간"
               value={`${freezerMinutes}분 / 실제 ${freezerMinutes}초`}
@@ -561,7 +555,7 @@ export default function Home() {
             1초 = 1분, 최대 냉동 시간은 20분입니다.
           </p>
           <p className="mt-3 rounded-md bg-white px-4 py-3 text-sm font-extrabold text-[#3f88c5]">
-            위쪽 왁스볼을 직접 클릭해서 깨뜨려 보세요. 마지막 균열에서 파괴음이 재생됩니다.
+            위쪽 왁뿌볼을 직접 클릭해서 깨뜨려 보세요. 마지막 균열에서 파괴음이 재생됩니다.
           </p>
         </div>
       </section>
@@ -570,7 +564,7 @@ export default function Home() {
         className="mx-auto w-[min(1120px,calc(100%-32px))] py-20"
         id="features"
       >
-        <SectionHeading eyebrow="Wax Ball Types" title="선택 가능한 왁스볼" />
+        <SectionHeading eyebrow="Wax Ball Types" title="선택 가능한 왁뿌볼" />
         <div className="grid grid-cols-3 gap-4 max-md:grid-cols-1">
           {waxTypes.map((wax) => (
             <article
