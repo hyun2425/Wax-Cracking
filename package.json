@@ -1,0 +1,13 @@
+{
+  "name": "wax-cracking",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "apps/frontend"
+  ],
+  "scripts": {
+    "build": "npm --workspace frontend run build",
+    "dev": "npm --workspace frontend run dev",
+    "lint": "npm --workspace frontend run lint"
+  }
+}
