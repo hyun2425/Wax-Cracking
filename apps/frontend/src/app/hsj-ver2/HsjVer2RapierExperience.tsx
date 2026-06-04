@@ -90,7 +90,7 @@ function makeCrackLine(points: Array<[number, number]>, color: number) {
   );
 }
 
-export default function HshRapierExperience() {
+export default function HsjVer2RapierExperience() {
   const mountRef = useRef<HTMLDivElement | null>(null);
   const handlesRef = useRef<SceneHandles | null>(null);
   const [mode, setMode] = useState("대기");

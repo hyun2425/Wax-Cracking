@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import HshRapierExperience from "../hsh-ver2/HshRapierExperience";
+import HsjVer2RapierExperience from "../hsj-ver2/HsjVer2RapierExperience";
 
 const versionLinks = [
   { href: "/", label: "kkm.ver" },
@@ -38,7 +38,7 @@ export default function NjjeyVerPage() {
         </nav>
       </header>
 
-      <HshRapierExperience />
+      <HsjVer2RapierExperience />
     </main>
   );
 }
