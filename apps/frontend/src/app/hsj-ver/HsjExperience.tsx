@@ -784,7 +784,7 @@ export default function HsjExperience() {
             WAX PPU BALL
           </p>
           <h1 className="text-5xl font-extrabold leading-none text-[#fff8ec] sm:text-7xl lg:text-8xl">
-            HSJ.ver
+            hsj.ver
           </h1>
         </div>
 
