@@ -627,6 +627,33 @@ function ThreeWaxBall({
     ball.receiveShadow = true;
     root.add(ball);
 
+    const clearOuterShell = new THREE.Mesh(
+      new THREE.SphereGeometry(1.58, 96, 64),
+      new THREE.MeshPhysicalMaterial({
+        clearcoat: 1,
+        clearcoatRoughness: 0.04,
+        color: 0xffffff,
+        opacity: 0.22,
+        roughness: 0.05,
+        transparent: true,
+        transmission: 0.65,
+      }),
+    );
+    clearOuterShell.castShadow = true;
+    root.add(clearOuterShell);
+
+    const shellHighlight = new THREE.Mesh(
+      new THREE.TorusGeometry(1.08, 0.018, 10, 96),
+      new THREE.MeshBasicMaterial({
+        color: 0xffffff,
+        opacity: 0.36,
+        transparent: true,
+      }),
+    );
+    shellHighlight.position.set(-0.1, 0.38, 0.95);
+    shellHighlight.rotation.set(1.18, -0.34, -0.22);
+    root.add(shellHighlight);
+
     const innerClay = new THREE.Mesh(
       new THREE.SphereGeometry(1.02, 48, 32),
       new THREE.MeshPhysicalMaterial({
@@ -697,7 +724,7 @@ function ThreeWaxBall({
           1,
         );
       } else {
-        patch.scale.set(1.15 + (index % 3) * 0.2, 0.7 + (index % 2) * 0.12, 1);
+        patch.scale.set(1.55 + (index % 3) * 0.22, 1.05 + (index % 2) * 0.16, 1);
       }
       patch.castShadow = true;
       root.add(patch);
@@ -728,17 +755,46 @@ function ThreeWaxBall({
       }
     }
 
+    const neckMaterial = new THREE.MeshPhysicalMaterial({
+      clearcoat: 0.8,
+      clearcoatRoughness: 0.08,
+      color: 0xf2f0e9,
+      opacity: 0.46,
+      roughness: 0.18,
+      transparent: true,
+      transmission: 0.38,
+    });
     const stem = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.16, 0.24, 0.58, 9),
-      new THREE.MeshStandardMaterial({
-        color: 0xe8d8bd,
-        roughness: 0.76,
-      }),
+      new THREE.CylinderGeometry(0.15, 0.25, 0.58, 12),
+      neckMaterial,
     );
     stem.position.set(0.1, 1.55, 0.16);
     stem.rotation.set(0.22, -0.18, 0.1);
     stem.castShadow = true;
     root.add(stem);
+
+    const cableTie = new THREE.Mesh(
+      new THREE.TorusGeometry(0.23, 0.028, 10, 42),
+      new THREE.MeshStandardMaterial({
+        color: 0xe9edf0,
+        metalness: 0.02,
+        roughness: 0.34,
+      }),
+    );
+    cableTie.position.set(0.09, 1.35, 0.16);
+    cableTie.rotation.set(1.42, -0.2, 0.08);
+    root.add(cableTie);
+
+    const cableTieTail = new THREE.Mesh(
+      new THREE.BoxGeometry(0.06, 0.42, 0.035),
+      new THREE.MeshStandardMaterial({
+        color: 0xe9edf0,
+        roughness: 0.4,
+      }),
+    );
+    cableTieTail.position.set(0.36, 1.37, 0.18);
+    cableTieTail.rotation.set(0.22, 0.02, -0.68);
+    root.add(cableTieTail);
 
     const crackGroup = new THREE.Group();
     root.add(crackGroup);
