@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 const versionLinks = [
+  { href: "/", label: "kkm.ver" },
   { href: "/hsj-ver", label: "hsj.ver" },
   { href: "/njjey-ver", label: "njjey.ver" },
 ];

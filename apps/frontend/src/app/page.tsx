@@ -251,11 +251,9 @@ export default function Home() {
             Online Wax-Cracking Ball
           </strong>
           <div className="flex flex-wrap gap-5 text-sm font-bold text-[#6f685e]">
-            <a href="#simulator">시뮬레이터</a>
-            <a href="#features">왁뿌볼</a>
-            <a href="#freezer">냉동 규칙</a>
-            <a href="#deploy">연결 상태</a>
-            <a href="/hsj-ver">HSJ.ver</a>
+            <a href="/">kkm.ver</a>
+            <a href="/hsj-ver">hsj.ver</a>
+            <a href="/njjey-ver">njjey.ver</a>
           </div>
         </nav>
 
