@@ -194,182 +194,7 @@ export default function Home() {
 
   const playCrackSound = useCallback((isFinal = false) => {
     playReferenceCrunch(isFinal);
-
-    const AudioContextClass =
-      window.AudioContext ??
-      (window as typeof window & { webkitAudioContext?: typeof AudioContext })
-        .webkitAudioContext;
-
-    if (!AudioContextClass) {
-      return;
-    }
-
-    const audioContext = new AudioContextClass();
-    const now = audioContext.currentTime;
-    const masterGain = audioContext.createGain();
-    const compressor = audioContext.createDynamicsCompressor();
-    compressor.threshold.value = -24;
-    compressor.knee.value = 18;
-    compressor.ratio.value = 5;
-    compressor.attack.value = 0.002;
-    compressor.release.value = 0.18;
-    masterGain.gain.setValueAtTime(0.0001, now);
-    masterGain.gain.exponentialRampToValueAtTime(isFinal ? 0.86 : 0.36, now + 0.006);
-    masterGain.gain.exponentialRampToValueAtTime(0.0001, now + (isFinal ? 0.74 : 0.24));
-    masterGain.connect(compressor);
-    compressor.connect(audioContext.destination);
-
-    const highCracks = isFinal
-      ? [0, 0.018, 0.039, 0.066, 0.104, 0.152, 0.206, 0.274, 0.36, 0.43]
-      : [0, 0.025, 0.058, 0.096];
-
-    highCracks.forEach((delay, index) => {
-      const duration = isFinal ? 0.045 + (index % 3) * 0.018 : 0.026;
-      const buffer = audioContext.createBuffer(
-        1,
-        Math.floor(audioContext.sampleRate * duration),
-        audioContext.sampleRate,
-      );
-      const data = buffer.getChannelData(0);
-
-      for (let sample = 0; sample < data.length; sample += 1) {
-        const fade = 1 - sample / data.length;
-        data[sample] = (Math.random() * 2 - 1) * fade * fade;
-      }
-
-      const source = audioContext.createBufferSource();
-      const bandPass = audioContext.createBiquadFilter();
-      const grainGain = audioContext.createGain();
-      source.buffer = buffer;
-      bandPass.type = "bandpass";
-      bandPass.frequency.setValueAtTime(
-        2200 + freezerMinutes * 80 + index * 360,
-        now + delay,
-      );
-      bandPass.Q.setValueAtTime(isFinal ? 4.5 : 6.5, now + delay);
-      grainGain.gain.setValueAtTime(0.0001, now + delay);
-      grainGain.gain.exponentialRampToValueAtTime(
-        isFinal ? 0.26 + index * 0.014 : 0.16,
-        now + delay + 0.004,
-      );
-      grainGain.gain.exponentialRampToValueAtTime(0.0001, now + delay + duration);
-      source.connect(bandPass);
-      bandPass.connect(grainGain);
-      grainGain.connect(masterGain);
-      source.start(now + delay);
-      source.stop(now + delay + duration);
-    });
-
-    const crunchBursts = isFinal ? [0, 0.09, 0.19, 0.33] : [0];
-    crunchBursts.forEach((delay, index) => {
-      const duration = isFinal ? 0.13 : 0.09;
-      const buffer = audioContext.createBuffer(
-        1,
-        Math.floor(audioContext.sampleRate * duration),
-        audioContext.sampleRate,
-      );
-      const data = buffer.getChannelData(0);
-
-      for (let sample = 0; sample < data.length; sample += 1) {
-        const fade = 1 - sample / data.length;
-        const chunk = sample % 97 < 32 ? 1 : 0.35;
-        data[sample] = (Math.random() * 2 - 1) * fade * chunk;
-      }
-
-      const source = audioContext.createBufferSource();
-      const lowPass = audioContext.createBiquadFilter();
-      const gain = audioContext.createGain();
-      source.buffer = buffer;
-      lowPass.type = "bandpass";
-      lowPass.frequency.setValueAtTime(520 + freezerMinutes * 18 + index * 130, now + delay);
-      lowPass.Q.setValueAtTime(1.25, now + delay);
-      gain.gain.setValueAtTime(0.0001, now + delay);
-      gain.gain.exponentialRampToValueAtTime(isFinal ? 0.44 : 0.28, now + delay + 0.01);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + delay + duration);
-      source.connect(lowPass);
-      lowPass.connect(gain);
-      gain.connect(masterGain);
-      source.start(now + delay);
-      source.stop(now + delay + duration);
-    });
-
-    const shellSnaps = isFinal ? [0.018, 0.092, 0.188, 0.334, 0.47] : [0.012, 0.075];
-    shellSnaps.forEach((delay, index) => {
-      const oscillator = audioContext.createOscillator();
-      const clickGain = audioContext.createGain();
-      oscillator.type = index === 0 ? "triangle" : "square";
-      oscillator.frequency.setValueAtTime(
-        selectedWax.frequency * 8 + freezerMinutes * 28 + index * 430,
-        now + delay,
-      );
-      clickGain.gain.setValueAtTime(0.0001, now + delay);
-      clickGain.gain.exponentialRampToValueAtTime(isFinal ? 0.2 : 0.14, now + delay + 0.003);
-      clickGain.gain.exponentialRampToValueAtTime(0.0001, now + delay + 0.045);
-      oscillator.connect(clickGain);
-      clickGain.connect(masterGain);
-      oscillator.start(now + delay);
-      oscillator.stop(now + delay + 0.05);
-    });
-
-    if (isFinal) {
-      const crumbleBuffer = audioContext.createBuffer(
-        1,
-        Math.floor(audioContext.sampleRate * 0.5),
-        audioContext.sampleRate,
-      );
-      const crumbleData = crumbleBuffer.getChannelData(0);
-      for (let sample = 0; sample < crumbleData.length; sample += 1) {
-        const fade = Math.pow(1 - sample / crumbleData.length, 1.8);
-        const grain = sample % 31 < 3 ? 1 : 0.2;
-        crumbleData[sample] = (Math.random() * 2 - 1) * fade * grain;
-      }
-
-      const crumble = audioContext.createBufferSource();
-      const crumbleFilter = audioContext.createBiquadFilter();
-      const crumbleGain = audioContext.createGain();
-      crumble.buffer = crumbleBuffer;
-      crumbleFilter.type = "highpass";
-      crumbleFilter.frequency.setValueAtTime(900, now + 0.16);
-      crumbleGain.gain.setValueAtTime(0.0001, now + 0.16);
-      crumbleGain.gain.exponentialRampToValueAtTime(0.16, now + 0.2);
-      crumbleGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.58);
-      crumble.connect(crumbleFilter);
-      crumbleFilter.connect(crumbleGain);
-      crumbleGain.connect(masterGain);
-      crumble.start(now + 0.16);
-      crumble.stop(now + 0.62);
-
-      const thump = audioContext.createOscillator();
-      const thumpGain = audioContext.createGain();
-      thump.type = "sine";
-      thump.frequency.setValueAtTime(70 + freezerMinutes * 2, now + 0.02);
-      thump.frequency.exponentialRampToValueAtTime(35, now + 0.26);
-      thumpGain.gain.setValueAtTime(0.0001, now + 0.02);
-      thumpGain.gain.exponentialRampToValueAtTime(0.44, now + 0.04);
-      thumpGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.32);
-      thump.connect(thumpGain);
-      thumpGain.connect(masterGain);
-      thump.start(now + 0.02);
-      thump.stop(now + 0.34);
-    } else {
-      const thump = audioContext.createOscillator();
-      const thumpGain = audioContext.createGain();
-      thump.type = "sine";
-      thump.frequency.setValueAtTime(92 + freezerMinutes * 2.5, now);
-      thump.frequency.exponentialRampToValueAtTime(48, now + 0.13);
-      thumpGain.gain.setValueAtTime(0.0001, now);
-      thumpGain.gain.exponentialRampToValueAtTime(0.18, now + 0.012);
-      thumpGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.16);
-      thump.connect(thumpGain);
-      thumpGain.connect(masterGain);
-      thump.start(now);
-      thump.stop(now + 0.17);
-    }
-
-    window.setTimeout(() => {
-      void audioContext.close();
-    }, isFinal ? 1100 : 420);
-  }, [freezerMinutes, playReferenceCrunch, selectedWax.frequency]);
+  }, [playReferenceCrunch]);
 
   function handleSelectWax(index: number) {
     setSelectedIndex(index);
@@ -844,7 +669,7 @@ function ThreeWaxBall({
         palette.style === "apple"
           ? 0.18
           : palette.style === "cotton"
-            ? revealAmount * 0.92
+            ? 0.72 + revealAmount * 0.24
             : revealAmount;
       const patchMaterial = new THREE.MeshPhysicalMaterial({
         clearcoat: 0.95,
@@ -867,8 +692,8 @@ function ThreeWaxBall({
         );
       } else if (palette.style === "cotton") {
         patch.scale.set(
-          (1.18 + (index % 3) * 0.34) * (0.55 + revealAmount * 0.75),
-          (0.72 + (index % 4) * 0.2) * (0.55 + revealAmount * 0.75),
+          1.35 + (index % 3) * 0.36 + revealAmount * 0.28,
+          0.88 + (index % 4) * 0.18 + revealAmount * 0.16,
           1,
         );
       } else {
@@ -928,25 +753,50 @@ function ThreeWaxBall({
     });
     if (palette.style === "cotton" && revealAmount > 0) {
       const seamMaterial = new THREE.LineBasicMaterial({
-        color: 0xffffff,
+        color: palette.crack,
         transparent: true,
-        opacity: 0.28 + revealAmount * 0.48,
+        opacity: 0.38 + revealAmount * 0.5,
       });
-      for (let index = 0; index < 10; index += 1) {
-        const angle = (index / 10) * Math.PI * 2;
-        const points = [];
-        for (let step = 0; step < 7; step += 1) {
-          const t = -0.8 + step * 0.27;
-          points.push(
-            new THREE.Vector3(
-              Math.cos(angle + t * 0.35) * (0.4 + step * 0.12),
-              Math.sin(angle + t * 0.22) * (0.28 + step * 0.08),
-              1.38 - Math.abs(t) * 0.08,
-            ),
-          );
-        }
-        crackGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(points), seamMaterial));
-      }
+      const panelSeams = [
+        [
+          new THREE.Vector3(-0.95, 0.42, 1.18),
+          new THREE.Vector3(-0.42, 0.68, 1.36),
+          new THREE.Vector3(0.06, 0.56, 1.46),
+          new THREE.Vector3(0.62, 0.74, 1.22),
+        ],
+        [
+          new THREE.Vector3(-1.08, -0.04, 1.1),
+          new THREE.Vector3(-0.48, 0.12, 1.42),
+          new THREE.Vector3(0.24, 0.06, 1.5),
+          new THREE.Vector3(0.98, 0.2, 1.12),
+        ],
+        [
+          new THREE.Vector3(-0.76, -0.58, 1.0),
+          new THREE.Vector3(-0.16, -0.34, 1.46),
+          new THREE.Vector3(0.42, -0.44, 1.36),
+          new THREE.Vector3(0.86, -0.62, 0.98),
+        ],
+        [
+          new THREE.Vector3(-0.18, 0.94, 0.98),
+          new THREE.Vector3(-0.02, 0.34, 1.52),
+          new THREE.Vector3(0.04, -0.2, 1.5),
+          new THREE.Vector3(0.16, -0.92, 0.98),
+        ],
+        [
+          new THREE.Vector3(-0.86, 0.18, 1.2),
+          new THREE.Vector3(-0.5, -0.24, 1.38),
+          new THREE.Vector3(-0.3, -0.72, 1.08),
+        ],
+        [
+          new THREE.Vector3(0.82, 0.42, 1.08),
+          new THREE.Vector3(0.5, -0.06, 1.38),
+          new THREE.Vector3(0.44, -0.7, 1.0),
+        ],
+      ];
+      panelSeams.slice(0, Math.min(panelSeams.length, 2 + crackPoints.length)).forEach((points) => {
+        const curve = new THREE.CatmullRomCurve3(points);
+        crackGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(curve.getPoints(16)), seamMaterial));
+      });
     }
     crackPoints.forEach((point, pointIndex) => {
       const baseX = (point.x - 50) / 35;
@@ -976,7 +826,7 @@ function ThreeWaxBall({
           crackGroup.add(tube);
         }
 
-        if (palette.style !== "dubai") {
+        if (palette.style !== "dubai" && palette.style !== "cotton") {
           const hairline = new THREE.Line(
             new THREE.BufferGeometry().setFromPoints([center, mid, end]),
             crackMaterial,
