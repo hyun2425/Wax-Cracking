@@ -579,7 +579,7 @@ function ThreeWaxBall({
     scene.add(root);
 
     const palette = getThreePalette(selectedWax.name);
-    const revealAmount = Math.min(1, crackPoints.length / 6);
+    const fractureAmount = Math.min(1, crackPoints.length / 15);
     const pressAmount = Math.min(0.16, crackPoints.length * 0.025);
     const ballGeometry = new THREE.SphereGeometry(1.48, 72, 48);
     if (palette.style === "cotton") {
@@ -590,10 +590,10 @@ function ThreeWaxBall({
       clearcoatRoughness: 0.045,
       color: palette.shell,
       metalness: 0.02,
-      opacity: palette.shellOpacity,
+      opacity: Math.max(0.18, palette.shellOpacity * (1 - fractureAmount * 0.74)),
       roughness: palette.style === "dubai" ? 0.08 : 0.06,
       sheen: 0.35,
-      transparent: palette.shellOpacity < 1,
+      transparent: true,
       transmission: palette.style === "apple" ? 0.28 : palette.style === "cotton" ? 0.18 : 0,
       vertexColors: palette.style === "cotton",
     });
@@ -612,7 +612,7 @@ function ThreeWaxBall({
         clearcoat: 1,
         clearcoatRoughness: 0.018,
         color: 0xffffff,
-        opacity: palette.style === "cotton" ? 0.16 : palette.style === "apple" ? 0.24 : 0.3,
+        opacity: Math.max(0.08, (palette.style === "cotton" ? 0.16 : palette.style === "apple" ? 0.24 : 0.3) * (1 - fractureAmount * 0.55)),
         roughness: 0.018,
         transparent: true,
         transmission: 0.82,
@@ -674,215 +674,64 @@ function ThreeWaxBall({
     cableTieTail.rotation.set(0.22, 0.02, -0.68);
     root.add(cableTieTail);
 
-    const crackGroup = new THREE.Group();
-    root.add(crackGroup);
-    const cottonFillingColors = [0xf7a8c6, 0xa8dcf3, 0xf4e6a8];
-    const getCrackColor = (pointIndex = 0, branchIndex = 0) =>
-      palette.style === "cotton"
-        ? cottonFillingColors[(pointIndex + branchIndex) % cottonFillingColors.length]
-        : palette.clay;
-    const makeCrackMaterial = (pointIndex = 0, branchIndex = 0) =>
-      new THREE.MeshPhysicalMaterial({
-        clearcoat: 0.35,
-        clearcoatRoughness: 0.18,
-        color: getCrackColor(pointIndex, branchIndex),
-        roughness: 0.28,
-        side: THREE.DoubleSide,
-        transparent: true,
-        opacity: 0.96,
-      });
-    const makeWaxShardMaterial = (pointIndex = 0, branchIndex = 0) =>
-      new THREE.MeshPhysicalMaterial({
-        clearcoat: 1,
-        clearcoatRoughness: 0.06,
-        color:
-          palette.style === "cotton"
-            ? cottonFillingColors[(pointIndex + branchIndex) % cottonFillingColors.length]
-            : palette.shell,
-        opacity: palette.style === "dubai" ? 0.98 : 0.74,
-        roughness: 0.12,
-        side: THREE.DoubleSide,
-        transparent: palette.style !== "dubai",
-        transmission: palette.style === "apple" ? 0.18 : palette.style === "cotton" ? 0.08 : 0,
-      });
-    const makeShardGeometry = (length: number, width: number, seed: number) => {
-      const wobbleA = Math.sin(seed * 12.9898) * width * 0.2;
-      const wobbleB = Math.cos(seed * 78.233) * width * 0.22;
-      const shape = new THREE.Shape();
-      shape.moveTo(-length / 2, -width * 0.35 + wobbleA);
-      shape.lineTo(-length * 0.18, -width * 0.58 - wobbleB);
-      shape.lineTo(length * 0.18, -width * 0.42 + wobbleA * 0.5);
-      shape.lineTo(length / 2, -width * 0.18 - wobbleA);
-      shape.lineTo(length * 0.46, width * 0.36 + wobbleB);
-      shape.lineTo(length * 0.05, width * 0.58 - wobbleA);
-      shape.lineTo(-length * 0.4, width * 0.4 + wobbleB * 0.4);
-      shape.closePath();
-      return new THREE.ShapeGeometry(shape);
-    };
-    const addCrackPlate = (
-      startPoint: THREE.Vector3,
-      endPoint: THREE.Vector3,
-      width: number,
-      material: THREE.Material,
-      seed = 0,
-    ) => {
-      const delta = endPoint.clone().sub(startPoint);
-      const length = Math.max(0.06, Math.hypot(delta.x, delta.y));
-      const angle = Math.atan2(delta.y, delta.x);
-      const plate = new THREE.Mesh(makeShardGeometry(length, width, seed), material);
-      plate.position.copy(startPoint.clone().add(endPoint).multiplyScalar(0.5));
-      plate.position.z = 1.515;
-      plate.rotation.z = angle;
-      plate.castShadow = false;
-      crackGroup.add(plate);
-
-      const normal = new THREE.Vector3(-Math.sin(angle), Math.cos(angle), 0);
-      [-1, 1].forEach((side) => {
-        const waxPlate = new THREE.Mesh(
-          makeShardGeometry(length * 0.82, width * 0.48, seed + side * 17),
-          makeWaxShardMaterial(seed, side),
-        );
-        waxPlate.position.copy(plate.position).add(normal.clone().multiplyScalar(side * width * 0.42));
-        waxPlate.position.z = 1.535 + side * 0.006;
-        waxPlate.rotation.set(0.08 * side, 0.04 * side, angle + side * 0.035);
-        waxPlate.castShadow = true;
-        crackGroup.add(waxPlate);
-      });
-    };
-    if (palette.style === "dubai" && revealAmount > 0) {
-      const panelSeams = [
-        [
-          new THREE.Vector3(-1.04, 0.58, 1.02),
-          new THREE.Vector3(-0.62, 0.78, 1.28),
-          new THREE.Vector3(-0.18, 0.62, 1.48),
-          new THREE.Vector3(0.16, 0.86, 1.24),
-        ],
-        [
-          new THREE.Vector3(0.18, 0.82, 1.2),
-          new THREE.Vector3(0.44, 0.5, 1.46),
-          new THREE.Vector3(0.76, 0.16, 1.3),
-          new THREE.Vector3(1.06, -0.02, 0.98),
-        ],
-        [
-          new THREE.Vector3(-1.06, 0.0, 1.04),
-          new THREE.Vector3(-0.64, 0.14, 1.36),
-          new THREE.Vector3(-0.16, -0.06, 1.5),
-          new THREE.Vector3(0.36, 0.08, 1.36),
-          new THREE.Vector3(0.9, -0.18, 1.02),
-        ],
-        [
-          new THREE.Vector3(-0.86, -0.48, 0.98),
-          new THREE.Vector3(-0.48, -0.24, 1.36),
-          new THREE.Vector3(-0.12, -0.42, 1.46),
-          new THREE.Vector3(0.26, -0.28, 1.38),
-          new THREE.Vector3(0.7, -0.54, 1.02),
-        ],
-        [
-          new THREE.Vector3(-0.42, 0.86, 1.08),
-          new THREE.Vector3(-0.24, 0.28, 1.5),
-          new THREE.Vector3(-0.2, -0.12, 1.54),
-          new THREE.Vector3(-0.32, -0.78, 1.02),
-        ],
-        [
-          new THREE.Vector3(0.54, 0.64, 1.04),
-          new THREE.Vector3(0.18, 0.2, 1.5),
-          new THREE.Vector3(0.3, -0.2, 1.48),
-          new THREE.Vector3(0.5, -0.78, 1.0),
-        ],
+    const fractureGroup = new THREE.Group();
+    root.add(fractureGroup);
+    if (fractureAmount > 0) {
+      const cottonFillingColors = [0xf7a8c6, 0xa8dcf3, 0xf4e6a8];
+      const pieceSpecs = [
+        [-0.44, 0.55, 0.9, 0.62, -0.28],
+        [0.2, 0.55, 0.82, 0.56, 0.18],
+        [0.66, 0.24, 0.62, 0.7, 0.74],
+        [-0.72, 0.06, 0.68, 0.78, -0.82],
+        [-0.18, 0.1, 0.82, 0.74, 0.48],
+        [0.36, -0.1, 0.74, 0.72, -0.42],
+        [-0.52, -0.48, 0.78, 0.58, 0.28],
+        [0.08, -0.56, 0.86, 0.62, -0.2],
+        [0.62, -0.5, 0.64, 0.56, 0.54],
+        [0.0, 0.92, 0.58, 0.38, -0.08],
       ];
-      panelSeams.slice(0, Math.min(panelSeams.length, 2 + crackPoints.length)).forEach((points) => {
-        const curve = new THREE.CatmullRomCurve3(points);
-        const curvePoints = curve.getPoints(18);
-        curvePoints.slice(1).forEach((point, index) => {
-          addCrackPlate(curvePoints[index], point, 0.035 + revealAmount * 0.025, makeCrackMaterial(index), index);
+      const makeFillingMaterial = (index: number) =>
+        new THREE.MeshPhysicalMaterial({
+          clearcoat: 0.24,
+          color: palette.style === "cotton" ? cottonFillingColors[index % cottonFillingColors.length] : palette.clay,
+          opacity: 0.9,
+          roughness: 0.34,
+          side: THREE.DoubleSide,
+          transparent: true,
         });
+      const makeShellMaterial = () =>
+        new THREE.MeshPhysicalMaterial({
+          clearcoat: 1,
+          clearcoatRoughness: 0.045,
+          color: palette.shell,
+          opacity: palette.style === "dubai" ? 0.98 : 0.78,
+          roughness: 0.1,
+          side: THREE.DoubleSide,
+          transparent: palette.style !== "dubai",
+          transmission: palette.style === "apple" ? 0.14 : palette.style === "cotton" ? 0.08 : 0,
+          vertexColors: palette.style === "cotton",
+        });
+
+      pieceSpecs.forEach(([x, y, width, height, rotation], index) => {
+        const direction = new THREE.Vector3(x, y, 0).normalize();
+        const separation = fractureAmount * (0.07 + index * 0.004);
+        const fillGeometry = makeBrokenPieceGeometry(width * 1.08, height * 1.08, index + 40);
+        const filling = new THREE.Mesh(fillGeometry, makeFillingMaterial(index));
+        filling.position.set(x, y, 1.48);
+        filling.rotation.z = rotation;
+        fractureGroup.add(filling);
+
+        const shellGeometry = makeBrokenPieceGeometry(width, height, index);
+        if (palette.style === "cotton") {
+          applyCottonMarbleColors(shellGeometry);
+        }
+        const shellPiece = new THREE.Mesh(shellGeometry, makeShellMaterial());
+        shellPiece.position.set(x + direction.x * separation, y + direction.y * separation, 1.54 + fractureAmount * 0.06);
+        shellPiece.rotation.set(fractureAmount * 0.16 * Math.sign(y || 1), fractureAmount * -0.1 * Math.sign(x || 1), rotation + fractureAmount * 0.04 * Math.sin(index));
+        shellPiece.castShadow = true;
+        fractureGroup.add(shellPiece);
       });
     }
-    if (palette.style === "cotton" && revealAmount > 0) {
-      const panelSeams = [
-        [
-          new THREE.Vector3(-0.95, 0.42, 1.18),
-          new THREE.Vector3(-0.42, 0.68, 1.36),
-          new THREE.Vector3(0.06, 0.56, 1.46),
-          new THREE.Vector3(0.62, 0.74, 1.22),
-        ],
-        [
-          new THREE.Vector3(-1.08, -0.04, 1.1),
-          new THREE.Vector3(-0.48, 0.12, 1.42),
-          new THREE.Vector3(0.24, 0.06, 1.5),
-          new THREE.Vector3(0.98, 0.2, 1.12),
-        ],
-        [
-          new THREE.Vector3(-0.76, -0.58, 1.0),
-          new THREE.Vector3(-0.16, -0.34, 1.46),
-          new THREE.Vector3(0.42, -0.44, 1.36),
-          new THREE.Vector3(0.86, -0.62, 0.98),
-        ],
-        [
-          new THREE.Vector3(-0.18, 0.94, 0.98),
-          new THREE.Vector3(-0.02, 0.34, 1.52),
-          new THREE.Vector3(0.04, -0.2, 1.5),
-          new THREE.Vector3(0.16, -0.92, 0.98),
-        ],
-        [
-          new THREE.Vector3(-0.86, 0.18, 1.2),
-          new THREE.Vector3(-0.5, -0.24, 1.38),
-          new THREE.Vector3(-0.3, -0.72, 1.08),
-        ],
-        [
-          new THREE.Vector3(0.82, 0.42, 1.08),
-          new THREE.Vector3(0.5, -0.06, 1.38),
-          new THREE.Vector3(0.44, -0.7, 1.0),
-        ],
-      ];
-      panelSeams.slice(0, Math.min(panelSeams.length, 3 + crackPoints.length)).forEach((points, index) => {
-        const curve = new THREE.CatmullRomCurve3(points);
-        const curvePoints = curve.getPoints(16);
-        curvePoints.slice(1).forEach((point, segmentIndex) => {
-          addCrackPlate(curvePoints[segmentIndex], point, 0.026 + revealAmount * 0.018, makeCrackMaterial(index, segmentIndex), index * 11 + segmentIndex);
-        });
-      });
-    }
-    crackPoints.forEach((point, pointIndex) => {
-      const baseX = (point.x - 50) / 35;
-      const baseY = -(point.y - 50) / 35;
-      const center = new THREE.Vector3(
-        THREE.MathUtils.clamp(baseX, -0.9, 0.9),
-        THREE.MathUtils.clamp(baseY, -0.85, 0.85),
-        1.18,
-      );
-      const branches = 14 + Math.min(10, pointIndex * 3);
-
-      for (let branch = 0; branch < branches; branch += 1) {
-        const angle = (branch / branches) * Math.PI * 2 + point.rotation * 0.02;
-        const length = 0.34 + point.force * 0.2 + (branch % 5) * 0.045;
-        const mid = center.clone().add(
-          new THREE.Vector3(Math.cos(angle) * length * 0.5, Math.sin(angle) * length * 0.5, 0.08),
-        );
-        const end = center.clone().add(
-          new THREE.Vector3(Math.cos(angle) * length, Math.sin(angle) * length, 0.02),
-        );
-        addCrackPlate(center, mid, 0.038 + revealAmount * 0.02, makeCrackMaterial(pointIndex, branch), pointIndex * 31 + branch);
-        addCrackPlate(mid, end, 0.03 + revealAmount * 0.015, makeCrackMaterial(pointIndex, branch + 1), pointIndex * 37 + branch);
-
-        if (branch % 2 === 0 || branch % 5 === 0) {
-          const forkAngle = angle + 0.42;
-          const forkEnd = mid.clone().add(
-            new THREE.Vector3(Math.cos(forkAngle) * length * 0.46, Math.sin(forkAngle) * length * 0.46, -0.02),
-          );
-          addCrackPlate(mid, forkEnd, 0.022 + revealAmount * 0.012, makeCrackMaterial(pointIndex + 1, branch), pointIndex * 41 + branch);
-        }
-
-        if (branch % 3 === 0) {
-          const chipAngle = angle - 0.34;
-          const chipStart = center.clone().lerp(end, 0.42);
-          const chipEnd = chipStart.clone().add(
-            new THREE.Vector3(Math.cos(chipAngle) * length * 0.28, Math.sin(chipAngle) * length * 0.28, -0.02),
-          );
-          addCrackPlate(chipStart, chipEnd, 0.018 + revealAmount * 0.01, makeCrackMaterial(pointIndex + 2, branch), pointIndex * 43 + branch);
-        }
-      }
-    });
 
     const floor = new THREE.Mesh(
       new THREE.CircleGeometry(1.55, 72),
@@ -1003,6 +852,22 @@ function getThreePalette(name: string) {
     shellOpacity: 0.62,
     style: "apple",
   } satisfies ThreePalette;
+}
+
+function makeBrokenPieceGeometry(width: number, height: number, seed: number) {
+  const shape = new THREE.Shape();
+  const wobble = (value: number) => Math.sin(seed * 9.13 + value * 4.71) * 0.08;
+
+  shape.moveTo(-width * (0.48 + wobble(1)), -height * (0.34 + wobble(2)));
+  shape.lineTo(-width * (0.16 + wobble(3)), -height * (0.55 + wobble(4)));
+  shape.lineTo(width * (0.18 + wobble(5)), -height * (0.46 + wobble(6)));
+  shape.lineTo(width * (0.5 + wobble(7)), -height * (0.18 + wobble(8)));
+  shape.lineTo(width * (0.44 + wobble(9)), height * (0.36 + wobble(10)));
+  shape.lineTo(width * (0.08 + wobble(11)), height * (0.56 + wobble(12)));
+  shape.lineTo(-width * (0.38 + wobble(13)), height * (0.4 + wobble(14)));
+  shape.closePath();
+
+  return new THREE.ShapeGeometry(shape);
 }
 
 function applyCottonMarbleColors(geometry: THREE.BufferGeometry) {
