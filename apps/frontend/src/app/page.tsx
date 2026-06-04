@@ -593,7 +593,7 @@ function ThreeWaxBall({
       opacity: palette.shellOpacity,
       roughness: palette.style === "dubai" ? 0.08 : 0.06,
       sheen: 0.35,
-      transparent: true,
+      transparent: palette.style !== "dubai",
       transmission: palette.style === "apple" ? 0.14 : palette.style === "cotton" ? 0.18 : 0,
       vertexColors: palette.style === "cotton",
     });
@@ -612,7 +612,7 @@ function ThreeWaxBall({
         clearcoat: 1,
         clearcoatRoughness: 0.018,
         color: 0xffffff,
-        opacity: palette.style === "dubai" ? 0.16 : palette.style === "cotton" ? 0.24 : 0.22,
+        opacity: palette.style === "dubai" ? 0.1 : palette.style === "cotton" ? 0.24 : 0.18,
         roughness: 0.018,
         transparent: true,
         transmission: 0.82,
@@ -727,7 +727,23 @@ function ThreeWaxBall({
               ];
       const initialPieceCount = palette.style === "dubai" ? 5 : palette.style === "cotton" ? 6 : 7;
       const pieceCount = Math.min(maxPieceSpecs.length, initialPieceCount + Math.max(0, crackPoints.length - 1) * 2);
-      const pieceSpecs = maxPieceSpecs.slice(0, pieceCount);
+      const firstImpact = crackPoints[0];
+      const impactCenter = firstImpact
+        ? new THREE.Vector2(
+            THREE.MathUtils.clamp((firstImpact.x - 50) / 35, -0.9, 0.9),
+            THREE.MathUtils.clamp(-(firstImpact.y - 50) / 35, -0.85, 0.85),
+          )
+        : new THREE.Vector2(0, 0);
+      const spreadBias = Math.min(1, Math.max(0, crackPoints.length - 1) / 8);
+      const pieceSpecs = [...maxPieceSpecs]
+        .sort((left, right) => {
+          const leftDistance = new THREE.Vector2(left[0], left[1]).distanceTo(impactCenter);
+          const rightDistance = new THREE.Vector2(right[0], right[1]).distanceTo(impactCenter);
+          const leftScore = leftDistance * (1 - spreadBias) + maxPieceSpecs.indexOf(left) * 0.018 * spreadBias;
+          const rightScore = rightDistance * (1 - spreadBias) + maxPieceSpecs.indexOf(right) * 0.018 * spreadBias;
+          return leftScore - rightScore;
+        })
+        .slice(0, pieceCount);
       const subdivisionScale = 1 - Math.min(0.28, Math.max(0, crackPoints.length - 1) * 0.035);
       const makeFillingMaterial = (index: number) =>
         new THREE.MeshPhysicalMaterial({
@@ -753,7 +769,7 @@ function ThreeWaxBall({
 
       pieceSpecs.forEach(([x, y, width, height, rotation], index) => {
         const direction = new THREE.Vector3(x || 0.01, y || 0.01, 0).normalize();
-        const separation = fractureAmount * (0.018 + index * 0.0014);
+        const separation = fractureAmount * (0.014 + index * 0.001);
         const fillGeometry = makeBrokenPieceGeometry(width * subdivisionScale * 0.9, height * subdivisionScale * 0.9, index + 40);
         const filling = new THREE.Mesh(fillGeometry, makeFillingMaterial(index));
         filling.position.set(x, y, 1.505);
@@ -765,8 +781,8 @@ function ThreeWaxBall({
           applyCottonMarbleColors(shellGeometry);
         }
         const shellPiece = new THREE.Mesh(shellGeometry, makeShellMaterial());
-        shellPiece.position.set(x + direction.x * separation, y + direction.y * separation, 1.535 + fractureAmount * 0.018);
-        shellPiece.rotation.set(fractureAmount * 0.045 * Math.sign(y || 1), fractureAmount * -0.035 * Math.sign(x || 1), rotation + fractureAmount * 0.018 * Math.sin(index));
+        shellPiece.position.set(x + direction.x * separation, y + direction.y * separation, 1.526 + fractureAmount * 0.012);
+        shellPiece.rotation.set(fractureAmount * 0.028 * Math.sign(y || 1), fractureAmount * -0.022 * Math.sign(x || 1), rotation + fractureAmount * 0.012 * Math.sin(index));
         shellPiece.castShadow = true;
         fractureGroup.add(shellPiece);
       });
