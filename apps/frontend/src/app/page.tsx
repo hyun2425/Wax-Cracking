@@ -131,7 +131,7 @@ export default function Home() {
         window.setTimeout(() => {
           audio.pause();
           audio.currentTime = 0;
-        }, 2000);
+        }, 1000);
       },
       { once: true },
     );
@@ -794,10 +794,10 @@ function ThreeWaxBall({
       color: palette.shell,
       metalness: 0.02,
       opacity: palette.shellOpacity,
-      roughness: palette.style === "apple" ? 0.18 : 0.28,
+      roughness: palette.style === "apple" || palette.style === "cotton" ? 0.18 : 0.28,
       sheen: 0.35,
       transparent: palette.shellOpacity < 1,
-      transmission: palette.style === "apple" ? 0.12 : 0,
+      transmission: palette.style === "apple" ? 0.12 : palette.style === "cotton" ? 0.18 : 0,
     });
 
     const ball = new THREE.Mesh(
@@ -857,9 +857,9 @@ function ThreeWaxBall({
         clearcoatRoughness: 0.1,
         color: palette.patchColors[index % palette.patchColors.length],
         opacity: patchOpacity,
-        roughness: palette.style === "dubai" ? 0.2 : 0.18,
+        roughness: palette.style === "dubai" ? 0.2 : 0.16,
         transparent: true,
-        transmission: palette.style === "apple" ? 0.35 : 0,
+        transmission: palette.style === "apple" ? 0.35 : palette.style === "cotton" ? 0.22 : 0,
       });
       const patch = new THREE.Mesh(patchGeometry, patchMaterial);
       patch.position.copy(unit.clone().multiplyScalar(1.505));
@@ -884,14 +884,14 @@ function ThreeWaxBall({
       root.add(patch);
     });
 
-    if (!isPristine && (palette.style === "dubai" || palette.style === "cotton")) {
+    if (!isPristine && palette.style === "dubai") {
       const ribbonMaterial = new THREE.MeshPhysicalMaterial({
         clearcoat: 0.6,
         clearcoatRoughness: 0.22,
         color: palette.clay,
         roughness: 0.42,
       });
-      const ribbonCount = palette.style === "dubai" ? 9 : 5 + Math.floor(revealAmount * 4);
+      const ribbonCount = 9;
       for (let index = 0; index < ribbonCount; index += 1) {
         const angle = (index / ribbonCount) * Math.PI * 2;
         const ribbon = new THREE.Mesh(
@@ -902,7 +902,7 @@ function ThreeWaxBall({
         ribbon.rotation.set(1.08, 0.15 + Math.sin(angle) * 0.28, angle + 0.38);
         ribbon.scale.set(
           1,
-          (palette.style === "dubai" ? 1.14 : 0.74 + revealAmount * 0.46),
+          1.14,
           1,
         );
         root.add(ribbon);
@@ -932,6 +932,28 @@ function ThreeWaxBall({
       color: palette.crack,
       roughness: 0.5,
     });
+    if (palette.style === "cotton" && revealAmount > 0) {
+      const seamMaterial = new THREE.LineBasicMaterial({
+        color: 0xffffff,
+        transparent: true,
+        opacity: 0.28 + revealAmount * 0.48,
+      });
+      for (let index = 0; index < 10; index += 1) {
+        const angle = (index / 10) * Math.PI * 2;
+        const points = [];
+        for (let step = 0; step < 7; step += 1) {
+          const t = -0.8 + step * 0.27;
+          points.push(
+            new THREE.Vector3(
+              Math.cos(angle + t * 0.35) * (0.4 + step * 0.12),
+              Math.sin(angle + t * 0.22) * (0.28 + step * 0.08),
+              1.38 - Math.abs(t) * 0.08,
+            ),
+          );
+        }
+        crackGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(points), seamMaterial));
+      }
+    }
     crackPoints.forEach((point, pointIndex) => {
       const baseX = (point.x - 50) / 35;
       const baseY = -(point.y - 50) / 35;
@@ -952,17 +974,13 @@ function ThreeWaxBall({
           new THREE.Vector3(Math.cos(angle) * length, Math.sin(angle) * length, 0.02),
         );
         const curve = new THREE.CatmullRomCurve3([center, mid, end]);
-        const tube = new THREE.Mesh(
-          new THREE.TubeGeometry(
-            curve,
-            10,
-            palette.style === "dubai" ? 0.026 + pointIndex * 0.003 : 0.014,
-            8,
-            false,
-          ),
-          crackTubeMaterial,
-        );
-        crackGroup.add(tube);
+        if (palette.style === "dubai") {
+          const tube = new THREE.Mesh(
+            new THREE.TubeGeometry(curve, 10, 0.026 + pointIndex * 0.003, 8, false),
+            crackTubeMaterial,
+          );
+          crackGroup.add(tube);
+        }
 
         if (palette.style !== "dubai") {
           const hairline = new THREE.Line(
@@ -1115,12 +1133,12 @@ function getThreePalette(name: string) {
 
   if (name.includes("솜사탕")) {
     return {
-      clay: 0xf8d7e4,
-      crack: 0xfff6fb,
+      clay: 0xf6d9e8,
+      crack: 0xfff3fb,
       patch: 0xf08aa9,
-      patchColors: [0xf5a9c4, 0x9ed9ed, 0xf5e7a8, 0xd9c1f2],
-      shell: 0xfbeef8,
-      shellOpacity: 0.94,
+      patchColors: [0xf4b4cd, 0xa9dced, 0xf5e8ae, 0xf7d6e5, 0xc8e7ef],
+      shell: 0xfaf0f7,
+      shellOpacity: 0.72,
       style: "cotton",
     } satisfies ThreePalette;
   }
