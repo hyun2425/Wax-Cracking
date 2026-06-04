@@ -33,12 +33,6 @@ type CrackPoint = {
   force: number;
 };
 
-type ImpactPoint = {
-  x: number;
-  y: number;
-  id: number;
-};
-
 type ThreePalette = {
   clay: number;
   crack: number;
@@ -104,7 +98,6 @@ export default function Home() {
   const [isFreezing, setIsFreezing] = useState(false);
   const [crackProgress, setCrackProgress] = useState(0);
   const [crackPoints, setCrackPoints] = useState<CrackPoint[]>([]);
-  const [impactPoint, setImpactPoint] = useState<ImpactPoint | null>(null);
   const [apiState, setApiState] = useState<ApiState>({ status: "checking" });
 
   const selectedWax = waxTypes[selectedIndex];
@@ -200,13 +193,11 @@ export default function Home() {
     setSelectedIndex(index);
     setCrackProgress(0);
     setCrackPoints([]);
-    setImpactPoint(null);
   }
 
   function handleStartFreezer() {
     setCrackProgress(0);
     setCrackPoints([]);
-    setImpactPoint(null);
     setIsFreezing(true);
   }
 
@@ -215,7 +206,6 @@ export default function Home() {
     setIsFreezing(false);
     setCrackProgress(0);
     setCrackPoints([]);
-    setImpactPoint(null);
   }
 
   function handleCrack(event: MouseEvent<HTMLButtonElement>) {
@@ -230,11 +220,6 @@ export default function Home() {
     const x = ((event.clientX - rect.left) / rect.width) * 100;
     const y = ((event.clientY - rect.top) / rect.height) * 100;
     const force = 0.82 + freezerMinutes / 22 + next / requiredClicks / 3;
-
-    setImpactPoint({ id: Date.now(), x, y });
-    window.setTimeout(() => {
-      setImpactPoint(null);
-    }, 210);
 
     setCrackPoints((current) => [
       ...current,
@@ -297,7 +282,6 @@ export default function Home() {
             crackPercent={crackPercent}
             freezerMinutes={freezerMinutes}
             freezerState={freezerState.state}
-            impactPoint={impactPoint}
             isBroken={isBroken}
             onCrack={handleCrack}
             selectedWax={selectedWax}
@@ -520,7 +504,6 @@ function WaxPreview({
   crackPercent,
   freezerMinutes,
   freezerState,
-  impactPoint,
   isBroken,
   onCrack,
   selectedWax,
@@ -529,15 +512,14 @@ function WaxPreview({
   crackPercent: number;
   freezerMinutes: number;
   freezerState: string;
-  impactPoint: ImpactPoint | null;
   isBroken: boolean;
   onCrack: (event: MouseEvent<HTMLButtonElement>) => void;
   selectedWax: WaxType;
 }) {
   return (
     <div className="grid min-h-[460px] place-items-center max-md:min-h-[360px]">
-      <div className="relative aspect-[1/1.08] w-[min(100%,440px)] overflow-hidden rounded-lg border border-[#2d241f] bg-[#211917] shadow-[0_24px_80px_rgba(25,16,12,0.34)]">
-        <span className="absolute left-5 top-5 z-10 rounded-full border border-white/10 bg-black/45 px-3 py-2 text-xs font-extrabold text-white backdrop-blur">
+      <div className="relative aspect-[1/1.08] w-[min(100%,440px)] overflow-hidden rounded-lg border border-[#e1d7ca] bg-[#f7f1e9] shadow-[0_24px_70px_rgba(90,72,54,0.18)]">
+        <span className="absolute left-5 top-5 z-10 rounded-full border border-[#dfd2c4] bg-white/75 px-3 py-2 text-xs font-extrabold text-[#3b3128] backdrop-blur">
           {freezerMinutes}분 냉동 · {freezerState}
         </span>
         <button
@@ -549,12 +531,11 @@ function WaxPreview({
           <ThreeWaxBall
             crackPoints={crackPoints}
             freezerMinutes={freezerMinutes}
-            impactPoint={impactPoint}
             isBroken={isBroken}
             selectedWax={selectedWax}
           />
         </button>
-        <span className="absolute bottom-5 right-5 z-10 rounded-full border border-white/10 bg-black/45 px-3 py-2 text-xs font-extrabold text-[#b8ff4d] backdrop-blur">
+        <span className="absolute bottom-5 right-5 z-10 rounded-full border border-[#dfd2c4] bg-white/75 px-3 py-2 text-xs font-extrabold text-[#4d8a10] backdrop-blur">
           {isBroken ? "완전 파괴 · 콰작 다시 듣기" : `${crackPercent}% 균열 · 3D 공 직접 클릭`}
         </span>
       </div>
@@ -565,13 +546,11 @@ function WaxPreview({
 function ThreeWaxBall({
   crackPoints,
   freezerMinutes,
-  impactPoint,
   isBroken,
   selectedWax,
 }: {
   crackPoints: CrackPoint[];
   freezerMinutes: number;
-  impactPoint: ImpactPoint | null;
   isBroken: boolean;
   selectedWax: WaxType;
 }) {
@@ -641,18 +620,6 @@ function ThreeWaxBall({
     clearOuterShell.castShadow = true;
     root.add(clearOuterShell);
 
-    const shellHighlight = new THREE.Mesh(
-      new THREE.TorusGeometry(1.08, 0.018, 10, 96),
-      new THREE.MeshBasicMaterial({
-        color: 0xffffff,
-        opacity: 0.36,
-        transparent: true,
-      }),
-    );
-    shellHighlight.position.set(-0.1, 0.38, 0.95);
-    shellHighlight.rotation.set(1.18, -0.34, -0.22);
-    root.add(shellHighlight);
-
     const innerClay = new THREE.Mesh(
       new THREE.SphereGeometry(1.02, 48, 32),
       new THREE.MeshPhysicalMaterial({
@@ -667,27 +634,26 @@ function ThreeWaxBall({
 
     if (palette.style === "cotton") {
       innerClay.visible = false;
-      const blobGeometry = new THREE.SphereGeometry(0.68, 48, 32);
+      const blobGeometry = new THREE.SphereGeometry(0.78, 64, 40);
       const blobSet = [
-        { color: 0xff9fc8, from: new THREE.Vector3(-0.46, 0.18, 0.34), to: new THREE.Vector3(-0.18, 0.05, 0.38), scale: new THREE.Vector3(1.06, 0.9, 0.86) },
-        { color: 0x8fd8ff, from: new THREE.Vector3(0.46, 0.12, 0.3), to: new THREE.Vector3(0.18, 0.02, 0.38), scale: new THREE.Vector3(1.02, 0.9, 0.88) },
-        { color: 0xffec86, from: new THREE.Vector3(0.02, -0.48, 0.28), to: new THREE.Vector3(0.02, -0.14, 0.36), scale: new THREE.Vector3(1.08, 0.78, 0.84) },
-        { color: 0xffb6d5, from: new THREE.Vector3(-0.16, 0.58, 0.24), to: new THREE.Vector3(-0.04, 0.28, 0.34), scale: new THREE.Vector3(0.78, 0.56, 0.68) },
+        { color: 0xff9fc8, from: new THREE.Vector3(-0.48, 0.28, 0.32), to: new THREE.Vector3(-0.24, 0.14, 0.38), scale: new THREE.Vector3(1.18, 1.0, 0.82) },
+        { color: 0x8fd8ff, from: new THREE.Vector3(0.48, 0.2, 0.3), to: new THREE.Vector3(0.22, 0.1, 0.38), scale: new THREE.Vector3(1.12, 0.96, 0.82) },
+        { color: 0xffec86, from: new THREE.Vector3(0.02, -0.54, 0.28), to: new THREE.Vector3(0.0, -0.24, 0.36), scale: new THREE.Vector3(1.18, 0.86, 0.82) },
       ];
 
       blobSet.forEach((blob, index) => {
         const material = new THREE.MeshPhysicalMaterial({
           clearcoat: 1,
-          clearcoatRoughness: 0.025,
+          clearcoatRoughness: 0.018,
           color: blob.color,
-          opacity: 0.88,
-          roughness: 0.08,
+          opacity: 0.96,
+          roughness: 0.045,
           transparent: true,
-          transmission: 0.08,
+          transmission: 0.04,
         });
         const mesh = new THREE.Mesh(blobGeometry, material);
         mesh.position.copy(blob.from.clone().lerp(blob.to, revealAmount));
-        mesh.scale.copy(blob.scale).multiplyScalar(1 + revealAmount * 0.08);
+        mesh.scale.copy(blob.scale).multiplyScalar(1 + revealAmount * 0.04);
         mesh.rotation.set(index * 0.4, index * 0.72, index * 0.25);
         mesh.castShadow = true;
         root.add(mesh);
@@ -700,7 +666,7 @@ function ThreeWaxBall({
             clearcoat: 0.8,
             clearcoatRoughness: 0.04,
             color: 0xf5d9ec,
-            opacity: revealAmount * 0.48,
+            opacity: revealAmount * 0.26,
             roughness: 0.12,
             transparent: true,
           }),
@@ -952,41 +918,8 @@ function ThreeWaxBall({
       }
     });
 
-    const fragmentGroup = new THREE.Group();
-    root.add(fragmentGroup);
     if (isBroken) {
-      const fragmentGeometry =
-        palette.style === "dubai" || palette.style === "cotton"
-          ? new THREE.BoxGeometry(0.34, 0.045, 0.24)
-          : new THREE.TetrahedronGeometry(0.18, 0);
-      for (let index = 0; index < 26; index += 1) {
-        const fragmentMaterial = new THREE.MeshStandardMaterial({
-          color: index % 3 === 0 ? palette.clay : palette.shell,
-          roughness: 0.18,
-          transparent: true,
-          opacity: palette.style === "apple" && index % 3 !== 0 ? 0.42 : 0.62,
-        });
-        const fragment = new THREE.Mesh(fragmentGeometry, fragmentMaterial);
-        const angle = index * 2.399963229728653;
-        const radius = 0.42 + (index % 6) * 0.07;
-        fragment.position.set(
-          Math.cos(angle) * radius,
-          Math.sin(angle * 1.2) * radius * 0.58,
-          1.05 + (index % 5) * 0.035,
-        );
-        fragment.rotation.set(index * 0.4, index * 0.7, index * 0.2);
-        fragment.scale.setScalar(0.42 + (index % 4) * 0.1);
-        fragment.castShadow = true;
-        fragmentGroup.add(fragment);
-      }
       crackMaterial.opacity = 1;
-    }
-
-    const impactMark = impactPoint
-      ? createImpactRing((impactPoint.x - 50) / 35, -(impactPoint.y - 50) / 35)
-      : null;
-    if (impactMark) {
-      root.add(impactMark);
     }
 
     const floor = new THREE.Mesh(
@@ -1041,10 +974,6 @@ function ThreeWaxBall({
         ),
         0.08,
       );
-      fragmentGroup.children.forEach((child, index) => {
-        child.rotation.x += 0.018 + index * 0.0007;
-        child.rotation.y += 0.014 + index * 0.0005;
-      });
       renderer.render(scene, camera);
       animationId = window.requestAnimationFrame(animate);
     }
@@ -1070,7 +999,7 @@ function ThreeWaxBall({
         }
       });
     };
-  }, [crackPoints, freezerMinutes, impactPoint, isBroken, selectedWax.name]);
+  }, [crackPoints, freezerMinutes, isBroken, selectedWax.name]);
 
   return <div ref={mountRef} className="h-full w-full" />;
 }
@@ -1109,21 +1038,6 @@ function getThreePalette(name: string) {
     shellOpacity: 0.9,
     style: "apple",
   } satisfies ThreePalette;
-}
-
-function createImpactRing(x: number, y: number) {
-  const ring = new THREE.Mesh(
-    new THREE.RingGeometry(0.08, 0.32, 32),
-    new THREE.MeshBasicMaterial({
-      color: 0xffffff,
-      opacity: 0.65,
-      transparent: true,
-      side: THREE.DoubleSide,
-    }),
-  );
-  ring.position.set(THREE.MathUtils.clamp(x, -1, 1), THREE.MathUtils.clamp(y, -1, 1), 1.55);
-  ring.lookAt(0, 0, 4);
-  return ring;
 }
 
 function SectionHeading({ eyebrow, title }: { eyebrow: string; title: string }) {
