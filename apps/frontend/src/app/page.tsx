@@ -638,11 +638,7 @@ function ThreeWaxBall({
     const patchGeometry = new THREE.CircleGeometry(0.24, 28);
     const patchNormals =
       palette.style === "cotton"
-        ? [
-            new THREE.Vector3(-0.58, 0.42, 0.7),
-            new THREE.Vector3(0.58, 0.32, 0.75),
-            new THREE.Vector3(0.0, -0.68, 0.74),
-          ]
+        ? []
         : palette.style === "apple"
         ? [
             new THREE.Vector3(-0.36, 0.5, 0.79),
@@ -748,13 +744,9 @@ function ThreeWaxBall({
 
     const crackGroup = new THREE.Group();
     root.add(crackGroup);
-    const cottonCrackColors = [0xff5fa8, 0x43c7ff, 0xffd23d];
-    const makeCrackMaterial = (pointIndex: number, branchIndex = 0) =>
+    const makeCrackMaterial = () =>
       new THREE.LineBasicMaterial({
-        color:
-          palette.style === "cotton"
-            ? cottonCrackColors[(pointIndex + branchIndex) % cottonCrackColors.length]
-            : palette.crack,
+        color: palette.crack,
         transparent: true,
         opacity: 0.98,
       });
@@ -851,9 +843,9 @@ function ThreeWaxBall({
           new THREE.Vector3(0.44, -0.7, 1.0),
         ],
       ];
-      panelSeams.slice(0, Math.min(panelSeams.length, 3 + crackPoints.length)).forEach((points, index) => {
+      panelSeams.slice(0, Math.min(panelSeams.length, 3 + crackPoints.length)).forEach((points) => {
         const curve = new THREE.CatmullRomCurve3(points);
-        crackGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(curve.getPoints(16)), makeCrackMaterial(index)));
+        crackGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(curve.getPoints(16)), makeCrackMaterial()));
       });
     }
     crackPoints.forEach((point, pointIndex) => {
@@ -877,7 +869,7 @@ function ThreeWaxBall({
         );
         const hairline = new THREE.Line(
           new THREE.BufferGeometry().setFromPoints([center, mid, end]),
-          makeCrackMaterial(pointIndex, branch),
+          makeCrackMaterial(),
         );
         crackGroup.add(hairline);
 
@@ -889,7 +881,7 @@ function ThreeWaxBall({
           crackGroup.add(
             new THREE.Line(
               new THREE.BufferGeometry().setFromPoints([mid, forkEnd]),
-              makeCrackMaterial(pointIndex + 1, branch),
+              makeCrackMaterial(),
             ),
           );
         }
@@ -1000,12 +992,12 @@ function getThreePalette(name: string) {
 
   if (name.includes("솜사탕")) {
     return {
-      clay: 0xff9fc8,
-      crack: 0xd89ab7,
-      patch: 0xf08aa9,
-      patchColors: [0xff7fb5, 0x67cfff, 0xffdf55],
-      shell: 0xf8fdff,
-      shellOpacity: 0.04,
+      clay: 0xf7a8c6,
+      crack: 0xb85f84,
+      patch: 0xf7a8c6,
+      patchColors: [0xf7a8c6],
+      shell: 0xf7a8c6,
+      shellOpacity: 0.88,
       style: "cotton",
     } satisfies ThreePalette;
   }
