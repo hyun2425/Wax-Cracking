@@ -82,6 +82,7 @@ const freezerRows = [
 ];
 
 const crackSteps = ["클릭 시작", "작은 균열", "균열 확장", "완전 파괴", "소리 재생"];
+const referenceCrunchUrl = "/sounds/wax-crunch-reference.mp3";
 
 function getFreezerState(minutes: number) {
   return freezerRows.find((row) => minutes <= row.max) ?? freezerRows.at(-1)!;
@@ -102,6 +103,28 @@ export default function Home() {
   const requiredClicks = Math.max(3, 8 - Math.floor(freezerMinutes / 4));
   const crackPercent = Math.min(100, Math.round((crackProgress / requiredClicks) * 100));
   const isBroken = crackPercent >= 100;
+
+  const playReferenceCrunch = useCallback((isFinal = false) => {
+    const takes = isFinal
+      ? [
+          { delay: 0, rate: 0.92, volume: 0.95 },
+          { delay: 130, rate: 1.02, volume: 0.82 },
+          { delay: 285, rate: 0.86, volume: 0.72 },
+        ]
+      : [{ delay: 0, rate: 1.05, volume: 0.62 }];
+
+    takes.forEach((take) => {
+      window.setTimeout(() => {
+        const audio = new Audio(referenceCrunchUrl);
+        audio.volume = take.volume;
+        audio.playbackRate = take.rate;
+        audio.currentTime = 0;
+        void audio.play().catch(() => {
+          // Keep the generated crunch layer as a fallback if the sample is blocked.
+        });
+      }, take.delay);
+    });
+  }, []);
 
   useEffect(() => {
     if (!isFreezing) {
@@ -159,6 +182,8 @@ export default function Home() {
   }, [healthUrl]);
 
   const playCrackSound = useCallback((isFinal = false) => {
+    playReferenceCrunch(isFinal);
+
     const AudioContextClass =
       window.AudioContext ??
       (window as typeof window & { webkitAudioContext?: typeof AudioContext })
@@ -333,7 +358,7 @@ export default function Home() {
     window.setTimeout(() => {
       void audioContext.close();
     }, isFinal ? 1100 : 420);
-  }, [freezerMinutes, selectedWax.frequency]);
+  }, [freezerMinutes, playReferenceCrunch, selectedWax.frequency]);
 
   function handleSelectWax(index: number) {
     setSelectedIndex(index);
@@ -767,6 +792,18 @@ function ThreeWaxBall({
     ball.receiveShadow = true;
     root.add(ball);
 
+    const innerClay = new THREE.Mesh(
+      new THREE.SphereGeometry(1.02, 48, 32),
+      new THREE.MeshPhysicalMaterial({
+        clearcoat: 0.25,
+        color: palette.clay,
+        roughness: 0.58,
+      }),
+    );
+    innerClay.visible = isBroken;
+    innerClay.castShadow = true;
+    root.add(innerClay);
+
     const patchMaterial = new THREE.MeshPhysicalMaterial({
       clearcoat: 0.9,
       clearcoatRoughness: 0.12,
@@ -852,7 +889,7 @@ function ThreeWaxBall({
       const fragmentGeometry = new THREE.TetrahedronGeometry(0.18, 0);
       for (let index = 0; index < 34; index += 1) {
         const fragmentMaterial = new THREE.MeshStandardMaterial({
-          color: index % 3 === 0 ? palette.patch : palette.shell,
+          color: index % 3 === 0 ? palette.clay : palette.shell,
           roughness: 0.52,
         });
         const fragment = new THREE.Mesh(fragmentGeometry, fragmentMaterial);
@@ -972,14 +1009,14 @@ function ThreeWaxBall({
 
 function getThreePalette(name: string) {
   if (name.includes("두바이")) {
-    return { patch: 0xd8a942, shell: 0x3a251a };
+    return { clay: 0xa9d96b, patch: 0x5b3424, shell: 0x3a2116 };
   }
 
   if (name.includes("솜사탕")) {
-    return { patch: 0xf08aa9, shell: 0xf8ecff };
+    return { clay: 0xf7c2d6, patch: 0xf08aa9, shell: 0xf8ecff };
   }
 
-  return { patch: 0x8ce000, shell: 0xf5f1df };
+  return { clay: 0xb6e96f, patch: 0x8ce000, shell: 0xf5f1df };
 }
 
 function createImpactRing(x: number, y: number) {
