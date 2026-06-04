@@ -598,19 +598,18 @@ function ThreeWaxBall({
       clearcoatRoughness: 0.045,
       color: fractureAmount > 0 && palette.style !== "cotton" ? palette.clay : palette.shell,
       metalness: 0.02,
-      opacity: fractureAmount > 0 && palette.style !== "cotton" ? 1 : palette.shellOpacity,
+      opacity: 1,
       roughness: palette.style === "dubai" ? 0.08 : 0.06,
       sheen: 0.35,
-      transparent: fractureAmount > 0 && palette.style !== "cotton" ? false : palette.style !== "dubai",
-      transmission: palette.style === "apple" ? 0.14 : palette.style === "cotton" ? 0.18 : 0,
-      vertexColors: fractureAmount === 0 && palette.style === "cotton",
+      transparent: false,
+      transmission: 0,
+      vertexColors: palette.style === "cotton",
     });
 
     const ball = new THREE.Mesh(
       ballGeometry,
       shellMaterial,
     );
-    ball.visible = fractureAmount === 0;
     ball.castShadow = true;
     ball.receiveShadow = true;
     root.add(ball);
@@ -695,42 +694,22 @@ function ThreeWaxBall({
         : new THREE.Vector2(0, 0);
       const pieceSpecs = buildSubdividedShellPieces(palette.style, crackPoints.length, impactCenter);
       const gapScale = 1 - Math.min(0.2, Math.max(0, crackPoints.length - 1) * 0.018);
-      const makeBackingMaterial = () =>
-        new THREE.MeshPhysicalMaterial({
-          clearcoat: palette.style === "cotton" ? 0.5 : 0.2,
-          clearcoatRoughness: 0.16,
-          color: palette.style === "cotton" ? 0xffffff : palette.clay,
-          opacity: palette.style === "cotton" ? 0.96 : 1,
-          roughness: palette.style === "cotton" ? 0.22 : 0.42,
-          side: THREE.DoubleSide,
-          transparent: palette.style === "cotton",
-          vertexColors: palette.style === "cotton",
-        });
       const makeShellMaterial = () =>
         new THREE.MeshPhysicalMaterial({
           clearcoat: 1,
           clearcoatRoughness: 0.045,
-          color: palette.style === "cotton" ? 0xfffbfd : palette.shell,
-          opacity: palette.style === "dubai" ? 1 : palette.style === "apple" ? 0.9 : 0.98,
-          roughness: palette.style === "cotton" ? 0.08 : 0.1,
+          color: palette.shell,
+          opacity: 1,
+          roughness: 0.1,
           side: THREE.DoubleSide,
-          transparent: palette.style !== "dubai",
-          transmission: palette.style === "apple" ? 0.1 : palette.style === "cotton" ? 0.02 : 0,
+          transparent: false,
+          transmission: 0,
           vertexColors: false,
         });
 
       pieceSpecs.forEach(({ height, id, rotation, width, x, y }, index) => {
         const direction = new THREE.Vector3(x || 0.01, y || 0.01, 0).normalize();
         const separation = fractureAmount * (0.012 + Math.min(index, 18) * 0.00055);
-        const backingGeometry = makeBrokenPieceGeometry(width * 1.08, height * 1.08, id + 300);
-        if (palette.style === "cotton") {
-          applyCottonMarbleColors(backingGeometry);
-        }
-        const backingPiece = new THREE.Mesh(backingGeometry, makeBackingMaterial());
-        backingPiece.position.set(x, y, 1.506);
-        backingPiece.rotation.z = rotation;
-        fractureGroup.add(backingPiece);
-
         const shellGeometry = makeBrokenPieceGeometry(width * gapScale, height * gapScale, id);
         const shellPiece = new THREE.Mesh(shellGeometry, makeShellMaterial());
         shellPiece.position.set(x + direction.x * separation, y + direction.y * separation, 1.526 + fractureAmount * 0.012);
