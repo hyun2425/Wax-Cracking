@@ -115,26 +115,27 @@ export default function Home() {
   const isBroken = crackPercent >= 100;
 
   const playReferenceCrunch = useCallback((isFinal = false) => {
-    const takes = isFinal
-      ? [
-          { delay: 0, rate: 0.92, volume: 0.95 },
-          { delay: 130, rate: 1.02, volume: 0.82 },
-          { delay: 285, rate: 0.86, volume: 0.72 },
-        ]
-      : [{ delay: 0, rate: 1.05, volume: 0.62 }];
+    const audio = new Audio(referenceCrunchUrl);
+    const freezerVolume = 0.32 + (freezerMinutes / 20) * 0.58;
+    audio.volume = Math.min(1, freezerVolume + (isFinal ? 0.12 : 0));
+    audio.playbackRate = isFinal ? 0.96 : 1.04;
 
-    takes.forEach((take) => {
-      window.setTimeout(() => {
-        const audio = new Audio(referenceCrunchUrl);
-        audio.volume = take.volume;
-        audio.playbackRate = take.rate;
-        audio.currentTime = 0;
+    audio.addEventListener(
+      "loadedmetadata",
+      () => {
+        const playableDuration = Math.max(0, audio.duration - 2);
+        audio.currentTime = playableDuration > 0 ? Math.random() * playableDuration : 0;
         void audio.play().catch(() => {
           // Keep the generated crunch layer as a fallback if the sample is blocked.
         });
-      }, take.delay);
-    });
-  }, []);
+        window.setTimeout(() => {
+          audio.pause();
+          audio.currentTime = 0;
+        }, 2000);
+      },
+      { once: true },
+    );
+  }, [freezerMinutes]);
 
   useEffect(() => {
     if (!isFreezing) {
@@ -785,6 +786,8 @@ function ThreeWaxBall({
     scene.add(root);
 
     const palette = getThreePalette(selectedWax.name);
+    const revealAmount = Math.min(1, crackPoints.length / 6);
+    const isPristine = crackPoints.length === 0 && !isBroken;
     const shellMaterial = new THREE.MeshPhysicalMaterial({
       clearcoat: 1,
       clearcoatRoughness: 0.18,
@@ -843,13 +846,19 @@ function ThreeWaxBall({
 
     patchNormals.forEach((normal, index) => {
       const unit = normal.normalize();
+      const patchOpacity =
+        palette.style === "apple"
+          ? 0.18
+          : palette.style === "cotton"
+            ? revealAmount * 0.92
+            : revealAmount;
       const patchMaterial = new THREE.MeshPhysicalMaterial({
         clearcoat: 0.95,
         clearcoatRoughness: 0.1,
         color: palette.patchColors[index % palette.patchColors.length],
-        opacity: palette.style === "apple" ? 0.18 : 0.98,
+        opacity: patchOpacity,
         roughness: palette.style === "dubai" ? 0.2 : 0.18,
-        transparent: palette.style === "apple",
+        transparent: true,
         transmission: palette.style === "apple" ? 0.35 : 0,
       });
       const patch = new THREE.Mesh(patchGeometry, patchMaterial);
@@ -857,9 +866,17 @@ function ThreeWaxBall({
       patch.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), unit);
       patch.rotation.z = index * 0.8;
       if (palette.style === "dubai") {
-        patch.scale.set(1.42 + (index % 3) * 0.38, 0.7 + (index % 4) * 0.16, 1);
+        patch.scale.set(
+          (1.42 + (index % 3) * 0.38) * (0.55 + revealAmount * 0.45),
+          (0.7 + (index % 4) * 0.16) * (0.55 + revealAmount * 0.45),
+          1,
+        );
       } else if (palette.style === "cotton") {
-        patch.scale.set(1.55 + (index % 3) * 0.34, 0.92 + (index % 4) * 0.2, 1);
+        patch.scale.set(
+          (1.18 + (index % 3) * 0.34) * (0.55 + revealAmount * 0.75),
+          (0.72 + (index % 4) * 0.2) * (0.55 + revealAmount * 0.75),
+          1,
+        );
       } else {
         patch.scale.set(1.15 + (index % 3) * 0.2, 0.7 + (index % 2) * 0.12, 1);
       }
@@ -867,14 +884,14 @@ function ThreeWaxBall({
       root.add(patch);
     });
 
-    if (palette.style === "dubai" || palette.style === "cotton") {
+    if (!isPristine && (palette.style === "dubai" || palette.style === "cotton")) {
       const ribbonMaterial = new THREE.MeshPhysicalMaterial({
         clearcoat: 0.6,
         clearcoatRoughness: 0.22,
         color: palette.clay,
         roughness: 0.42,
       });
-      const ribbonCount = palette.style === "dubai" ? 9 : 5;
+      const ribbonCount = palette.style === "dubai" ? 9 : 5 + Math.floor(revealAmount * 4);
       for (let index = 0; index < ribbonCount; index += 1) {
         const angle = (index / ribbonCount) * Math.PI * 2;
         const ribbon = new THREE.Mesh(
@@ -883,7 +900,11 @@ function ThreeWaxBall({
         );
         ribbon.position.set(Math.cos(angle) * 0.45, Math.sin(angle * 1.4) * 0.36, 1.32);
         ribbon.rotation.set(1.08, 0.15 + Math.sin(angle) * 0.28, angle + 0.38);
-        ribbon.scale.set(1, palette.style === "dubai" ? 1.14 : 0.74, 1);
+        ribbon.scale.set(
+          1,
+          (palette.style === "dubai" ? 1.14 : 0.74 + revealAmount * 0.46),
+          1,
+        );
         root.add(ribbon);
       }
     }
@@ -1082,8 +1103,8 @@ function ThreeWaxBall({
 function getThreePalette(name: string) {
   if (name.includes("두바이")) {
     return {
-      clay: 0xb9d8aa,
-      crack: 0xc7e5bd,
+      clay: 0x7fb15b,
+      crack: 0x93c870,
       patch: 0x5b3424,
       patchColors: [0x4a2618, 0x62341f, 0x7a4328, 0x2f1a12],
       shell: 0x3a2116,
