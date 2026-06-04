@@ -598,11 +598,11 @@ function ThreeWaxBall({
       clearcoatRoughness: 0.045,
       color: fractureAmount > 0 && palette.style !== "cotton" ? palette.clay : palette.shell,
       metalness: 0.02,
-      opacity: palette.style === "apple" ? 0.84 : 1,
+      opacity: palette.style === "apple" ? 0.94 : 1,
       roughness: palette.style === "dubai" ? 0.08 : 0.06,
       sheen: 0.35,
       transparent: palette.style === "apple",
-      transmission: palette.style === "apple" ? 0.12 : 0,
+      transmission: palette.style === "apple" ? 0.03 : 0,
       vertexColors: palette.style === "cotton",
     });
 
@@ -699,21 +699,22 @@ function ThreeWaxBall({
           clearcoat: 1,
           clearcoatRoughness: 0.045,
           color: palette.shell,
-          opacity: palette.style === "cotton" ? 0.78 : palette.style === "apple" ? 0.84 : 1,
+          depthWrite: true,
+          opacity: palette.style === "cotton" ? 0.9 : palette.style === "apple" ? 0.92 : 1,
           roughness: palette.style === "apple" ? 0.07 : 0.1,
           side: THREE.DoubleSide,
           transparent: palette.style === "cotton" || palette.style === "apple",
-          transmission: palette.style === "apple" ? 0.12 : palette.style === "cotton" ? 0.04 : 0,
+          transmission: 0,
           vertexColors: false,
         });
 
       pieceSpecs.forEach(({ height, id, rotation, width, x, y }, index) => {
         const direction = new THREE.Vector3(x || 0.01, y || 0.01, 0).normalize();
-        const separation = fractureAmount * (0.012 + Math.min(index, 18) * 0.00055);
+        const separation = fractureAmount * (0.006 + Math.min(index, 18) * 0.00032);
         const shellGeometry = makeBrokenPieceGeometry(width * gapScale, height * gapScale, id);
         const shellPiece = new THREE.Mesh(shellGeometry, makeShellMaterial());
-        shellPiece.position.set(x + direction.x * separation, y + direction.y * separation, 1.526 + fractureAmount * 0.012);
-        shellPiece.rotation.set(fractureAmount * 0.024 * Math.sign(y || 1), fractureAmount * -0.02 * Math.sign(x || 1), rotation + fractureAmount * 0.01 * Math.sin(id));
+        shellPiece.position.set(x + direction.x * separation, y + direction.y * separation, 1.512 + fractureAmount * 0.004);
+        shellPiece.rotation.set(fractureAmount * 0.01 * Math.sign(y || 1), fractureAmount * -0.008 * Math.sign(x || 1), rotation + fractureAmount * 0.004 * Math.sin(id));
         shellPiece.castShadow = true;
         fractureGroup.add(shellPiece);
       });
@@ -850,6 +851,9 @@ function getBaseShellPieces(style: ThreePalette["style"]): ShellPieceSpec[] {
       { id: 5, x: -0.1, y: -0.06, width: 0.72, height: 0.62, rotation: 0.3 },
       { id: 6, x: 0.38, y: -0.58, width: 0.6, height: 0.48, rotation: -0.22 },
       { id: 7, x: -0.46, y: -0.6, width: 0.58, height: 0.46, rotation: 0.24 },
+      { id: 8, x: 0.86, y: 0.36, width: 0.36, height: 0.4, rotation: -0.36 },
+      { id: 9, x: 0.82, y: -0.34, width: 0.42, height: 0.46, rotation: 0.42 },
+      { id: 10, x: 0.18, y: -0.84, width: 0.48, height: 0.34, rotation: -0.08 },
     ];
   }
 
@@ -863,6 +867,9 @@ function getBaseShellPieces(style: ThreePalette["style"]): ShellPieceSpec[] {
       { id: 16, x: 0.48, y: -0.34, width: 0.56, height: 0.6, rotation: -0.3 },
       { id: 17, x: -0.38, y: -0.58, width: 0.62, height: 0.46, rotation: 0.18 },
       { id: 18, x: 0.22, y: -0.68, width: 0.54, height: 0.42, rotation: -0.12 },
+      { id: 19, x: 0.86, y: 0.44, width: 0.34, height: 0.38, rotation: -0.34 },
+      { id: 20, x: 0.88, y: -0.08, width: 0.36, height: 0.44, rotation: 0.38 },
+      { id: 31, x: 0.72, y: -0.62, width: 0.4, height: 0.36, rotation: -0.2 },
     ];
   }
 
@@ -877,6 +884,9 @@ function getBaseShellPieces(style: ThreePalette["style"]): ShellPieceSpec[] {
     { id: 28, x: -0.48, y: -0.5, width: 0.54, height: 0.44, rotation: 0.16 },
     { id: 29, x: 0.02, y: -0.62, width: 0.56, height: 0.42, rotation: -0.18 },
     { id: 30, x: 0.5, y: -0.52, width: 0.48, height: 0.44, rotation: 0.28 },
+    { id: 31, x: 0.86, y: 0.34, width: 0.34, height: 0.38, rotation: -0.32 },
+    { id: 32, x: 0.86, y: -0.2, width: 0.36, height: 0.42, rotation: 0.36 },
+    { id: 33, x: 0.68, y: -0.74, width: 0.36, height: 0.32, rotation: -0.22 },
   ];
 }
 
