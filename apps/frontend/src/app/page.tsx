@@ -594,7 +594,7 @@ function ThreeWaxBall({
       roughness: palette.style === "dubai" ? 0.08 : 0.06,
       sheen: 0.35,
       transparent: true,
-      transmission: palette.style === "apple" ? 0.28 : palette.style === "cotton" ? 0.18 : 0,
+      transmission: palette.style === "apple" ? 0.14 : palette.style === "cotton" ? 0.18 : 0,
       vertexColors: palette.style === "cotton",
     });
 
@@ -612,7 +612,7 @@ function ThreeWaxBall({
         clearcoat: 1,
         clearcoatRoughness: 0.018,
         color: 0xffffff,
-        opacity: palette.style === "cotton" ? 0.28 : palette.style === "apple" ? 0.34 : 0.36,
+        opacity: palette.style === "dubai" ? 0.16 : palette.style === "cotton" ? 0.24 : 0.22,
         roughness: 0.018,
         transparent: true,
         transmission: 0.82,
@@ -678,7 +678,7 @@ function ThreeWaxBall({
     root.add(fractureGroup);
     if (fractureAmount > 0) {
       const cottonFillingColors = [0xf7a8c6, 0xa8dcf3, 0xf4e6a8];
-      const pieceSpecs =
+      const maxPieceSpecs =
         palette.style === "dubai"
           ? [
               [-0.42, 0.46, 0.62, 0.52, -0.22],
@@ -688,6 +688,9 @@ function ThreeWaxBall({
               [-0.1, -0.1, 0.64, 0.58, 0.34],
               [0.28, -0.55, 0.54, 0.44, -0.18],
               [-0.42, -0.52, 0.48, 0.42, 0.24],
+              [0.56, -0.38, 0.38, 0.36, 0.48],
+              [-0.02, 0.82, 0.38, 0.3, -0.05],
+              [-0.72, 0.36, 0.34, 0.34, -0.38],
             ]
           : palette.style === "cotton"
             ? [
@@ -700,6 +703,9 @@ function ThreeWaxBall({
                 [-0.36, -0.48, 0.54, 0.42, 0.2],
                 [0.08, -0.58, 0.56, 0.42, -0.18],
                 [0.58, -0.56, 0.38, 0.36, 0.46],
+                [-0.0, 0.84, 0.38, 0.28, -0.1],
+                [-0.78, 0.28, 0.32, 0.34, -0.42],
+                [0.76, -0.02, 0.3, 0.34, 0.58],
               ]
             : [
                 [-0.5, 0.54, 0.48, 0.38, -0.24],
@@ -714,7 +720,15 @@ function ThreeWaxBall({
                 [0.38, -0.48, 0.44, 0.42, 0.3],
                 [0.68, -0.32, 0.32, 0.34, -0.5],
                 [0.02, -0.78, 0.34, 0.3, 0.12],
+                [-0.82, -0.1, 0.28, 0.32, 0.44],
+                [0.8, 0.34, 0.28, 0.28, -0.2],
+                [-0.38, 0.84, 0.3, 0.26, 0.12],
+                [0.42, -0.78, 0.28, 0.28, -0.44],
               ];
+      const initialPieceCount = palette.style === "dubai" ? 5 : palette.style === "cotton" ? 6 : 7;
+      const pieceCount = Math.min(maxPieceSpecs.length, initialPieceCount + Math.max(0, crackPoints.length - 1) * 2);
+      const pieceSpecs = maxPieceSpecs.slice(0, pieceCount);
+      const subdivisionScale = 1 - Math.min(0.28, Math.max(0, crackPoints.length - 1) * 0.035);
       const makeFillingMaterial = (index: number) =>
         new THREE.MeshPhysicalMaterial({
           clearcoat: 0.24,
@@ -739,14 +753,14 @@ function ThreeWaxBall({
 
       pieceSpecs.forEach(([x, y, width, height, rotation], index) => {
         const direction = new THREE.Vector3(x || 0.01, y || 0.01, 0).normalize();
-        const separation = fractureAmount * (0.022 + index * 0.0018);
-        const fillGeometry = makeBrokenPieceGeometry(width * 0.92, height * 0.92, index + 40);
+        const separation = fractureAmount * (0.018 + index * 0.0014);
+        const fillGeometry = makeBrokenPieceGeometry(width * subdivisionScale * 0.9, height * subdivisionScale * 0.9, index + 40);
         const filling = new THREE.Mesh(fillGeometry, makeFillingMaterial(index));
         filling.position.set(x, y, 1.505);
         filling.rotation.z = rotation;
         fractureGroup.add(filling);
 
-        const shellGeometry = makeBrokenPieceGeometry(width, height, index);
+        const shellGeometry = makeBrokenPieceGeometry(width * subdivisionScale, height * subdivisionScale, index);
         if (palette.style === "cotton") {
           applyCottonMarbleColors(shellGeometry);
         }
@@ -873,8 +887,8 @@ function getThreePalette(name: string) {
     crack: 0xffffff,
     patch: 0x8ce000,
     patchColors: [0x8fd10a, 0x9ee32d, 0x6fb800],
-    shell: 0x97d63d,
-    shellOpacity: 0.62,
+    shell: 0x8eea22,
+    shellOpacity: 0.86,
     style: "apple",
   } satisfies ThreePalette;
 }
