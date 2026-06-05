@@ -732,7 +732,7 @@ function ThreeWaxBall({
       const makeShellMaterial = () =>
         new THREE.MeshPhysicalMaterial({
           clearcoat: 1,
-          clearcoatRoughness: 0.035,
+          clearcoatRoughness: palette.style === "apple" ? 0.06 : 0.035,
           color: palette.shell,
           depthWrite: true,
           opacity: 1,
@@ -744,10 +744,10 @@ function ThreeWaxBall({
           transparent: false,
           transmission: 0,
           vertexColors: false,
-        });
+      });
       const highlightMaterial = new THREE.MeshBasicMaterial({
         color: 0xffffff,
-        opacity: palette.style === "dubai" ? 0.16 : 0.28,
+        opacity: palette.style === "apple" ? 0.14 : palette.style === "dubai" ? 0.16 : 0.22,
         transparent: true,
         depthWrite: false,
         side: THREE.DoubleSide,
@@ -901,7 +901,7 @@ function getThreePalette(name: string) {
   }
 
   return {
-    clay: 0xeee9dc,
+    clay: 0xece3d2,
     crack: 0xffffff,
     patch: 0x8ce000,
     patchColors: [0x8fd10a, 0x9ee32d, 0x6fb800],
@@ -979,30 +979,34 @@ function makeSurfacePatchGeometry({
   });
   const cos = Math.cos(rotation);
   const sin = Math.sin(rotation);
-  const edgeLimit = radius * 0.92;
+  const edgeLimit = radius * 0.94;
   const vertices: number[] = [];
   const normals: number[] = [];
-  const centerRadius = Math.hypot(centerX, centerY);
-  const safeCenterScale = centerRadius > edgeLimit ? edgeLimit / centerRadius : 1;
-  const safeCenterX = centerX * safeCenterScale;
-  const safeCenterY = centerY * safeCenterScale;
-  const centerZ = getFrontSurfaceZ(safeCenterX, safeCenterY, radius) + 0.018 - pressOffset;
+  const centerDistance = Math.hypot(centerX, centerY);
+  const centerClamp = centerDistance > edgeLimit ? edgeLimit / centerDistance : 1;
+  const safeCenterX = centerX * centerClamp;
+  const safeCenterY = centerY * centerClamp;
+  const edgeRatio = THREE.MathUtils.clamp(Math.hypot(safeCenterX, safeCenterY) / edgeLimit, 0, 1);
+  const curvatureScale = 1 - edgeRatio * edgeRatio * 0.34;
+  const surfaceOffset = 0.018 - edgeRatio * 0.008;
+  const centerZ = getFrontSurfaceZ(safeCenterX, safeCenterY, radius) + surfaceOffset - pressOffset;
 
   vertices.push(safeCenterX, safeCenterY, centerZ);
-  normals.push(safeCenterX / radius, safeCenterY / radius, centerZ / radius);
+  normals.push(safeCenterX / radius, safeCenterY / radius, getFrontSurfaceZ(safeCenterX, safeCenterY, radius) / radius);
 
   roundedPoints.forEach(([localX, localY]) => {
-    const rotatedX = localX * cos - localY * sin;
-    const rotatedY = localX * sin + localY * cos;
+    const rotatedX = (localX * cos - localY * sin) * curvatureScale;
+    const rotatedY = (localX * sin + localY * cos) * curvatureScale;
     const rawX = safeCenterX + rotatedX;
     const rawY = safeCenterY + rotatedY;
     const distance = Math.hypot(rawX, rawY);
     const scale = distance > edgeLimit ? edgeLimit / distance : 1;
     const x = rawX * scale;
     const y = rawY * scale;
-    const z = getFrontSurfaceZ(x, y, radius) + 0.018 - pressOffset;
+    const sphereZ = getFrontSurfaceZ(x, y, radius);
+    const z = sphereZ + surfaceOffset - pressOffset;
     vertices.push(x, y, z);
-    normals.push(x / radius, y / radius, z / radius);
+    normals.push(x / radius, y / radius, sphereZ / radius);
   });
 
   const indices: number[] = [];
@@ -1014,7 +1018,6 @@ function makeSurfacePatchGeometry({
   geometry.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3));
   geometry.setAttribute("normal", new THREE.Float32BufferAttribute(normals, 3));
   geometry.setIndex(indices);
-  geometry.computeVertexNormals();
   return geometry;
 }
 
@@ -1061,14 +1064,14 @@ function getBaseShellPieces(style: ThreePalette["style"]): ShellPieceSpec[] {
   const scale = style === "dubai" ? 1.08 : style === "cotton" ? 1 : 0.96;
   const startId = style === "dubai" ? 1 : style === "cotton" ? 40 : 80;
   const layout = [
-    [-0.62, 0.48, 0.78, 0.58, -0.26],
-    [0.18, 0.62, 0.82, 0.54, 0.16],
-    [0.84, 0.1, 0.62, 0.62, 0.52],
-    [-0.84, -0.02, 0.64, 0.68, -0.5],
-    [-0.12, -0.08, 0.88, 0.72, 0.3],
-    [0.54, -0.64, 0.72, 0.52, -0.2],
-    [-0.52, -0.74, 0.68, 0.5, 0.14],
-    [0.02, 0.98, 0.5, 0.34, -0.04],
+    [-0.88, 0.66, 0.72, 0.52, -0.28],
+    [-0.04, 0.82, 0.8, 0.52, 0.12],
+    [0.86, 0.54, 0.62, 0.48, 0.52],
+    [-1.04, -0.04, 0.58, 0.66, -0.5],
+    [-0.2, 0.02, 0.9, 0.68, 0.28],
+    [0.78, -0.08, 0.72, 0.62, -0.16],
+    [-0.64, -0.82, 0.72, 0.48, 0.14],
+    [0.46, -0.9, 0.72, 0.46, -0.1],
   ];
 
   return layout.map(([x, y, width, height, rotation], index) => ({
