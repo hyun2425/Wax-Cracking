@@ -621,10 +621,12 @@ function ThreeWaxBall({
         clearcoat: 1,
         clearcoatRoughness: 0.018,
         color: 0xffffff,
-        opacity: fractureAmount > 0 ? 0.018 : palette.style === "dubai" ? 0.1 : palette.style === "cotton" ? 0.24 : 0.18,
+        depthWrite: false,
+        opacity: fractureAmount > 0 ? 0.1 : palette.style === "dubai" ? 0.1 : palette.style === "cotton" ? 0.24 : 0.18,
         roughness: 0.018,
+        side: THREE.DoubleSide,
         transparent: true,
-        transmission: fractureAmount > 0 ? 0.72 : 0.82,
+        transmission: 0.82,
       }),
     );
     clearOuterShell.castShadow = true;
@@ -683,6 +685,28 @@ function ThreeWaxBall({
     cableTieTail.rotation.set(0.22, 0.02, -0.68);
     root.add(cableTieTail);
 
+    const crimpMaterial = new THREE.MeshPhysicalMaterial({
+      clearcoat: 0.65,
+      clearcoatRoughness: 0.12,
+      color: 0xf6f1e8,
+      opacity: 0.58,
+      roughness: 0.22,
+      transparent: true,
+      transmission: 0.22,
+    });
+    const tiePinch = new THREE.Mesh(new THREE.SphereGeometry(0.18, 16, 10), crimpMaterial);
+    tiePinch.position.set(0.09, 1.43, 0.17);
+    tiePinch.scale.set(1.18, 0.42, 0.72);
+    tiePinch.rotation.set(0.2, -0.18, 0.08);
+    root.add(tiePinch);
+
+    [-0.12, 0.02, 0.15].forEach((offset, index) => {
+      const fold = new THREE.Mesh(new THREE.BoxGeometry(0.028, 0.32, 0.032), crimpMaterial);
+      fold.position.set(0.07 + offset, 1.54 + index * 0.015, 0.19);
+      fold.rotation.set(0.35, -0.12 + index * 0.08, -0.18 + index * 0.18);
+      root.add(fold);
+    });
+
     const fractureGroup = new THREE.Group();
     root.add(fractureGroup);
     if (fractureAmount > 0) {
@@ -713,11 +737,12 @@ function ThreeWaxBall({
         const direction = new THREE.Vector3(x || 0.01, y || 0.01, 0).normalize();
         const separation = fractureAmount * (0.003 + Math.min(index, 18) * 0.00016);
         const pressOffset = getPressOffsetForPiece(x, y, crackPoints);
+        const surfaceZ = getFrontSurfaceZ(x, y, 1.48);
         const shellGeometry = makeBrokenPieceGeometry(width * gapScale, height * gapScale, id);
         const shellPiece = new THREE.Mesh(shellGeometry, makeShellMaterial());
-        shellPiece.position.set(x + direction.x * separation, y + direction.y * separation, 1.49 - pressOffset);
+        shellPiece.position.set(x + direction.x * separation, y + direction.y * separation, surfaceZ + 0.012 - pressOffset);
         shellPiece.rotation.set(fractureAmount * 0.004 * Math.sign(y || 1), fractureAmount * -0.003 * Math.sign(x || 1), rotation + fractureAmount * 0.002 * Math.sin(id));
-        shellPiece.castShadow = true;
+        shellPiece.castShadow = false;
         fractureGroup.add(shellPiece);
       });
     }
@@ -854,8 +879,12 @@ function getPressCenters(crackPoints: CrackPoint[]) {
 function getPressOffsetForPiece(x: number, y: number, crackPoints: CrackPoint[]) {
   return getPressCenters(crackPoints).reduce((offset, point) => {
     const distanceSq = (x - point.x) ** 2 + (y - point.y) ** 2;
-    return offset + Math.exp(-distanceSq / 0.16) * 0.055 * point.force;
+    return offset + Math.exp(-distanceSq / 0.16) * 0.035 * point.force;
   }, 0);
+}
+
+function getFrontSurfaceZ(x: number, y: number, radius: number) {
+  return Math.sqrt(Math.max(0.08, radius * radius - x * x - y * y));
 }
 
 function applyPressedClayDeformation(geometry: THREE.BufferGeometry, crackPoints: CrackPoint[]) {
@@ -876,23 +905,20 @@ function applyPressedClayDeformation(geometry: THREE.BufferGeometry, crackPoints
     }
 
     let dent = 0;
-    let smearX = 0;
-    let smearY = 0;
+    const edgeFalloff = THREE.MathUtils.smoothstep(1.18 - Math.sqrt(x * x + y * y), 0, 0.34);
 
     centers.forEach((point) => {
       const dx = x - point.x;
       const dy = y - point.y;
-      const influence = Math.exp(-(dx * dx + dy * dy) / 0.24) * point.force;
-      dent += influence * 0.18;
-      smearX += dx * influence * 0.026;
-      smearY += dy * influence * 0.02;
+      const influence = Math.exp(-(dx * dx + dy * dy) / 0.22) * point.force * edgeFalloff;
+      dent += influence * 0.105;
     });
 
     position.setXYZ(
       index,
-      x + smearX,
-      y + smearY,
-      Math.max(0.86, z - dent),
+      x,
+      y,
+      Math.max(1.02, z - dent),
     );
   }
 
