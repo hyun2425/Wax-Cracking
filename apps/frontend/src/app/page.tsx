@@ -595,13 +595,13 @@ function ThreeWaxBall({
     }
     applyPressedClayDeformation(ballGeometry, crackPoints);
     const shellMaterial = new THREE.MeshPhysicalMaterial({
-      clearcoat: fractureAmount > 0 ? (palette.style === "apple" ? 0.14 : palette.style === "dubai" ? 0.35 : 0.45) : 1,
-      clearcoatRoughness: fractureAmount > 0 ? 0.2 : 0.045,
+      clearcoat: fractureAmount > 0 ? (palette.style === "apple" ? 0.03 : palette.style === "dubai" ? 0.35 : 0.45) : 1,
+      clearcoatRoughness: fractureAmount > 0 ? (palette.style === "apple" ? 0.34 : 0.2) : 0.045,
       color: fractureAmount > 0 && palette.style !== "cotton" ? palette.clay : palette.shell,
       metalness: 0.02,
       opacity: 1,
-      roughness: fractureAmount > 0 ? (palette.style === "apple" ? 0.5 : 0.32) : palette.style === "apple" ? 0.045 : palette.style === "dubai" ? 0.08 : 0.06,
-      sheen: 0.35,
+      roughness: fractureAmount > 0 ? (palette.style === "apple" ? 0.72 : 0.32) : palette.style === "apple" ? 0.045 : palette.style === "dubai" ? 0.08 : 0.06,
+      sheen: palette.style === "apple" && fractureAmount > 0 ? 0.08 : 0.35,
       transparent: false,
       transmission: 0,
       vertexColors: palette.style === "cotton",
@@ -843,7 +843,7 @@ function ThreeWaxBall({
         pressedScale,
         0.08,
       );
-      clearOuterShell.scale.lerp(pressedScale, 0.08);
+      clearOuterShell.scale.lerp(new THREE.Vector3(1, 1, 1), 0.1);
       innerClay.scale.lerp(pressedScale, 0.08);
       renderer.render(scene, camera);
       animationId = window.requestAnimationFrame(animate);
@@ -901,7 +901,7 @@ function getThreePalette(name: string) {
   }
 
   return {
-    clay: 0xece3d2,
+    clay: 0xefe7d7,
     crack: 0xffffff,
     patch: 0x8ce000,
     patchColors: [0x8fd10a, 0x9ee32d, 0x6fb800],
@@ -1061,33 +1061,33 @@ function applyPressedClayDeformation(geometry: THREE.BufferGeometry, crackPoints
 }
 
 function getBaseShellPieces(style: ThreePalette["style"]): ShellPieceSpec[] {
-  const scale = style === "dubai" ? 1.08 : style === "cotton" ? 1 : 0.96;
+  const scale = style === "dubai" ? 1.18 : style === "cotton" ? 1.12 : 1.12;
   const startId = style === "dubai" ? 1 : style === "cotton" ? 40 : 80;
   const layout = [
-    [-0.08, 0.12, 0.46, 0.36, 0.2],
-    [-0.58, 0.36, 0.4, 0.34, -0.38],
-    [0.48, 0.42, 0.42, 0.32, 0.34],
-    [-0.42, -0.34, 0.38, 0.34, 0.48],
-    [0.46, -0.32, 0.4, 0.34, -0.18],
-    [-0.02, -0.58, 0.44, 0.3, 0.06],
-    [-0.12, 0.68, 0.42, 0.3, -0.08],
-    [-0.98, 0.62, 0.36, 0.26, -0.48],
-    [-0.54, 0.96, 0.34, 0.24, 0.28],
-    [0.26, 1.02, 0.36, 0.24, -0.12],
-    [0.92, 0.68, 0.34, 0.26, 0.54],
-    [1.12, 0.12, 0.32, 0.3, -0.34],
-    [0.94, -0.48, 0.34, 0.28, 0.2],
-    [0.54, -0.98, 0.36, 0.24, -0.44],
-    [-0.2, -1.1, 0.34, 0.24, 0.36],
-    [-0.82, -0.76, 0.34, 0.26, -0.16],
-    [-1.12, -0.2, 0.32, 0.3, 0.4],
-    [-1.24, 0.22, 0.3, 0.26, -0.22],
-    [1.24, -0.18, 0.3, 0.26, 0.16],
-    [0.02, 1.28, 0.28, 0.2, 0.08],
-    [0.06, -1.3, 0.28, 0.2, -0.18],
-    [-0.94, 0.02, 0.28, 0.22, 0.12],
-    [0.76, 0.02, 0.3, 0.24, -0.08],
-    [0.06, -0.02, 0.32, 0.24, -0.34],
+    [-0.08, 0.12, 0.56, 0.44, 0.2],
+    [-0.58, 0.36, 0.5, 0.42, -0.38],
+    [0.48, 0.42, 0.5, 0.4, 0.34],
+    [-0.42, -0.34, 0.48, 0.42, 0.48],
+    [0.46, -0.32, 0.5, 0.42, -0.18],
+    [-0.02, -0.58, 0.54, 0.38, 0.06],
+    [-0.12, 0.68, 0.52, 0.38, -0.08],
+    [-0.98, 0.62, 0.44, 0.34, -0.48],
+    [-0.54, 0.96, 0.42, 0.32, 0.28],
+    [0.26, 1.02, 0.44, 0.32, -0.12],
+    [0.92, 0.68, 0.42, 0.34, 0.54],
+    [1.12, 0.12, 0.4, 0.38, -0.34],
+    [0.94, -0.48, 0.42, 0.36, 0.2],
+    [0.54, -0.98, 0.44, 0.32, -0.44],
+    [-0.2, -1.1, 0.42, 0.32, 0.36],
+    [-0.82, -0.76, 0.42, 0.34, -0.16],
+    [-1.12, -0.2, 0.4, 0.38, 0.4],
+    [-1.24, 0.22, 0.38, 0.34, -0.22],
+    [1.24, -0.18, 0.38, 0.34, 0.16],
+    [0.02, 1.28, 0.36, 0.28, 0.08],
+    [0.06, -1.3, 0.36, 0.28, -0.18],
+    [-0.94, 0.02, 0.38, 0.3, 0.12],
+    [0.76, 0.02, 0.4, 0.32, -0.08],
+    [0.06, -0.02, 0.42, 0.32, -0.34],
   ];
 
   return layout.map(([x, y, width, height, rotation], index) => ({
