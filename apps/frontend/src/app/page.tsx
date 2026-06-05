@@ -595,12 +595,12 @@ function ThreeWaxBall({
     }
     applyPressedClayDeformation(ballGeometry, crackPoints);
     const shellMaterial = new THREE.MeshPhysicalMaterial({
-      clearcoat: 1,
-      clearcoatRoughness: 0.045,
+      clearcoat: palette.style === "dubai" && fractureAmount > 0 ? 0.35 : 1,
+      clearcoatRoughness: fractureAmount > 0 ? 0.16 : 0.045,
       color: fractureAmount > 0 && palette.style !== "cotton" ? palette.clay : palette.shell,
       metalness: 0.02,
       opacity: 1,
-      roughness: palette.style === "apple" ? 0.045 : palette.style === "dubai" ? 0.08 : 0.06,
+      roughness: fractureAmount > 0 ? 0.32 : palette.style === "apple" ? 0.045 : palette.style === "dubai" ? 0.08 : 0.06,
       sheen: 0.35,
       transparent: false,
       transmission: 0,
@@ -619,17 +619,18 @@ function ThreeWaxBall({
       new THREE.SphereGeometry(1.58, 96, 64),
       new THREE.MeshPhysicalMaterial({
         clearcoat: 1,
-        clearcoatRoughness: 0.018,
-        color: 0xffffff,
+        clearcoatRoughness: 0.03,
+        color: 0xf5fdff,
         depthWrite: false,
-        opacity: fractureAmount > 0 ? 0.1 : palette.style === "dubai" ? 0.1 : palette.style === "cotton" ? 0.24 : 0.18,
-        roughness: 0.018,
-        side: THREE.DoubleSide,
+        opacity: fractureAmount > 0 ? 0.075 : palette.style === "dubai" ? 0.1 : palette.style === "cotton" ? 0.24 : 0.18,
+        roughness: 0.035,
+        side: THREE.FrontSide,
         transparent: true,
-        transmission: 0.82,
+        transmission: 0.62,
       }),
     );
-    clearOuterShell.castShadow = true;
+    clearOuterShell.castShadow = false;
+    clearOuterShell.renderOrder = 3;
     root.add(clearOuterShell);
 
     const innerClay = new THREE.Mesh(
@@ -722,16 +723,26 @@ function ThreeWaxBall({
       const makeShellMaterial = () =>
         new THREE.MeshPhysicalMaterial({
           clearcoat: 1,
-          clearcoatRoughness: 0.045,
+          clearcoatRoughness: 0.035,
           color: palette.shell,
           depthWrite: true,
           opacity: 1,
-          roughness: palette.style === "apple" ? 0.055 : 0.1,
+          polygonOffset: true,
+          polygonOffsetFactor: -1,
+          polygonOffsetUnits: -1,
+          roughness: palette.style === "apple" ? 0.045 : 0.085,
           side: THREE.DoubleSide,
           transparent: false,
           transmission: 0,
           vertexColors: false,
         });
+      const highlightMaterial = new THREE.MeshBasicMaterial({
+        color: 0xffffff,
+        opacity: palette.style === "dubai" ? 0.16 : 0.28,
+        transparent: true,
+        depthWrite: false,
+        side: THREE.DoubleSide,
+      });
 
       pieceSpecs.forEach(({ height, id, rotation, width, x, y }, index) => {
         const direction = new THREE.Vector3(x || 0.01, y || 0.01, 0).normalize();
@@ -751,6 +762,22 @@ function ThreeWaxBall({
         shellPiece.renderOrder = 2;
         shellPiece.castShadow = false;
         fractureGroup.add(shellPiece);
+
+        if (index % 3 !== 1) {
+          const glintGeometry = makeSurfacePatchGeometry({
+            centerX: x + direction.x * separation - width * 0.08,
+            centerY: y + direction.y * separation + height * 0.08,
+            height: height * gapScale * 0.22,
+            pressOffset: pressOffset - 0.004,
+            radius: 1.48,
+            rotation: rotation - 0.18,
+            seed: id + 500,
+            width: width * gapScale * 0.3,
+          });
+          const glint = new THREE.Mesh(glintGeometry, highlightMaterial);
+          glint.renderOrder = 4;
+          fractureGroup.add(glint);
+        }
       });
     }
 
@@ -799,9 +826,9 @@ function ThreeWaxBall({
       root.rotation.y = -0.24 + Math.sin(elapsed * 0.55) * 0.12;
       root.rotation.x = -0.08 + Math.sin(elapsed * 0.42) * 0.05;
       const pressedScale = new THREE.Vector3(
-        1 + pressAmount * 0.56,
-        1 - pressAmount * 1.08,
-        1 + pressAmount * 0.08,
+        1 + pressAmount * 0.32,
+        1 - pressAmount * 0.48,
+        1 + pressAmount * 0.04,
       );
       ball.scale.lerp(
         pressedScale,
@@ -886,7 +913,7 @@ function getPressCenters(crackPoints: CrackPoint[]) {
 function getPressOffsetForPiece(x: number, y: number, crackPoints: CrackPoint[]) {
   return getPressCenters(crackPoints).reduce((offset, point) => {
     const distanceSq = (x - point.x) ** 2 + (y - point.y) ** 2;
-    return offset + Math.exp(-distanceSq / 0.16) * 0.035 * point.force;
+    return offset + Math.exp(-distanceSq / 0.18) * 0.024 * point.force;
   }, 0);
 }
 
@@ -923,6 +950,20 @@ function makeSurfacePatchGeometry({
     [width * (0.08 + wobble(11)), height * (0.56 + wobble(12))],
     [-width * (0.38 + wobble(13)), height * (0.4 + wobble(14))],
   ];
+  const roundedPoints: number[][] = [];
+  localPoints.forEach(([startX, startY], index) => {
+    const [endX, endY] = localPoints[(index + 1) % localPoints.length];
+    for (let step = 0; step < 3; step += 1) {
+      const t = step / 3;
+      const x = THREE.MathUtils.lerp(startX, endX, t);
+      const y = THREE.MathUtils.lerp(startY, endY, t);
+      const bulge = Math.sin(t * Math.PI) * (0.018 + Math.abs(wobble(index + step + 18)) * 0.025);
+      const edgeLength = Math.hypot(endX - startX, endY - startY) || 1;
+      const normalX = -(endY - startY) / edgeLength;
+      const normalY = (endX - startX) / edgeLength;
+      roundedPoints.push([x + normalX * bulge, y + normalY * bulge]);
+    }
+  });
   const cos = Math.cos(rotation);
   const sin = Math.sin(rotation);
   const edgeLimit = radius * 0.84;
@@ -937,7 +978,7 @@ function makeSurfacePatchGeometry({
   vertices.push(safeCenterX, safeCenterY, centerZ);
   normals.push(safeCenterX / radius, safeCenterY / radius, centerZ / radius);
 
-  localPoints.forEach(([localX, localY]) => {
+  roundedPoints.forEach(([localX, localY]) => {
     const rotatedX = localX * cos - localY * sin;
     const rotatedY = localX * sin + localY * cos;
     const rawX = safeCenterX + rotatedX;
@@ -952,8 +993,8 @@ function makeSurfacePatchGeometry({
   });
 
   const indices: number[] = [];
-  for (let index = 1; index <= localPoints.length; index += 1) {
-    indices.push(0, index, index === localPoints.length ? 1 : index + 1);
+  for (let index = 1; index <= roundedPoints.length; index += 1) {
+    indices.push(0, index, index === roundedPoints.length ? 1 : index + 1);
   }
 
   const geometry = new THREE.BufferGeometry();
@@ -987,15 +1028,15 @@ function applyPressedClayDeformation(geometry: THREE.BufferGeometry, crackPoints
     centers.forEach((point) => {
       const dx = x - point.x;
       const dy = y - point.y;
-      const influence = Math.exp(-(dx * dx + dy * dy) / 0.22) * point.force * edgeFalloff;
-      dent += influence * 0.105;
+      const influence = Math.exp(-(dx * dx + dy * dy) / 0.26) * point.force * edgeFalloff;
+      dent += influence * 0.072;
     });
 
     position.setXYZ(
       index,
       x,
       y,
-      Math.max(1.02, z - dent),
+      Math.max(1.14, z - dent),
     );
   }
 
