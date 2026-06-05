@@ -966,7 +966,7 @@ function makeSurfacePatchGeometry({
   });
   const cos = Math.cos(rotation);
   const sin = Math.sin(rotation);
-  const edgeLimit = radius * 0.84;
+  const edgeLimit = radius * 0.92;
   const vertices: number[] = [];
   const normals: number[] = [];
   const centerRadius = Math.hypot(centerX, centerY);
@@ -1045,71 +1045,49 @@ function applyPressedClayDeformation(geometry: THREE.BufferGeometry, crackPoints
 }
 
 function getBaseShellPieces(style: ThreePalette["style"]): ShellPieceSpec[] {
-  if (style === "dubai") {
-    return [
-      { id: 1, x: -0.5, y: 0.48, width: 0.7, height: 0.58, rotation: -0.26 },
-      { id: 2, x: 0.22, y: 0.56, width: 0.68, height: 0.54, rotation: 0.12 },
-      { id: 3, x: 0.66, y: 0.04, width: 0.56, height: 0.66, rotation: 0.56 },
-      { id: 4, x: -0.68, y: -0.04, width: 0.56, height: 0.7, rotation: -0.56 },
-      { id: 5, x: -0.1, y: -0.06, width: 0.72, height: 0.62, rotation: 0.3 },
-      { id: 6, x: 0.38, y: -0.58, width: 0.6, height: 0.48, rotation: -0.22 },
-      { id: 7, x: -0.46, y: -0.6, width: 0.58, height: 0.46, rotation: 0.24 },
-      { id: 8, x: 0.86, y: 0.36, width: 0.36, height: 0.4, rotation: -0.36 },
-      { id: 9, x: 0.82, y: -0.34, width: 0.42, height: 0.46, rotation: 0.42 },
-      { id: 10, x: 0.18, y: -0.84, width: 0.48, height: 0.34, rotation: -0.08 },
-      { id: 34, x: 0.96, y: 0.02, width: 0.28, height: 0.36, rotation: 0.08 },
-      { id: 35, x: -0.86, y: 0.32, width: 0.3, height: 0.34, rotation: 0.2 },
-      { id: 36, x: 0.48, y: 0.78, width: 0.34, height: 0.3, rotation: -0.12 },
-    ];
-  }
-
-  if (style === "cotton") {
-    return [
-      { id: 11, x: -0.52, y: 0.5, width: 0.64, height: 0.5, rotation: -0.22 },
-      { id: 12, x: 0.08, y: 0.58, width: 0.64, height: 0.48, rotation: 0.12 },
-      { id: 13, x: 0.62, y: 0.22, width: 0.56, height: 0.56, rotation: 0.5 },
-      { id: 14, x: -0.68, y: -0.06, width: 0.54, height: 0.62, rotation: -0.6 },
-      { id: 15, x: -0.08, y: 0.04, width: 0.68, height: 0.6, rotation: 0.3 },
-      { id: 16, x: 0.48, y: -0.34, width: 0.56, height: 0.6, rotation: -0.3 },
-      { id: 17, x: -0.38, y: -0.58, width: 0.62, height: 0.46, rotation: 0.18 },
-      { id: 18, x: 0.22, y: -0.68, width: 0.54, height: 0.42, rotation: -0.12 },
-      { id: 19, x: 0.86, y: 0.44, width: 0.34, height: 0.38, rotation: -0.34 },
-      { id: 20, x: 0.88, y: -0.08, width: 0.36, height: 0.44, rotation: 0.38 },
-      { id: 31, x: 0.72, y: -0.62, width: 0.4, height: 0.36, rotation: -0.2 },
-      { id: 32, x: 0.98, y: 0.18, width: 0.28, height: 0.34, rotation: 0.12 },
-      { id: 33, x: -0.88, y: 0.28, width: 0.3, height: 0.34, rotation: -0.24 },
-      { id: 34, x: 0.36, y: 0.82, width: 0.36, height: 0.3, rotation: 0.1 },
-    ];
-  }
-
-  return [
-    { id: 21, x: -0.5, y: 0.54, width: 0.58, height: 0.44, rotation: -0.24 },
-    { id: 22, x: 0.02, y: 0.6, width: 0.56, height: 0.42, rotation: 0.08 },
-    { id: 23, x: 0.5, y: 0.44, width: 0.52, height: 0.48, rotation: 0.4 },
-    { id: 24, x: 0.68, y: 0.02, width: 0.42, height: 0.54, rotation: 0.78 },
-    { id: 25, x: -0.68, y: 0.02, width: 0.44, height: 0.58, rotation: -0.68 },
-    { id: 26, x: -0.2, y: 0, width: 0.58, height: 0.52, rotation: 0.28 },
-    { id: 27, x: 0.3, y: -0.16, width: 0.54, height: 0.5, rotation: -0.34 },
-    { id: 28, x: -0.48, y: -0.5, width: 0.54, height: 0.44, rotation: 0.16 },
-    { id: 29, x: 0.02, y: -0.62, width: 0.56, height: 0.42, rotation: -0.18 },
-    { id: 30, x: 0.5, y: -0.52, width: 0.48, height: 0.44, rotation: 0.28 },
-    { id: 31, x: 0.86, y: 0.34, width: 0.34, height: 0.38, rotation: -0.32 },
-    { id: 32, x: 0.86, y: -0.2, width: 0.36, height: 0.42, rotation: 0.36 },
-    { id: 33, x: 0.68, y: -0.74, width: 0.36, height: 0.32, rotation: -0.22 },
-    { id: 34, x: 0.98, y: 0.08, width: 0.28, height: 0.34, rotation: 0.14 },
-    { id: 35, x: -0.86, y: 0.32, width: 0.3, height: 0.34, rotation: -0.26 },
-    { id: 36, x: 0.34, y: 0.82, width: 0.36, height: 0.3, rotation: 0.06 },
+  const scale = style === "dubai" ? 1.05 : style === "cotton" ? 0.95 : 0.9;
+  const startId = style === "dubai" ? 1 : style === "cotton" ? 40 : 80;
+  const layout = [
+    [0, 0, 0.48, 0.42, 0.18],
+    [-0.42, 0.22, 0.46, 0.38, -0.28],
+    [0.42, 0.24, 0.46, 0.38, 0.24],
+    [-0.18, -0.34, 0.5, 0.36, 0.42],
+    [0.34, -0.36, 0.46, 0.34, -0.38],
+    [-0.56, -0.28, 0.4, 0.34, 0.14],
+    [0.62, -0.04, 0.38, 0.36, 0.62],
+    [-0.66, 0.34, 0.34, 0.32, -0.48],
+    [0.7, 0.36, 0.34, 0.32, 0.36],
+    [-0.08, 0.62, 0.42, 0.32, -0.12],
+    [-0.36, 0.72, 0.3, 0.26, 0.22],
+    [0.36, 0.72, 0.3, 0.26, -0.24],
+    [-0.78, -0.06, 0.3, 0.34, 0.34],
+    [0.82, -0.34, 0.3, 0.32, -0.18],
+    [-0.5, -0.66, 0.34, 0.28, -0.2],
+    [0.06, -0.74, 0.38, 0.28, 0.12],
+    [0.54, -0.66, 0.32, 0.28, 0.28],
+    [-0.92, 0.18, 0.24, 0.28, -0.12],
+    [0.94, 0.12, 0.24, 0.28, 0.18],
+    [0.0, 0.9, 0.26, 0.22, 0.04],
   ];
+
+  return layout.map(([x, y, width, height, rotation], index) => ({
+    height: height * scale,
+    id: startId + index,
+    rotation,
+    width: width * scale,
+    x,
+    y,
+  }));
 }
 
 function buildSubdividedShellPieces(style: ThreePalette["style"], clickCount: number, impactCenter: THREE.Vector2) {
-  const maxPieces = style === "dubai" ? 28 : style === "cotton" ? 34 : 36;
+  const maxPieces = style === "dubai" ? 34 : style === "cotton" ? 38 : 40;
   const spread = Math.min(1, Math.max(0, clickCount - 1) / 2);
   let pieces = getBaseShellPieces(style).map((piece) => ({ ...piece }));
 
   for (let step = 2; step <= clickCount && pieces.length < maxPieces; step += 1) {
     const splitCount = Math.min(style === "dubai" ? 3 : 4, maxPieces - pieces.length);
-    const centerWeight = Math.max(0, 1 - spread) * 0.16;
+    const centerWeight = Math.max(0, 1 - spread) * 0.04;
     const ordered = pieces
       .map((piece, index) => {
         const impactDistance = new THREE.Vector2(piece.x, piece.y).distanceTo(impactCenter);
