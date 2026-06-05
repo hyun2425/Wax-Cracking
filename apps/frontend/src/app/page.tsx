@@ -588,7 +588,7 @@ function ThreeWaxBall({
 
     const palette = getThreePalette(selectedWax.name);
     const fractureAmount = Math.min(1, crackPoints.length / 15);
-    const pressAmount = Math.min(0.16, crackPoints.length * 0.025);
+    const pressAmount = Math.min(0.22, crackPoints.length * 0.03);
     const ballGeometry = new THREE.SphereGeometry(1.42, 72, 48);
     if (palette.style === "cotton") {
       applyCottonMarbleColors(ballGeometry);
@@ -839,15 +839,20 @@ function ThreeWaxBall({
       root.rotation.y = -0.24 + Math.sin(elapsed * 0.55) * 0.12;
       root.rotation.x = -0.08 + Math.sin(elapsed * 0.42) * 0.05;
       const pressedScale = new THREE.Vector3(
-        1 + pressAmount * 0.42,
-        1 - pressAmount * 0.68,
+        1 + pressAmount * 0.5,
+        1 - pressAmount * 0.82,
         1 + pressAmount * 0.04,
+      );
+      const rubberScale = new THREE.Vector3(
+        1 + pressAmount * 0.16,
+        1 - pressAmount * 0.24,
+        1,
       );
       ball.scale.lerp(
         pressedScale,
         0.08,
       );
-      clearOuterShell.scale.lerp(new THREE.Vector3(1, 1, 1), 0.1);
+      clearOuterShell.scale.lerp(rubberScale, 0.08);
       innerClay.scale.lerp(pressedScale, 0.08);
       renderer.render(scene, camera);
       animationId = window.requestAnimationFrame(animate);
@@ -905,7 +910,7 @@ function getThreePalette(name: string) {
   }
 
   return {
-    clay: 0xf7f0e4,
+    clay: 0xfff6ea,
     crack: 0xffffff,
     patch: 0x8ce000,
     patchColors: [0x8fd10a, 0x9ee32d, 0x6fb800],
@@ -924,15 +929,15 @@ function makeFractureTexture(style: ThreePalette["style"], clickCount: number) {
   const progress = THREE.MathUtils.clamp((clickCount - 1) / 14, 0, 1);
 
   if (style === "cotton") {
-    context.fillStyle = "#f59fca";
+    context.fillStyle = "#f28fc4";
     context.fillRect(0, 0, size, size);
-    context.globalAlpha = 0.94;
+    context.globalAlpha = 0.98;
     [
-      ["#8fe7f8", 0.28, 0.36, 0.44],
-      ["#8fe7f8", 0.72, 0.18, 0.34],
-      ["#ffe47e", 0.5, 0.72, 0.4],
-      ["#ffe47e", 0.84, 0.48, 0.24],
-      ["#f59fca", 0.78, 0.66, 0.34],
+      ["#68daf3", 0.28, 0.36, 0.45],
+      ["#68daf3", 0.72, 0.18, 0.35],
+      ["#ffd84e", 0.5, 0.72, 0.42],
+      ["#ffd84e", 0.84, 0.48, 0.25],
+      ["#f28fc4", 0.78, 0.66, 0.35],
     ].forEach(([color, x, y, radius]) => {
       const glow = context.createRadialGradient(
         Number(x) * size,
@@ -949,7 +954,7 @@ function makeFractureTexture(style: ThreePalette["style"], clickCount: number) {
     });
     context.globalAlpha = 1;
   } else {
-    context.fillStyle = style === "dubai" ? "#c7d88a" : "#f7f0e4";
+    context.fillStyle = style === "dubai" ? "#c7d88a" : "#fff6ea";
     context.fillRect(0, 0, size, size);
   }
 
@@ -957,7 +962,7 @@ function makeFractureTexture(style: ThreePalette["style"], clickCount: number) {
     style === "dubai"
       ? ["#2f1a12", "#4a2618", "#62341f", "#7a4328"]
       : style === "cotton"
-        ? ["rgba(255,248,239,0.68)", "rgba(255,250,243,0.58)", "rgba(250,244,236,0.62)"]
+        ? ["rgba(255,248,239,0.56)", "rgba(255,243,232,0.48)", "rgba(250,236,222,0.52)"]
         : ["#7dd90e", "#8eea22", "#9af52a", "#6fc600"];
   let fragments = getTextureBaseFragments();
 
@@ -988,7 +993,7 @@ function makeFractureTexture(style: ThreePalette["style"], clickCount: number) {
     const points = 6 + (index % 3);
     const centerX = u * size;
     const centerY = v * size;
-    const coverageScale = (style === "cotton" ? 0.58 : 0.76) * (1 - progress * 0.1);
+    const coverageScale = (style === "cotton" ? 0.72 : 0.86) * (1 - progress * 0.05);
     const radiusX = width * size * coverageScale * (0.8 + random(index + 2) * 0.24);
     const radiusY = height * size * coverageScale * (0.76 + random(index + 7) * 0.22);
     const rotated = rotation + random(index + 19) * 0.28;
@@ -1000,10 +1005,10 @@ function makeFractureTexture(style: ThreePalette["style"], clickCount: number) {
       style === "dubai"
         ? "rgba(30,18,10,0.36)"
         : style === "cotton"
-          ? "rgba(104,76,68,0.34)"
+          ? "rgba(94,60,78,0.2)"
           : "rgba(80,72,58,0.18)";
-    context.shadowBlur = style === "apple" ? 8 : style === "cotton" ? 12 : 12;
-    context.shadowOffsetY = style === "cotton" ? 8 : 6;
+    context.shadowBlur = style === "apple" ? 7 : style === "cotton" ? 9 : 10;
+    context.shadowOffsetY = style === "cotton" ? 5 : 5;
     context.beginPath();
 
     for (let point = 0; point <= points; point += 1) {
@@ -1023,16 +1028,16 @@ function makeFractureTexture(style: ThreePalette["style"], clickCount: number) {
     context.fill();
     context.shadowColor = "transparent";
     context.lineJoin = "miter";
-    context.lineWidth = (style === "cotton" ? 10 : 9) + progress * 8;
+    context.lineWidth = (style === "cotton" ? 4 : 3.5) + progress * 3;
     context.strokeStyle =
       style === "dubai"
         ? "rgba(199,216,138,0.55)"
         : style === "cotton"
-          ? "rgba(247,182,210,0.64)"
-          : "rgba(247,240,228,0.68)";
+          ? "rgba(242,143,196,0.24)"
+          : "rgba(255,246,234,0.34)";
     context.stroke();
     context.shadowColor = "transparent";
-    context.globalAlpha = style === "cotton" ? 0.12 : style === "dubai" ? 0.24 : 0.26;
+    context.globalAlpha = style === "cotton" ? 0.06 : style === "dubai" ? 0.16 : 0.18;
     context.fillStyle = "rgba(255,255,255,0.72)";
     context.scale(0.58, 0.36);
     context.translate(-radiusX * 0.28, -radiusY * 0.4);
