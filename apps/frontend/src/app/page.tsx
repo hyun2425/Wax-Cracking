@@ -962,7 +962,7 @@ function makeFractureTexture(style: ThreePalette["style"], clickCount: number) {
     style === "dubai"
       ? ["#4a2618"]
       : style === "cotton"
-        ? ["rgba(255,248,239,0.26)"]
+        ? ["rgba(255,248,239,0.76)"]
         : ["#8eea22"];
   let fragments = getTextureBaseFragments();
 
@@ -971,8 +971,9 @@ function makeFractureTexture(style: ThreePalette["style"], clickCount: number) {
     return raw - Math.floor(raw);
   };
 
-  for (let step = 2; step <= Math.min(clickCount, 15); step += 1) {
-    const splitCount = step < 6 ? 2 : 3;
+  const maxFragments = Math.min(22, clickCount <= 1 ? 10 : 10 + Math.ceil(clickCount * 0.9));
+  for (let step = 2; step <= Math.min(clickCount, 15) && fragments.length < maxFragments; step += 1) {
+    const splitCount = Math.min(step < 6 ? 1 : 2, maxFragments - fragments.length);
     const selected = new Set(
       fragments
         .map((fragment, index) => ({
@@ -993,7 +994,7 @@ function makeFractureTexture(style: ThreePalette["style"], clickCount: number) {
     const points = 7 + (index % 2);
     const centerX = u * size;
     const centerY = v * size;
-    const coverageScale = (style === "cotton" ? 0.66 : 0.74) * (1 - progress * 0.02);
+    const coverageScale = (style === "cotton" ? 0.56 : 0.64) * (1 - progress * 0.04);
     const balancedWidth = THREE.MathUtils.lerp(width, height, 0.28);
     const balancedHeight = THREE.MathUtils.lerp(height, width, 0.24);
     const radiusX = balancedWidth * size * coverageScale * (0.9 + random(index + 2) * 0.12);
@@ -1009,8 +1010,8 @@ function makeFractureTexture(style: ThreePalette["style"], clickCount: number) {
         : style === "cotton"
           ? "rgba(94,60,78,0.16)"
           : "rgba(80,72,58,0.14)";
-    context.shadowBlur = style === "apple" ? 5 : style === "cotton" ? 6 : 7;
-    context.shadowOffsetY = style === "cotton" ? 3 : 4;
+    context.shadowBlur = style === "apple" ? 6 : style === "cotton" ? 7 : 8;
+    context.shadowOffsetY = style === "cotton" ? 4 : 5;
     context.beginPath();
 
     for (let point = 0; point <= points; point += 1) {
@@ -1030,16 +1031,16 @@ function makeFractureTexture(style: ThreePalette["style"], clickCount: number) {
     context.fill();
     context.shadowColor = "transparent";
     context.lineJoin = "miter";
-    context.lineWidth = (style === "cotton" ? 5 : 6) + progress * 4;
+    context.lineWidth = (style === "cotton" ? 3.2 : 3.6) + progress * 2;
     context.strokeStyle =
       style === "dubai"
         ? "rgba(199,216,138,0.55)"
         : style === "cotton"
-          ? "rgba(247,168,198,0.5)"
-          : "rgba(255,251,242,0.7)";
+          ? "rgba(255,248,239,0.34)"
+          : "rgba(255,251,242,0.48)";
     context.stroke();
     context.shadowColor = "transparent";
-    context.globalAlpha = style === "cotton" ? 0.025 : style === "dubai" ? 0.08 : 0.08;
+    context.globalAlpha = style === "cotton" ? 0.04 : style === "dubai" ? 0.07 : 0.07;
     context.fillStyle = "rgba(255,255,255,0.72)";
     context.scale(0.58, 0.36);
     context.translate(-radiusX * 0.28, -radiusY * 0.4);
@@ -1067,16 +1068,16 @@ type TextureFragment = {
 
 function getTextureBaseFragments(): TextureFragment[] {
   return [
-    [0.16, 0.2, 0.18, 0.17, -0.18],
-    [0.45, 0.18, 0.19, 0.17, 0.12],
-    [0.76, 0.24, 0.18, 0.17, 0.28],
-    [0.12, 0.5, 0.17, 0.18, -0.28],
-    [0.4, 0.48, 0.21, 0.19, 0.18],
-    [0.7, 0.48, 0.21, 0.19, -0.12],
-    [0.92, 0.56, 0.16, 0.17, 0.2],
-    [0.22, 0.76, 0.18, 0.16, 0.08],
-    [0.54, 0.8, 0.2, 0.17, -0.22],
-    [0.82, 0.76, 0.18, 0.17, 0.12],
+    [0.16, 0.22, 0.22, 0.19, -0.16],
+    [0.45, 0.18, 0.24, 0.18, 0.08],
+    [0.76, 0.24, 0.22, 0.19, 0.24],
+    [0.12, 0.5, 0.2, 0.2, -0.24],
+    [0.42, 0.48, 0.27, 0.22, 0.16],
+    [0.72, 0.48, 0.25, 0.21, -0.1],
+    [0.9, 0.58, 0.18, 0.18, 0.18],
+    [0.24, 0.76, 0.22, 0.18, 0.08],
+    [0.54, 0.8, 0.25, 0.18, -0.18],
+    [0.82, 0.76, 0.21, 0.18, 0.12],
   ].map(([u, v, width, height, rotation], index) => ({
     height,
     id: index + 1,
@@ -1089,26 +1090,26 @@ function getTextureBaseFragments(): TextureFragment[] {
 
 function splitTextureFragment(fragment: TextureFragment, step: number): TextureFragment[] {
   const splitVertical = (fragment.id + step) % 2 === 0;
-  const offset = splitVertical ? fragment.width * 0.36 : fragment.height * 0.36;
-  const rotationOffset = 0.14 + ((fragment.id + step) % 3) * 0.035;
+  const offset = splitVertical ? fragment.width * 0.31 : fragment.height * 0.31;
+  const rotationOffset = 0.12 + ((fragment.id + step) % 3) * 0.03;
 
   if (splitVertical) {
     return [
       {
         ...fragment,
-        height: fragment.height * 0.86,
+        height: fragment.height * 0.78,
         id: fragment.id * 2 + step,
         rotation: fragment.rotation - rotationOffset,
         u: THREE.MathUtils.clamp(fragment.u - offset, 0.035, 0.965),
-        width: fragment.width * 0.5,
+        width: fragment.width * 0.54,
       },
       {
         ...fragment,
-        height: fragment.height * 0.86,
+        height: fragment.height * 0.78,
         id: fragment.id * 2 + step + 1,
         rotation: fragment.rotation + rotationOffset,
         u: THREE.MathUtils.clamp(fragment.u + offset, 0.035, 0.965),
-        width: fragment.width * 0.48,
+        width: fragment.width * 0.5,
       },
     ];
   }
@@ -1116,19 +1117,19 @@ function splitTextureFragment(fragment: TextureFragment, step: number): TextureF
   return [
     {
       ...fragment,
-      height: fragment.height * 0.5,
+      height: fragment.height * 0.54,
       id: fragment.id * 2 + step,
       rotation: fragment.rotation - rotationOffset,
       v: THREE.MathUtils.clamp(fragment.v - offset, 0.055, 0.945),
-      width: fragment.width * 0.86,
+      width: fragment.width * 0.78,
     },
     {
       ...fragment,
-      height: fragment.height * 0.48,
+      height: fragment.height * 0.5,
       id: fragment.id * 2 + step + 1,
       rotation: fragment.rotation + rotationOffset,
       v: THREE.MathUtils.clamp(fragment.v + offset, 0.055, 0.945),
-      width: fragment.width * 0.86,
+      width: fragment.width * 0.78,
     },
   ];
 }
