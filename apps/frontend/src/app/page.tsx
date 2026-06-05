@@ -901,8 +901,8 @@ function getThreePalette(name: string) {
     return {
       clay: 0xf4d8c6,
       crack: 0xf4d8c6,
-      patch: 0xf7a8c6,
-      patchColors: [0xf7a8c6, 0xa8dcf3, 0xf4e6a8],
+      patch: 0xf7b6d2,
+      patchColors: [0xf7b6d2, 0xb7eef7, 0xfdeca6],
       shell: 0xffffff,
       shellOpacity: 0.96,
       style: "cotton",
@@ -910,7 +910,7 @@ function getThreePalette(name: string) {
   }
 
   return {
-    clay: 0xfffbf2,
+    clay: 0xf2ebdd,
     crack: 0xffffff,
     patch: 0x8ce000,
     patchColors: [0x8fd10a, 0x9ee32d, 0x6fb800],
@@ -929,16 +929,17 @@ function makeFractureTexture(style: ThreePalette["style"], clickCount: number) {
   const progress = THREE.MathUtils.clamp((clickCount - 1) / 14, 0, 1);
 
   if (style === "cotton") {
-    context.fillStyle = "#f7a8c6";
+    context.fillStyle = "#f7b6d2";
     context.fillRect(0, 0, size, size);
-    context.globalAlpha = 0.92;
     [
-      ["#8be7f7", 0.28, 0.36, 0.45],
-      ["#8be7f7", 0.72, 0.18, 0.35],
-      ["#ffe070", 0.5, 0.72, 0.42],
-      ["#ffe070", 0.84, 0.48, 0.25],
-      ["#f7a8c6", 0.78, 0.66, 0.35],
-    ].forEach(([color, x, y, radius]) => {
+      ["#b7eef7", 0.22, 0.26, 0.5, 0.94],
+      ["#b7eef7", 0.73, 0.22, 0.44, 0.72],
+      ["#fdeca6", 0.48, 0.72, 0.45, 0.88],
+      ["#fdeca6", 0.88, 0.56, 0.28, 0.62],
+      ["#f7b6d2", 0.72, 0.72, 0.42, 0.78],
+      ["#f7b6d2", 0.16, 0.7, 0.34, 0.58],
+    ].forEach(([color, x, y, radius, alpha]) => {
+      context.globalAlpha = Number(alpha);
       const glow = context.createRadialGradient(
         Number(x) * size,
         Number(y) * size,
@@ -962,7 +963,7 @@ function makeFractureTexture(style: ThreePalette["style"], clickCount: number) {
     style === "dubai"
       ? ["#4a2618"]
       : style === "cotton"
-        ? ["rgba(255,248,239,0.76)"]
+        ? ["rgba(255,248,239,0.9)"]
         : ["#8eea22"];
   let fragments = getTextureBaseFragments();
 
@@ -971,9 +972,23 @@ function makeFractureTexture(style: ThreePalette["style"], clickCount: number) {
     return raw - Math.floor(raw);
   };
 
-  const maxFragments = Math.min(22, clickCount <= 1 ? 10 : 10 + Math.ceil(clickCount * 0.9));
+  const maxFragments =
+    style === "cotton"
+      ? Math.min(38, clickCount <= 1 ? 10 : 9 + Math.ceil(clickCount * 2.4))
+      : Math.min(32, clickCount <= 1 ? 10 : 9 + Math.ceil(clickCount * 1.65));
   for (let step = 2; step <= Math.min(clickCount, 15) && fragments.length < maxFragments; step += 1) {
-    const splitCount = Math.min(step < 6 ? 1 : 2, maxFragments - fragments.length);
+    const splitCount = Math.min(
+      style === "cotton"
+        ? step < 4
+          ? 2
+          : step < 8
+            ? 3
+            : 4
+        : step < 5
+          ? 1
+          : 2,
+      maxFragments - fragments.length,
+    );
     const selected = new Set(
       fragments
         .map((fragment, index) => ({
@@ -994,7 +1009,7 @@ function makeFractureTexture(style: ThreePalette["style"], clickCount: number) {
     const points = 7 + (index % 2);
     const centerX = u * size;
     const centerY = v * size;
-    const coverageScale = (style === "cotton" ? 0.56 : 0.64) * (1 - progress * 0.04);
+    const coverageScale = (style === "cotton" ? 0.78 : 0.69) * (1 - progress * 0.035);
     const balancedWidth = THREE.MathUtils.lerp(width, height, 0.28);
     const balancedHeight = THREE.MathUtils.lerp(height, width, 0.24);
     const radiusX = balancedWidth * size * coverageScale * (0.9 + random(index + 2) * 0.12);
@@ -1008,7 +1023,7 @@ function makeFractureTexture(style: ThreePalette["style"], clickCount: number) {
       style === "dubai"
         ? "rgba(30,18,10,0.24)"
         : style === "cotton"
-          ? "rgba(94,60,78,0.16)"
+          ? "rgba(130,94,62,0.18)"
           : "rgba(80,72,58,0.14)";
     context.shadowBlur = style === "apple" ? 6 : style === "cotton" ? 7 : 8;
     context.shadowOffsetY = style === "cotton" ? 4 : 5;
@@ -1031,12 +1046,12 @@ function makeFractureTexture(style: ThreePalette["style"], clickCount: number) {
     context.fill();
     context.shadowColor = "transparent";
     context.lineJoin = "miter";
-    context.lineWidth = (style === "cotton" ? 3.2 : 3.6) + progress * 2;
+    context.lineWidth = (style === "cotton" ? 3.6 : 3.4) + progress * 1.8;
     context.strokeStyle =
       style === "dubai"
         ? "rgba(199,216,138,0.55)"
         : style === "cotton"
-          ? "rgba(255,248,239,0.34)"
+          ? "rgba(184,146,98,0.24)"
           : "rgba(255,251,242,0.48)";
     context.stroke();
     context.shadowColor = "transparent";
@@ -1409,9 +1424,9 @@ function splitShellPiece(piece: ShellPieceSpec, step: number): ShellPieceSpec[] 
 function applyCottonMarbleColors(geometry: THREE.BufferGeometry) {
   const position = geometry.getAttribute("position");
   const colors: number[] = [];
-  const pink = new THREE.Color(0xf7a8c6);
-  const sky = new THREE.Color(0xa8dcf3);
-  const cream = new THREE.Color(0xf4e6a8);
+  const pink = new THREE.Color(0xf7b6d2);
+  const sky = new THREE.Color(0xb7eef7);
+  const cream = new THREE.Color(0xfdeca6);
   const temp = new THREE.Color();
 
   for (let index = 0; index < position.count; index += 1) {
