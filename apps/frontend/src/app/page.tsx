@@ -735,13 +735,20 @@ function ThreeWaxBall({
 
       pieceSpecs.forEach(({ height, id, rotation, width, x, y }, index) => {
         const direction = new THREE.Vector3(x || 0.01, y || 0.01, 0).normalize();
-        const separation = fractureAmount * (0.003 + Math.min(index, 18) * 0.00016);
+        const separation = fractureAmount * (0.0018 + Math.min(index, 18) * 0.00008);
         const pressOffset = getPressOffsetForPiece(x, y, crackPoints);
-        const surfaceZ = getFrontSurfaceZ(x, y, 1.48);
-        const shellGeometry = makeBrokenPieceGeometry(width * gapScale, height * gapScale, id);
+        const shellGeometry = makeSurfacePatchGeometry({
+          centerX: x + direction.x * separation,
+          centerY: y + direction.y * separation,
+          height: height * gapScale,
+          pressOffset,
+          radius: 1.48,
+          rotation,
+          seed: id,
+          width: width * gapScale,
+        });
         const shellPiece = new THREE.Mesh(shellGeometry, makeShellMaterial());
-        shellPiece.position.set(x + direction.x * separation, y + direction.y * separation, surfaceZ + 0.012 - pressOffset);
-        shellPiece.rotation.set(fractureAmount * 0.004 * Math.sign(y || 1), fractureAmount * -0.003 * Math.sign(x || 1), rotation + fractureAmount * 0.002 * Math.sin(id));
+        shellPiece.renderOrder = 2;
         shellPiece.castShadow = false;
         fractureGroup.add(shellPiece);
       });
@@ -792,9 +799,9 @@ function ThreeWaxBall({
       root.rotation.y = -0.24 + Math.sin(elapsed * 0.55) * 0.12;
       root.rotation.x = -0.08 + Math.sin(elapsed * 0.42) * 0.05;
       const pressedScale = new THREE.Vector3(
-        1 + pressAmount * 0.42,
-        1 - pressAmount,
-        1 + pressAmount * 0.18,
+        1 + pressAmount * 0.56,
+        1 - pressAmount * 1.08,
+        1 + pressAmount * 0.08,
       );
       ball.scale.lerp(
         pressedScale,
@@ -885,6 +892,76 @@ function getPressOffsetForPiece(x: number, y: number, crackPoints: CrackPoint[])
 
 function getFrontSurfaceZ(x: number, y: number, radius: number) {
   return Math.sqrt(Math.max(0.08, radius * radius - x * x - y * y));
+}
+
+function makeSurfacePatchGeometry({
+  centerX,
+  centerY,
+  height,
+  pressOffset,
+  radius,
+  rotation,
+  seed,
+  width,
+}: {
+  centerX: number;
+  centerY: number;
+  height: number;
+  pressOffset: number;
+  radius: number;
+  rotation: number;
+  seed: number;
+  width: number;
+}) {
+  const wobble = (value: number) => Math.sin(seed * 9.13 + value * 4.71) * 0.08;
+  const localPoints = [
+    [-width * (0.48 + wobble(1)), -height * (0.34 + wobble(2))],
+    [-width * (0.16 + wobble(3)), -height * (0.55 + wobble(4))],
+    [width * (0.18 + wobble(5)), -height * (0.46 + wobble(6))],
+    [width * (0.5 + wobble(7)), -height * (0.18 + wobble(8))],
+    [width * (0.44 + wobble(9)), height * (0.36 + wobble(10))],
+    [width * (0.08 + wobble(11)), height * (0.56 + wobble(12))],
+    [-width * (0.38 + wobble(13)), height * (0.4 + wobble(14))],
+  ];
+  const cos = Math.cos(rotation);
+  const sin = Math.sin(rotation);
+  const edgeLimit = radius * 0.84;
+  const vertices: number[] = [];
+  const normals: number[] = [];
+  const centerRadius = Math.hypot(centerX, centerY);
+  const safeCenterScale = centerRadius > edgeLimit ? edgeLimit / centerRadius : 1;
+  const safeCenterX = centerX * safeCenterScale;
+  const safeCenterY = centerY * safeCenterScale;
+  const centerZ = getFrontSurfaceZ(safeCenterX, safeCenterY, radius) + 0.018 - pressOffset;
+
+  vertices.push(safeCenterX, safeCenterY, centerZ);
+  normals.push(safeCenterX / radius, safeCenterY / radius, centerZ / radius);
+
+  localPoints.forEach(([localX, localY]) => {
+    const rotatedX = localX * cos - localY * sin;
+    const rotatedY = localX * sin + localY * cos;
+    const rawX = safeCenterX + rotatedX;
+    const rawY = safeCenterY + rotatedY;
+    const distance = Math.hypot(rawX, rawY);
+    const scale = distance > edgeLimit ? edgeLimit / distance : 1;
+    const x = rawX * scale;
+    const y = rawY * scale;
+    const z = getFrontSurfaceZ(x, y, radius) + 0.018 - pressOffset;
+    vertices.push(x, y, z);
+    normals.push(x / radius, y / radius, z / radius);
+  });
+
+  const indices: number[] = [];
+  for (let index = 1; index <= localPoints.length; index += 1) {
+    indices.push(0, index, index === localPoints.length ? 1 : index + 1);
+  }
+
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3));
+  geometry.setAttribute("normal", new THREE.Float32BufferAttribute(normals, 3));
+  geometry.setIndex(indices);
+  geometry.computeVertexNormals();
+  return geometry;
 }
 
 function applyPressedClayDeformation(geometry: THREE.BufferGeometry, crackPoints: CrackPoint[]) {
@@ -1062,22 +1139,6 @@ function splitShellPiece(piece: ShellPieceSpec, step: number): ShellPieceSpec[] 
       y: piece.y + offset * 0.9,
     },
   ];
-}
-
-function makeBrokenPieceGeometry(width: number, height: number, seed: number) {
-  const shape = new THREE.Shape();
-  const wobble = (value: number) => Math.sin(seed * 9.13 + value * 4.71) * 0.08;
-
-  shape.moveTo(-width * (0.48 + wobble(1)), -height * (0.34 + wobble(2)));
-  shape.lineTo(-width * (0.16 + wobble(3)), -height * (0.55 + wobble(4)));
-  shape.lineTo(width * (0.18 + wobble(5)), -height * (0.46 + wobble(6)));
-  shape.lineTo(width * (0.5 + wobble(7)), -height * (0.18 + wobble(8)));
-  shape.lineTo(width * (0.44 + wobble(9)), height * (0.36 + wobble(10)));
-  shape.lineTo(width * (0.08 + wobble(11)), height * (0.56 + wobble(12)));
-  shape.lineTo(-width * (0.38 + wobble(13)), height * (0.4 + wobble(14)));
-  shape.closePath();
-
-  return new THREE.ShapeGeometry(shape);
 }
 
 function applyCottonMarbleColors(geometry: THREE.BufferGeometry) {
