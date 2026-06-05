@@ -924,22 +924,31 @@ function makeFractureTexture(style: ThreePalette["style"], clickCount: number) {
   const progress = THREE.MathUtils.clamp((clickCount - 1) / 14, 0, 1);
 
   if (style === "cotton") {
-    const gradient = context.createLinearGradient(0, 0, size, size);
-    gradient.addColorStop(0, "#b7eef7");
-    gradient.addColorStop(0.36, "#fdeca6");
-    gradient.addColorStop(1, "#f7b6d2");
-    context.fillStyle = gradient;
+    context.fillStyle = "#f7b6d2";
     context.fillRect(0, 0, size, size);
-    context.globalAlpha = 0.42;
-    [["#f7b6d2", 0.18, 0.28], ["#b7eef7", 0.7, 0.2], ["#fdeca6", 0.42, 0.72]].forEach(
-      ([color, x, y]) => {
-        const glow = context.createRadialGradient(Number(x) * size, Number(y) * size, 0, Number(x) * size, Number(y) * size, size * 0.42);
-        glow.addColorStop(0, String(color));
-        glow.addColorStop(1, "rgba(255,255,255,0)");
-        context.fillStyle = glow;
-        context.fillRect(0, 0, size, size);
-      },
-    );
+    context.globalAlpha = 0.86;
+    [
+      ["#b7eef7", 0.28, 0.36, 0.46],
+      ["#b7eef7", 0.72, 0.18, 0.34],
+      ["#fdeca6", 0.56, 0.7, 0.34],
+      ["#f7b6d2", 0.78, 0.66, 0.36],
+    ].forEach(([color, x, y, radius]) => {
+      const glow = context.createRadialGradient(
+        Number(x) * size,
+        Number(y) * size,
+        0,
+        Number(x) * size,
+        Number(y) * size,
+        Number(radius) * size,
+      );
+      glow.addColorStop(0, String(color));
+      glow.addColorStop(1, "rgba(255,255,255,0)");
+      context.fillStyle = glow;
+      context.fillRect(0, 0, size, size);
+    });
+    context.globalAlpha = 0.24;
+    context.fillStyle = "#fff8ef";
+    context.fillRect(0, 0, size, size);
     context.globalAlpha = 1;
   } else {
     context.fillStyle = style === "dubai" ? "#c7d88a" : "#efe7d7";
@@ -950,7 +959,7 @@ function makeFractureTexture(style: ThreePalette["style"], clickCount: number) {
     style === "dubai"
       ? ["#2f1a12", "#4a2618", "#62341f", "#7a4328"]
       : style === "cotton"
-        ? ["rgba(255,248,239,0.76)", "rgba(255,252,246,0.66)", "rgba(250,244,236,0.7)"]
+        ? ["rgba(255,248,239,0.86)", "rgba(255,250,243,0.78)", "rgba(250,244,236,0.82)"]
         : ["#7dd90e", "#8eea22", "#9af52a", "#6fc600"];
   let fragments = getTextureBaseFragments();
 
@@ -981,7 +990,7 @@ function makeFractureTexture(style: ThreePalette["style"], clickCount: number) {
     const points = 6 + (index % 3);
     const centerX = u * size;
     const centerY = v * size;
-    const coverageScale = (style === "cotton" ? 0.62 : 0.88) * (1 - progress * 0.12);
+    const coverageScale = (style === "cotton" ? 0.5 : 0.78) * (1 - progress * 0.16);
     const radiusX = width * size * coverageScale * (0.8 + random(index + 2) * 0.24);
     const radiusY = height * size * coverageScale * (0.76 + random(index + 7) * 0.22);
     const rotated = rotation + random(index + 19) * 0.28;
@@ -993,10 +1002,10 @@ function makeFractureTexture(style: ThreePalette["style"], clickCount: number) {
       style === "dubai"
         ? "rgba(30,18,10,0.36)"
         : style === "cotton"
-          ? "rgba(126,94,82,0.26)"
+          ? "rgba(104,76,68,0.34)"
           : "rgba(80,72,58,0.18)";
-    context.shadowBlur = style === "apple" ? 8 : style === "cotton" ? 10 : 12;
-    context.shadowOffsetY = style === "cotton" ? 7 : 6;
+    context.shadowBlur = style === "apple" ? 8 : style === "cotton" ? 12 : 12;
+    context.shadowOffsetY = style === "cotton" ? 8 : 6;
     context.beginPath();
 
     for (let point = 0; point <= points; point += 1) {
@@ -1016,12 +1025,12 @@ function makeFractureTexture(style: ThreePalette["style"], clickCount: number) {
     context.fill();
     context.shadowColor = "transparent";
     context.lineJoin = "miter";
-    context.lineWidth = (style === "cotton" ? 8 : 7) + progress * 8;
+    context.lineWidth = (style === "cotton" ? 12 : 11) + progress * 10;
     context.strokeStyle =
       style === "dubai"
         ? "rgba(199,216,138,0.55)"
         : style === "cotton"
-          ? "rgba(253,236,166,0.62)"
+          ? "rgba(247,182,210,0.64)"
           : "rgba(239,231,215,0.5)";
     context.stroke();
     context.shadowColor = "transparent";
