@@ -929,15 +929,15 @@ function makeFractureTexture(style: ThreePalette["style"], clickCount: number) {
   const progress = THREE.MathUtils.clamp((clickCount - 1) / 14, 0, 1);
 
   if (style === "cotton") {
-    context.fillStyle = "#f7b6d2";
+    context.fillStyle = "#f59ac4";
     context.fillRect(0, 0, size, size);
     [
-      ["#b7eef7", 0.22, 0.26, 0.5, 0.94],
-      ["#b7eef7", 0.73, 0.22, 0.44, 0.72],
-      ["#fdeca6", 0.48, 0.72, 0.45, 0.88],
-      ["#fdeca6", 0.88, 0.56, 0.28, 0.62],
-      ["#f7b6d2", 0.72, 0.72, 0.42, 0.78],
-      ["#f7b6d2", 0.16, 0.7, 0.34, 0.58],
+      ["#8fe7f5", 0.22, 0.26, 0.5, 0.96],
+      ["#8fe7f5", 0.73, 0.22, 0.44, 0.78],
+      ["#ffd86f", 0.48, 0.72, 0.45, 0.88],
+      ["#ffd86f", 0.88, 0.56, 0.28, 0.66],
+      ["#f59ac4", 0.72, 0.72, 0.42, 0.82],
+      ["#f59ac4", 0.16, 0.7, 0.34, 0.64],
     ].forEach(([color, x, y, radius, alpha]) => {
       context.globalAlpha = Number(alpha);
       const glow = context.createRadialGradient(
@@ -963,7 +963,7 @@ function makeFractureTexture(style: ThreePalette["style"], clickCount: number) {
     style === "dubai"
       ? ["#4a2618"]
       : style === "cotton"
-        ? ["rgba(255,248,239,0.9)"]
+        ? ["rgba(255,248,239,0.8)"]
         : ["#8eea22"];
   let fragments = getTextureBaseFragments();
 
@@ -974,8 +974,8 @@ function makeFractureTexture(style: ThreePalette["style"], clickCount: number) {
 
   const maxFragments =
     style === "cotton"
-      ? Math.min(38, clickCount <= 1 ? 10 : 9 + Math.ceil(clickCount * 2.4))
-      : Math.min(32, clickCount <= 1 ? 10 : 9 + Math.ceil(clickCount * 1.65));
+      ? Math.min(42, clickCount <= 1 ? 11 : 10 + Math.ceil(clickCount * 2.55))
+      : Math.min(36, clickCount <= 1 ? 11 : 10 + Math.ceil(clickCount * 1.9));
   for (let step = 2; step <= Math.min(clickCount, 15) && fragments.length < maxFragments; step += 1) {
     const splitCount = Math.min(
       style === "cotton"
@@ -1006,10 +1006,10 @@ function makeFractureTexture(style: ThreePalette["style"], clickCount: number) {
   }
 
   fragments.forEach(({ height, rotation, u, v, width }, index) => {
-    const points = 7 + (index % 2);
+    const points = 5 + Math.floor(random(index * 11 + 5) * 5);
     const centerX = u * size;
     const centerY = v * size;
-    const coverageScale = (style === "cotton" ? 0.78 : 0.69) * (1 - progress * 0.035);
+    const coverageScale = (style === "cotton" ? 0.75 : 0.75) * (1 - progress * 0.02);
     const balancedWidth = THREE.MathUtils.lerp(width, height, 0.28);
     const balancedHeight = THREE.MathUtils.lerp(height, width, 0.24);
     const radiusX = balancedWidth * size * coverageScale * (0.9 + random(index + 2) * 0.12);
@@ -1029,11 +1029,17 @@ function makeFractureTexture(style: ThreePalette["style"], clickCount: number) {
     context.shadowOffsetY = style === "cotton" ? 4 : 5;
     context.beginPath();
 
+    let angle = random(index * 29 + 4) * 0.28;
+
     for (let point = 0; point <= points; point += 1) {
-      const angle = (point / points) * Math.PI * 2;
-      const wobble = 0.9 + random(index * 17 + point * 3) * 0.18;
+      if (point > 0) {
+        angle +=
+          (Math.PI * 2) / points *
+          (0.72 + random(index * 31 + point * 7) * 0.52);
+      }
+      const wobble = 0.78 + random(index * 17 + point * 3) * 0.36;
       const x = Math.cos(angle) * radiusX * wobble;
-      const y = Math.sin(angle) * radiusY * (0.9 + random(index * 23 + point) * 0.14);
+      const y = Math.sin(angle) * radiusY * (0.78 + random(index * 23 + point) * 0.34);
       if (point === 0) {
         context.moveTo(x, y);
       } else {
@@ -1046,7 +1052,7 @@ function makeFractureTexture(style: ThreePalette["style"], clickCount: number) {
     context.fill();
     context.shadowColor = "transparent";
     context.lineJoin = "miter";
-    context.lineWidth = (style === "cotton" ? 3.6 : 3.4) + progress * 1.8;
+    context.lineWidth = (style === "cotton" ? 3.2 : 2.9) + progress * 1.4;
     context.strokeStyle =
       style === "dubai"
         ? "rgba(199,216,138,0.55)"
@@ -1055,7 +1061,7 @@ function makeFractureTexture(style: ThreePalette["style"], clickCount: number) {
           : "rgba(255,251,242,0.48)";
     context.stroke();
     context.shadowColor = "transparent";
-    context.globalAlpha = style === "cotton" ? 0.04 : style === "dubai" ? 0.07 : 0.07;
+    context.globalAlpha = style === "cotton" ? 0.035 : style === "dubai" ? 0.06 : 0.055;
     context.fillStyle = "rgba(255,255,255,0.72)";
     context.scale(0.58, 0.36);
     context.translate(-radiusX * 0.28, -radiusY * 0.4);
