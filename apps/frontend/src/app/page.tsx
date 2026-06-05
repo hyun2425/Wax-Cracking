@@ -719,7 +719,7 @@ function ThreeWaxBall({
           )
         : new THREE.Vector2(0, 0);
       const pieceSpecs = buildSubdividedShellPieces(palette.style, crackPoints.length, impactCenter);
-      const gapScale = 1 - Math.min(0.2, Math.max(0, crackPoints.length - 1) * 0.018);
+      const gapScale = 1 - Math.min(0.22, Math.max(0, crackPoints.length - 1) * 0.02);
       const makeShellMaterial = () =>
         new THREE.MeshPhysicalMaterial({
           clearcoat: 1,
@@ -763,7 +763,7 @@ function ThreeWaxBall({
         shellPiece.castShadow = false;
         fractureGroup.add(shellPiece);
 
-        if (index % 3 !== 1) {
+        if (index % 4 === 0) {
           const glintGeometry = makeSurfacePatchGeometry({
             centerX: x + direction.x * separation - width * 0.08,
             centerY: y + direction.y * separation + height * 0.08,
@@ -940,16 +940,20 @@ function makeSurfacePatchGeometry({
   seed: number;
   width: number;
 }) {
-  const wobble = (value: number) => Math.sin(seed * 9.13 + value * 4.71) * 0.08;
-  const localPoints = [
-    [-width * (0.48 + wobble(1)), -height * (0.34 + wobble(2))],
-    [-width * (0.16 + wobble(3)), -height * (0.55 + wobble(4))],
-    [width * (0.18 + wobble(5)), -height * (0.46 + wobble(6))],
-    [width * (0.5 + wobble(7)), -height * (0.18 + wobble(8))],
-    [width * (0.44 + wobble(9)), height * (0.36 + wobble(10))],
-    [width * (0.08 + wobble(11)), height * (0.56 + wobble(12))],
-    [-width * (0.38 + wobble(13)), height * (0.4 + wobble(14))],
-  ];
+  const random = (value: number) => {
+    const raw = Math.sin(seed * 37.17 + value * 19.91) * 43758.5453;
+    return raw - Math.floor(raw);
+  };
+  const pointCount = 5 + (seed % 4);
+  const localPoints = Array.from({ length: pointCount }, (_, index) => {
+    const angle =
+      (Math.PI * 2 * index) / pointCount +
+      (random(index + 1) - 0.5) * 0.34;
+    const radiusX = width * (0.38 + random(index + 11) * 0.22);
+    const radiusY = height * (0.34 + random(index + 21) * 0.24);
+    return [Math.cos(angle) * radiusX, Math.sin(angle) * radiusY];
+  });
+  const wobble = (value: number) => (random(value) - 0.5) * 0.08;
   const roundedPoints: number[][] = [];
   localPoints.forEach(([startX, startY], index) => {
     const [endX, endY] = localPoints[(index + 1) % localPoints.length];
@@ -1045,29 +1049,17 @@ function applyPressedClayDeformation(geometry: THREE.BufferGeometry, crackPoints
 }
 
 function getBaseShellPieces(style: ThreePalette["style"]): ShellPieceSpec[] {
-  const scale = style === "dubai" ? 1.05 : style === "cotton" ? 0.95 : 0.9;
+  const scale = style === "dubai" ? 1.08 : style === "cotton" ? 1 : 0.96;
   const startId = style === "dubai" ? 1 : style === "cotton" ? 40 : 80;
   const layout = [
-    [0, 0, 0.48, 0.42, 0.18],
-    [-0.42, 0.22, 0.46, 0.38, -0.28],
-    [0.42, 0.24, 0.46, 0.38, 0.24],
-    [-0.18, -0.34, 0.5, 0.36, 0.42],
-    [0.34, -0.36, 0.46, 0.34, -0.38],
-    [-0.56, -0.28, 0.4, 0.34, 0.14],
-    [0.62, -0.04, 0.38, 0.36, 0.62],
-    [-0.66, 0.34, 0.34, 0.32, -0.48],
-    [0.7, 0.36, 0.34, 0.32, 0.36],
-    [-0.08, 0.62, 0.42, 0.32, -0.12],
-    [-0.36, 0.72, 0.3, 0.26, 0.22],
-    [0.36, 0.72, 0.3, 0.26, -0.24],
-    [-0.78, -0.06, 0.3, 0.34, 0.34],
-    [0.82, -0.34, 0.3, 0.32, -0.18],
-    [-0.5, -0.66, 0.34, 0.28, -0.2],
-    [0.06, -0.74, 0.38, 0.28, 0.12],
-    [0.54, -0.66, 0.32, 0.28, 0.28],
-    [-0.92, 0.18, 0.24, 0.28, -0.12],
-    [0.94, 0.12, 0.24, 0.28, 0.18],
-    [0.0, 0.9, 0.26, 0.22, 0.04],
+    [-0.54, 0.42, 0.66, 0.54, -0.32],
+    [0.2, 0.56, 0.72, 0.48, 0.18],
+    [0.76, 0.08, 0.54, 0.56, 0.58],
+    [-0.76, -0.04, 0.56, 0.62, -0.54],
+    [-0.12, -0.08, 0.78, 0.66, 0.34],
+    [0.46, -0.56, 0.62, 0.46, -0.22],
+    [-0.44, -0.68, 0.58, 0.42, 0.16],
+    [0.02, 0.92, 0.42, 0.3, -0.06],
   ];
 
   return layout.map(([x, y, width, height, rotation], index) => ({
@@ -1081,17 +1073,18 @@ function getBaseShellPieces(style: ThreePalette["style"]): ShellPieceSpec[] {
 }
 
 function buildSubdividedShellPieces(style: ThreePalette["style"], clickCount: number, impactCenter: THREE.Vector2) {
-  const maxPieces = style === "dubai" ? 34 : style === "cotton" ? 38 : 40;
+  const maxPieces = style === "dubai" ? 24 : style === "cotton" ? 28 : 30;
   const spread = Math.min(1, Math.max(0, clickCount - 1) / 2);
   let pieces = getBaseShellPieces(style).map((piece) => ({ ...piece }));
 
   for (let step = 2; step <= clickCount && pieces.length < maxPieces; step += 1) {
-    const splitCount = Math.min(style === "dubai" ? 3 : 4, maxPieces - pieces.length);
-    const centerWeight = Math.max(0, 1 - spread) * 0.04;
+    const splitCount = Math.min(style === "dubai" ? 2 : 3, maxPieces - pieces.length);
+    const centerWeight = Math.max(0, 1 - spread) * 0.03;
     const ordered = pieces
       .map((piece, index) => {
         const impactDistance = new THREE.Vector2(piece.x, piece.y).distanceTo(impactCenter);
-        const wholeBallOrder = Math.abs(Math.sin(piece.id * 4.81 + step * 1.73)) + index * 0.004;
+        const edgeBonus = Math.min(1, Math.hypot(piece.x, piece.y));
+        const wholeBallOrder = Math.abs(Math.sin(piece.id * 4.81 + step * 1.73)) - edgeBonus * 0.18 + index * 0.004;
         return {
           piece,
           score: impactDistance * centerWeight + wholeBallOrder * (1 - centerWeight),
