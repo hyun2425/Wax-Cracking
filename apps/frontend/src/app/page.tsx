@@ -960,10 +960,10 @@ function makeFractureTexture(style: ThreePalette["style"], clickCount: number) {
 
   const waxColors =
     style === "dubai"
-      ? ["#2f1a12", "#4a2618", "#62341f", "#7a4328"]
+      ? ["#4a2618"]
       : style === "cotton"
-        ? ["rgba(255,248,239,0.42)", "rgba(255,243,232,0.36)", "rgba(250,236,222,0.38)"]
-        : ["#7dd90e", "#8eea22", "#9af52a", "#6fc600"];
+        ? ["rgba(255,248,239,0.26)"]
+        : ["#8eea22"];
   let fragments = getTextureBaseFragments();
 
   const random = (seed: number) => {
@@ -993,7 +993,7 @@ function makeFractureTexture(style: ThreePalette["style"], clickCount: number) {
     const points = 6 + (index % 3);
     const centerX = u * size;
     const centerY = v * size;
-    const coverageScale = (style === "cotton" ? 0.82 : 0.94) * (1 - progress * 0.03);
+    const coverageScale = (style === "cotton" ? 0.66 : 0.74) * (1 - progress * 0.02);
     const radiusX = width * size * coverageScale * (0.8 + random(index + 2) * 0.24);
     const radiusY = height * size * coverageScale * (0.76 + random(index + 7) * 0.22);
     const rotated = rotation + random(index + 19) * 0.28;
@@ -1028,13 +1028,13 @@ function makeFractureTexture(style: ThreePalette["style"], clickCount: number) {
     context.fill();
     context.shadowColor = "transparent";
     context.lineJoin = "miter";
-    context.lineWidth = (style === "cotton" ? 1.6 : 1.4) + progress * 1.2;
+    context.lineWidth = (style === "cotton" ? 5 : 6) + progress * 4;
     context.strokeStyle =
       style === "dubai"
         ? "rgba(199,216,138,0.55)"
         : style === "cotton"
-          ? "rgba(255,248,239,0.32)"
-          : "rgba(255,251,242,0.28)";
+          ? "rgba(247,168,198,0.5)"
+          : "rgba(255,251,242,0.7)";
     context.stroke();
     context.shadowColor = "transparent";
     context.globalAlpha = style === "cotton" ? 0.025 : style === "dubai" ? 0.08 : 0.08;
@@ -1065,16 +1065,16 @@ type TextureFragment = {
 
 function getTextureBaseFragments(): TextureFragment[] {
   return [
-    [0.18, 0.2, 0.24, 0.2, -0.26],
-    [0.48, 0.18, 0.25, 0.18, 0.16],
-    [0.78, 0.24, 0.24, 0.2, 0.44],
-    [0.13, 0.48, 0.22, 0.22, -0.5],
-    [0.4, 0.46, 0.29, 0.22, 0.26],
-    [0.7, 0.48, 0.28, 0.22, -0.18],
-    [0.9, 0.56, 0.21, 0.2, 0.34],
-    [0.24, 0.75, 0.24, 0.19, 0.12],
-    [0.54, 0.78, 0.28, 0.19, -0.34],
-    [0.8, 0.76, 0.23, 0.2, 0.18],
+    [0.16, 0.2, 0.2, 0.18, -0.26],
+    [0.45, 0.18, 0.21, 0.16, 0.16],
+    [0.76, 0.24, 0.2, 0.18, 0.44],
+    [0.12, 0.5, 0.19, 0.2, -0.5],
+    [0.4, 0.48, 0.23, 0.19, 0.26],
+    [0.7, 0.48, 0.23, 0.19, -0.18],
+    [0.92, 0.56, 0.17, 0.18, 0.34],
+    [0.22, 0.76, 0.2, 0.16, 0.12],
+    [0.54, 0.8, 0.22, 0.16, -0.34],
+    [0.82, 0.76, 0.19, 0.17, 0.18],
   ].map(([u, v, width, height, rotation], index) => ({
     height,
     id: index + 1,
@@ -1087,7 +1087,7 @@ function getTextureBaseFragments(): TextureFragment[] {
 
 function splitTextureFragment(fragment: TextureFragment, step: number): TextureFragment[] {
   const splitVertical = (fragment.id + step) % 2 === 0;
-  const offset = splitVertical ? fragment.width * 0.26 : fragment.height * 0.26;
+  const offset = splitVertical ? fragment.width * 0.36 : fragment.height * 0.36;
   const rotationOffset = 0.14 + ((fragment.id + step) % 3) * 0.035;
 
   if (splitVertical) {
@@ -1097,14 +1097,14 @@ function splitTextureFragment(fragment: TextureFragment, step: number): TextureF
         id: fragment.id * 2 + step,
         rotation: fragment.rotation - rotationOffset,
         u: THREE.MathUtils.clamp(fragment.u - offset, 0.035, 0.965),
-        width: fragment.width * 0.58,
+        width: fragment.width * 0.44,
       },
       {
         ...fragment,
         id: fragment.id * 2 + step + 1,
         rotation: fragment.rotation + rotationOffset,
         u: THREE.MathUtils.clamp(fragment.u + offset, 0.035, 0.965),
-        width: fragment.width * 0.54,
+        width: fragment.width * 0.42,
       },
     ];
   }
@@ -1112,14 +1112,14 @@ function splitTextureFragment(fragment: TextureFragment, step: number): TextureF
   return [
     {
       ...fragment,
-      height: fragment.height * 0.58,
+      height: fragment.height * 0.44,
       id: fragment.id * 2 + step,
       rotation: fragment.rotation - rotationOffset,
       v: THREE.MathUtils.clamp(fragment.v - offset, 0.055, 0.945),
     },
     {
       ...fragment,
-      height: fragment.height * 0.54,
+      height: fragment.height * 0.42,
       id: fragment.id * 2 + step + 1,
       rotation: fragment.rotation + rotationOffset,
       v: THREE.MathUtils.clamp(fragment.v + offset, 0.055, 0.945),
