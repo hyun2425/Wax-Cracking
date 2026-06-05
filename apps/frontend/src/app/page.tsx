@@ -949,7 +949,7 @@ function makeFractureTexture(style: ThreePalette["style"]) {
     style === "dubai"
       ? ["#2f1a12", "#4a2618", "#62341f", "#7a4328"]
       : style === "cotton"
-        ? ["rgba(255,255,255,0.9)", "rgba(255,252,246,0.82)", "rgba(248,244,238,0.86)"]
+        ? ["rgba(255,255,255,0.78)", "rgba(255,252,246,0.7)", "rgba(248,244,238,0.74)"]
         : ["#7dd90e", "#8eea22", "#9af52a", "#6fc600"];
   const anchors = [
     [0.12, 0.2, 0.13, 0.1],
@@ -979,33 +979,31 @@ function makeFractureTexture(style: ThreePalette["style"]) {
   };
 
   anchors.forEach(([u, v, width, height], index) => {
-    const points = 11 + (index % 4);
+    const points = 6 + (index % 3);
     const centerX = u * size;
     const centerY = v * size;
-    const radiusX = width * size * (0.72 + random(index + 2) * 0.22);
-    const radiusY = height * size * (0.72 + random(index + 7) * 0.22);
+    const coverageScale = style === "cotton" ? 0.72 : 0.92;
+    const radiusX = width * size * coverageScale * (0.8 + random(index + 2) * 0.24);
+    const radiusY = height * size * coverageScale * (0.76 + random(index + 7) * 0.22);
     const rotation = random(index + 19) * Math.PI;
 
     context.save();
     context.translate(centerX, centerY);
     context.rotate(rotation);
     context.shadowColor = style === "dubai" ? "rgba(30,18,10,0.34)" : "rgba(80,72,58,0.18)";
-    context.shadowBlur = style === "apple" ? 13 : 18;
-    context.shadowOffsetY = 9;
+    context.shadowBlur = style === "apple" ? 9 : 12;
+    context.shadowOffsetY = 6;
     context.beginPath();
 
     for (let point = 0; point <= points; point += 1) {
       const angle = (point / points) * Math.PI * 2;
-      const wobble = 0.82 + random(index * 17 + point * 3) * 0.28;
+      const wobble = 0.76 + random(index * 17 + point * 3) * 0.34;
       const x = Math.cos(angle) * radiusX * wobble;
       const y = Math.sin(angle) * radiusY * (0.78 + random(index * 23 + point) * 0.22);
       if (point === 0) {
         context.moveTo(x, y);
       } else {
-        const prevAngle = ((point - 0.5) / points) * Math.PI * 2;
-        const controlX = Math.cos(prevAngle) * radiusX * 1.03;
-        const controlY = Math.sin(prevAngle) * radiusY * 1.03;
-        context.quadraticCurveTo(controlX, controlY, x, y);
+        context.lineTo(x, y);
       }
     }
 
@@ -1013,7 +1011,17 @@ function makeFractureTexture(style: ThreePalette["style"]) {
     context.fillStyle = waxColors[index % waxColors.length];
     context.fill();
     context.shadowColor = "transparent";
-    context.globalAlpha = style === "dubai" ? 0.32 : 0.44;
+    context.lineJoin = "miter";
+    context.lineWidth = style === "cotton" ? 5 : 6;
+    context.strokeStyle =
+      style === "dubai"
+        ? "rgba(199,216,138,0.55)"
+        : style === "cotton"
+          ? "rgba(244,216,198,0.42)"
+          : "rgba(239,231,215,0.5)";
+    context.stroke();
+    context.shadowColor = "transparent";
+    context.globalAlpha = style === "cotton" ? 0.2 : style === "dubai" ? 0.28 : 0.32;
     context.fillStyle = "rgba(255,255,255,0.72)";
     context.scale(0.58, 0.36);
     context.translate(-radiusX * 0.28, -radiusY * 0.4);
