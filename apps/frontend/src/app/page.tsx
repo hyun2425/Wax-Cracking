@@ -990,13 +990,15 @@ function makeFractureTexture(style: ThreePalette["style"], clickCount: number) {
   }
 
   fragments.forEach(({ height, rotation, u, v, width }, index) => {
-    const points = 6 + (index % 3);
+    const points = 7 + (index % 2);
     const centerX = u * size;
     const centerY = v * size;
     const coverageScale = (style === "cotton" ? 0.66 : 0.74) * (1 - progress * 0.02);
-    const radiusX = width * size * coverageScale * (0.8 + random(index + 2) * 0.24);
-    const radiusY = height * size * coverageScale * (0.76 + random(index + 7) * 0.22);
-    const rotated = rotation + random(index + 19) * 0.28;
+    const balancedWidth = THREE.MathUtils.lerp(width, height, 0.28);
+    const balancedHeight = THREE.MathUtils.lerp(height, width, 0.24);
+    const radiusX = balancedWidth * size * coverageScale * (0.9 + random(index + 2) * 0.12);
+    const radiusY = balancedHeight * size * coverageScale * (0.88 + random(index + 7) * 0.12);
+    const rotated = rotation + random(index + 19) * 0.18;
 
     context.save();
     context.translate(centerX, centerY);
@@ -1013,9 +1015,9 @@ function makeFractureTexture(style: ThreePalette["style"], clickCount: number) {
 
     for (let point = 0; point <= points; point += 1) {
       const angle = (point / points) * Math.PI * 2;
-      const wobble = 0.76 + random(index * 17 + point * 3) * 0.34;
+      const wobble = 0.9 + random(index * 17 + point * 3) * 0.18;
       const x = Math.cos(angle) * radiusX * wobble;
-      const y = Math.sin(angle) * radiusY * (0.78 + random(index * 23 + point) * 0.22);
+      const y = Math.sin(angle) * radiusY * (0.9 + random(index * 23 + point) * 0.14);
       if (point === 0) {
         context.moveTo(x, y);
       } else {
@@ -1065,16 +1067,16 @@ type TextureFragment = {
 
 function getTextureBaseFragments(): TextureFragment[] {
   return [
-    [0.16, 0.2, 0.2, 0.18, -0.26],
-    [0.45, 0.18, 0.21, 0.16, 0.16],
-    [0.76, 0.24, 0.2, 0.18, 0.44],
-    [0.12, 0.5, 0.19, 0.2, -0.5],
-    [0.4, 0.48, 0.23, 0.19, 0.26],
-    [0.7, 0.48, 0.23, 0.19, -0.18],
-    [0.92, 0.56, 0.17, 0.18, 0.34],
-    [0.22, 0.76, 0.2, 0.16, 0.12],
-    [0.54, 0.8, 0.22, 0.16, -0.34],
-    [0.82, 0.76, 0.19, 0.17, 0.18],
+    [0.16, 0.2, 0.18, 0.17, -0.18],
+    [0.45, 0.18, 0.19, 0.17, 0.12],
+    [0.76, 0.24, 0.18, 0.17, 0.28],
+    [0.12, 0.5, 0.17, 0.18, -0.28],
+    [0.4, 0.48, 0.21, 0.19, 0.18],
+    [0.7, 0.48, 0.21, 0.19, -0.12],
+    [0.92, 0.56, 0.16, 0.17, 0.2],
+    [0.22, 0.76, 0.18, 0.16, 0.08],
+    [0.54, 0.8, 0.2, 0.17, -0.22],
+    [0.82, 0.76, 0.18, 0.17, 0.12],
   ].map(([u, v, width, height, rotation], index) => ({
     height,
     id: index + 1,
@@ -1094,17 +1096,19 @@ function splitTextureFragment(fragment: TextureFragment, step: number): TextureF
     return [
       {
         ...fragment,
+        height: fragment.height * 0.86,
         id: fragment.id * 2 + step,
         rotation: fragment.rotation - rotationOffset,
         u: THREE.MathUtils.clamp(fragment.u - offset, 0.035, 0.965),
-        width: fragment.width * 0.44,
+        width: fragment.width * 0.5,
       },
       {
         ...fragment,
+        height: fragment.height * 0.86,
         id: fragment.id * 2 + step + 1,
         rotation: fragment.rotation + rotationOffset,
         u: THREE.MathUtils.clamp(fragment.u + offset, 0.035, 0.965),
-        width: fragment.width * 0.42,
+        width: fragment.width * 0.48,
       },
     ];
   }
@@ -1112,17 +1116,19 @@ function splitTextureFragment(fragment: TextureFragment, step: number): TextureF
   return [
     {
       ...fragment,
-      height: fragment.height * 0.44,
+      height: fragment.height * 0.5,
       id: fragment.id * 2 + step,
       rotation: fragment.rotation - rotationOffset,
       v: THREE.MathUtils.clamp(fragment.v - offset, 0.055, 0.945),
+      width: fragment.width * 0.86,
     },
     {
       ...fragment,
-      height: fragment.height * 0.42,
+      height: fragment.height * 0.48,
       id: fragment.id * 2 + step + 1,
       rotation: fragment.rotation + rotationOffset,
       v: THREE.MathUtils.clamp(fragment.v + offset, 0.055, 0.945),
+      width: fragment.width * 0.86,
     },
   ];
 }
