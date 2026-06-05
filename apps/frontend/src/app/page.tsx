@@ -905,7 +905,7 @@ function getThreePalette(name: string) {
   }
 
   return {
-    clay: 0xf2ebdd,
+    clay: 0xf7f0e4,
     crack: 0xffffff,
     patch: 0x8ce000,
     patchColors: [0x8fd10a, 0x9ee32d, 0x6fb800],
@@ -930,7 +930,8 @@ function makeFractureTexture(style: ThreePalette["style"], clickCount: number) {
     [
       ["#8fe7f8", 0.28, 0.36, 0.44],
       ["#8fe7f8", 0.72, 0.18, 0.34],
-      ["#ffe47e", 0.56, 0.72, 0.28],
+      ["#ffe47e", 0.5, 0.72, 0.4],
+      ["#ffe47e", 0.84, 0.48, 0.24],
       ["#f59fca", 0.78, 0.66, 0.34],
     ].forEach(([color, x, y, radius]) => {
       const glow = context.createRadialGradient(
@@ -948,7 +949,7 @@ function makeFractureTexture(style: ThreePalette["style"], clickCount: number) {
     });
     context.globalAlpha = 1;
   } else {
-    context.fillStyle = style === "dubai" ? "#c7d88a" : "#f2ebdd";
+    context.fillStyle = style === "dubai" ? "#c7d88a" : "#f7f0e4";
     context.fillRect(0, 0, size, size);
   }
 
@@ -987,7 +988,7 @@ function makeFractureTexture(style: ThreePalette["style"], clickCount: number) {
     const points = 6 + (index % 3);
     const centerX = u * size;
     const centerY = v * size;
-    const coverageScale = (style === "cotton" ? 0.34 : 0.52) * (1 - progress * 0.18);
+    const coverageScale = (style === "cotton" ? 0.58 : 0.76) * (1 - progress * 0.1);
     const radiusX = width * size * coverageScale * (0.8 + random(index + 2) * 0.24);
     const radiusY = height * size * coverageScale * (0.76 + random(index + 7) * 0.22);
     const rotated = rotation + random(index + 19) * 0.28;
@@ -1022,13 +1023,13 @@ function makeFractureTexture(style: ThreePalette["style"], clickCount: number) {
     context.fill();
     context.shadowColor = "transparent";
     context.lineJoin = "miter";
-    context.lineWidth = (style === "cotton" ? 15 : 14) + progress * 12;
+    context.lineWidth = (style === "cotton" ? 10 : 9) + progress * 8;
     context.strokeStyle =
       style === "dubai"
         ? "rgba(199,216,138,0.55)"
         : style === "cotton"
           ? "rgba(247,182,210,0.64)"
-          : "rgba(242,235,221,0.62)";
+          : "rgba(247,240,228,0.68)";
     context.stroke();
     context.shadowColor = "transparent";
     context.globalAlpha = style === "cotton" ? 0.12 : style === "dubai" ? 0.24 : 0.26;
@@ -1059,16 +1060,16 @@ type TextureFragment = {
 
 function getTextureBaseFragments(): TextureFragment[] {
   return [
-    [0.18, 0.22, 0.16, 0.14, -0.32],
-    [0.48, 0.18, 0.17, 0.13, 0.18],
-    [0.78, 0.24, 0.16, 0.14, 0.46],
-    [0.12, 0.48, 0.15, 0.16, -0.58],
-    [0.4, 0.46, 0.19, 0.15, 0.28],
-    [0.7, 0.48, 0.18, 0.15, -0.18],
-    [0.9, 0.56, 0.14, 0.14, 0.34],
-    [0.24, 0.74, 0.16, 0.13, 0.12],
-    [0.54, 0.78, 0.18, 0.13, -0.4],
-    [0.8, 0.76, 0.15, 0.14, 0.18],
+    [0.18, 0.22, 0.22, 0.18, -0.32],
+    [0.48, 0.18, 0.23, 0.17, 0.18],
+    [0.78, 0.24, 0.22, 0.18, 0.46],
+    [0.12, 0.48, 0.21, 0.2, -0.58],
+    [0.4, 0.46, 0.26, 0.19, 0.28],
+    [0.7, 0.48, 0.25, 0.19, -0.18],
+    [0.9, 0.56, 0.2, 0.18, 0.34],
+    [0.24, 0.74, 0.22, 0.17, 0.12],
+    [0.54, 0.78, 0.25, 0.17, -0.4],
+    [0.8, 0.76, 0.21, 0.18, 0.18],
   ].map(([u, v, width, height, rotation], index) => ({
     height,
     id: index + 1,
@@ -1081,7 +1082,7 @@ function getTextureBaseFragments(): TextureFragment[] {
 
 function splitTextureFragment(fragment: TextureFragment, step: number): TextureFragment[] {
   const splitVertical = (fragment.id + step) % 2 === 0;
-  const offset = splitVertical ? fragment.width * 0.32 : fragment.height * 0.32;
+  const offset = splitVertical ? fragment.width * 0.3 : fragment.height * 0.3;
   const rotationOffset = 0.18 + ((fragment.id + step) % 3) * 0.04;
 
   if (splitVertical) {
@@ -1091,14 +1092,14 @@ function splitTextureFragment(fragment: TextureFragment, step: number): TextureF
         id: fragment.id * 2 + step,
         rotation: fragment.rotation - rotationOffset,
         u: THREE.MathUtils.clamp(fragment.u - offset, 0.035, 0.965),
-        width: fragment.width * 0.38,
+        width: fragment.width * 0.52,
       },
       {
         ...fragment,
         id: fragment.id * 2 + step + 1,
         rotation: fragment.rotation + rotationOffset,
         u: THREE.MathUtils.clamp(fragment.u + offset, 0.035, 0.965),
-        width: fragment.width * 0.36,
+        width: fragment.width * 0.48,
       },
     ];
   }
@@ -1106,14 +1107,14 @@ function splitTextureFragment(fragment: TextureFragment, step: number): TextureF
   return [
     {
       ...fragment,
-      height: fragment.height * 0.38,
+      height: fragment.height * 0.52,
       id: fragment.id * 2 + step,
       rotation: fragment.rotation - rotationOffset,
       v: THREE.MathUtils.clamp(fragment.v - offset, 0.055, 0.945),
     },
     {
       ...fragment,
-      height: fragment.height * 0.36,
+      height: fragment.height * 0.48,
       id: fragment.id * 2 + step + 1,
       rotation: fragment.rotation + rotationOffset,
       v: THREE.MathUtils.clamp(fragment.v + offset, 0.055, 0.945),
