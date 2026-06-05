@@ -589,19 +589,19 @@ function ThreeWaxBall({
     const palette = getThreePalette(selectedWax.name);
     const fractureAmount = Math.min(1, crackPoints.length / 15);
     const pressAmount = Math.min(0.16, crackPoints.length * 0.025);
-    const ballGeometry = new THREE.SphereGeometry(1.48, 72, 48);
+    const ballGeometry = new THREE.SphereGeometry(1.42, 72, 48);
     if (palette.style === "cotton") {
       applyCottonMarbleColors(ballGeometry);
     }
     applyPressedClayDeformation(ballGeometry, crackPoints);
     const shellMaterial = new THREE.MeshPhysicalMaterial({
-      clearcoat: fractureAmount > 0 ? (palette.style === "apple" ? 0.03 : palette.style === "dubai" ? 0.35 : 0.45) : 1,
-      clearcoatRoughness: fractureAmount > 0 ? (palette.style === "apple" ? 0.34 : 0.2) : 0.045,
+      clearcoat: fractureAmount > 0 ? (palette.style === "apple" ? 0 : palette.style === "dubai" ? 0.35 : 0.45) : 1,
+      clearcoatRoughness: fractureAmount > 0 ? (palette.style === "apple" ? 0.75 : 0.2) : 0.045,
       color: fractureAmount > 0 && palette.style !== "cotton" ? palette.clay : palette.shell,
       metalness: 0.02,
       opacity: 1,
-      roughness: fractureAmount > 0 ? (palette.style === "apple" ? 0.72 : 0.32) : palette.style === "apple" ? 0.045 : palette.style === "dubai" ? 0.08 : 0.06,
-      sheen: palette.style === "apple" && fractureAmount > 0 ? 0.08 : 0.35,
+      roughness: fractureAmount > 0 ? (palette.style === "apple" ? 0.92 : 0.32) : palette.style === "apple" ? 0.045 : palette.style === "dubai" ? 0.08 : 0.06,
+      sheen: palette.style === "apple" && fractureAmount > 0 ? 0 : 0.35,
       transparent: false,
       transmission: 0,
       vertexColors: palette.style === "cotton",
@@ -734,6 +734,7 @@ function ThreeWaxBall({
           clearcoat: 1,
           clearcoatRoughness: palette.style === "apple" ? 0.06 : 0.035,
           color: palette.shell,
+          depthTest: false,
           depthWrite: true,
           opacity: 1,
           polygonOffset: true,
@@ -762,7 +763,7 @@ function ThreeWaxBall({
           centerY: y + direction.y * separation,
           height: height * gapScale,
           pressOffset,
-          radius: 1.48,
+          radius: 1.49,
           rotation,
           seed: id,
           width: width * gapScale,
@@ -778,7 +779,7 @@ function ThreeWaxBall({
             centerY: y + direction.y * separation + height * 0.08,
             height: height * gapScale * 0.22,
             pressOffset: pressOffset - 0.004,
-            radius: 1.48,
+            radius: 1.5,
             rotation: rotation - 0.18,
             seed: id + 500,
             width: width * gapScale * 0.3,
@@ -803,19 +804,19 @@ function ThreeWaxBall({
     floor.scale.set(1.35, 0.38, 1);
     scene.add(floor);
 
-    const keyLight = new THREE.DirectionalLight(0xffffff, 3.2);
+    const keyLight = new THREE.DirectionalLight(0xffffff, palette.style === "apple" && fractureAmount > 0 ? 2.05 : 3.2);
     keyLight.position.set(3.6, 4.2, 5.8);
     keyLight.castShadow = true;
     scene.add(keyLight);
 
-    const rimLight = new THREE.DirectionalLight(0xc8f7ff, 2.2);
+    const rimLight = new THREE.DirectionalLight(0xc8f7ff, palette.style === "apple" && fractureAmount > 0 ? 1.15 : 2.2);
     rimLight.position.set(-3.8, 1.8, 3.2);
     scene.add(rimLight);
 
-    const warmLight = new THREE.PointLight(0xffffff, 4.8, 9);
+    const warmLight = new THREE.PointLight(0xfff1dd, palette.style === "apple" && fractureAmount > 0 ? 2.1 : 4.8, 9);
     warmLight.position.set(-2.8, -2.1, 3.4);
     scene.add(warmLight);
-    scene.add(new THREE.HemisphereLight(0xffffff, 0xd8e8f0, 1.45));
+    scene.add(new THREE.HemisphereLight(0xfff7ed, 0xd8e8f0, palette.style === "apple" && fractureAmount > 0 ? 0.85 : 1.45));
 
     let animationId = 0;
     const start = performance.now();
@@ -979,7 +980,7 @@ function makeSurfacePatchGeometry({
   });
   const cos = Math.cos(rotation);
   const sin = Math.sin(rotation);
-  const edgeLimit = radius * 0.94;
+  const edgeLimit = radius * 0.99;
   const vertices: number[] = [];
   const normals: number[] = [];
   const radialDistance = Math.hypot(centerX, centerY);
