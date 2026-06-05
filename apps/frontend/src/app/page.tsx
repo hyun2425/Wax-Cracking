@@ -595,12 +595,12 @@ function ThreeWaxBall({
     }
     applyPressedClayDeformation(ballGeometry, crackPoints);
     const shellMaterial = new THREE.MeshPhysicalMaterial({
-      clearcoat: palette.style === "dubai" && fractureAmount > 0 ? 0.35 : 1,
-      clearcoatRoughness: fractureAmount > 0 ? 0.16 : 0.045,
+      clearcoat: fractureAmount > 0 ? (palette.style === "apple" ? 0.14 : palette.style === "dubai" ? 0.35 : 0.45) : 1,
+      clearcoatRoughness: fractureAmount > 0 ? 0.2 : 0.045,
       color: fractureAmount > 0 && palette.style !== "cotton" ? palette.clay : palette.shell,
       metalness: 0.02,
       opacity: 1,
-      roughness: fractureAmount > 0 ? 0.32 : palette.style === "apple" ? 0.045 : palette.style === "dubai" ? 0.08 : 0.06,
+      roughness: fractureAmount > 0 ? (palette.style === "apple" ? 0.5 : 0.32) : palette.style === "apple" ? 0.045 : palette.style === "dubai" ? 0.08 : 0.06,
       sheen: 0.35,
       transparent: false,
       transmission: 0,
@@ -622,7 +622,7 @@ function ThreeWaxBall({
         clearcoatRoughness: 0.03,
         color: 0xf5fdff,
         depthWrite: false,
-        opacity: fractureAmount > 0 ? 0.075 : palette.style === "dubai" ? 0.1 : palette.style === "cotton" ? 0.24 : 0.18,
+        opacity: fractureAmount > 0 ? 0.11 : palette.style === "dubai" ? 0.1 : palette.style === "cotton" ? 0.24 : 0.18,
         roughness: 0.035,
         side: THREE.FrontSide,
         transparent: true,
@@ -655,11 +655,12 @@ function ThreeWaxBall({
       transmission: 0.38,
     });
     const stem = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.15, 0.25, 0.58, 12),
+      new THREE.CylinderGeometry(0.12, 0.27, 0.54, 14),
       neckMaterial,
     );
-    stem.position.set(0.1, 1.55, 0.16);
-    stem.rotation.set(0.22, -0.18, 0.1);
+    stem.position.set(0.08, 1.52, 0.16);
+    stem.rotation.set(0.28, -0.16, 0.08);
+    stem.scale.set(0.82, 1, 0.68);
     stem.castShadow = true;
     root.add(stem);
 
@@ -690,23 +691,31 @@ function ThreeWaxBall({
       clearcoat: 0.65,
       clearcoatRoughness: 0.12,
       color: 0xf6f1e8,
-      opacity: 0.58,
+      opacity: 0.66,
       roughness: 0.22,
       transparent: true,
       transmission: 0.22,
     });
     const tiePinch = new THREE.Mesh(new THREE.SphereGeometry(0.18, 16, 10), crimpMaterial);
-    tiePinch.position.set(0.09, 1.43, 0.17);
-    tiePinch.scale.set(1.18, 0.42, 0.72);
+    tiePinch.position.set(0.08, 1.39, 0.17);
+    tiePinch.scale.set(1.35, 0.48, 0.8);
     tiePinch.rotation.set(0.2, -0.18, 0.08);
     root.add(tiePinch);
 
-    [-0.12, 0.02, 0.15].forEach((offset, index) => {
-      const fold = new THREE.Mesh(new THREE.BoxGeometry(0.028, 0.32, 0.032), crimpMaterial);
-      fold.position.set(0.07 + offset, 1.54 + index * 0.015, 0.19);
-      fold.rotation.set(0.35, -0.12 + index * 0.08, -0.18 + index * 0.18);
+    [-0.16, -0.05, 0.07, 0.18].forEach((offset, index) => {
+      const fold = new THREE.Mesh(new THREE.BoxGeometry(0.032, 0.34, 0.034), crimpMaterial);
+      fold.position.set(0.06 + offset, 1.5 + index * 0.012, 0.2);
+      fold.rotation.set(0.38, -0.14 + index * 0.07, -0.28 + index * 0.18);
       root.add(fold);
     });
+
+    const knotShadow = new THREE.Mesh(
+      new THREE.TorusGeometry(0.2, 0.018, 8, 32),
+      new THREE.MeshBasicMaterial({ color: 0x8aa2aa, opacity: 0.22, transparent: true }),
+    );
+    knotShadow.position.set(0.08, 1.32, 0.15);
+    knotShadow.rotation.set(1.46, -0.16, 0.04);
+    root.add(knotShadow);
 
     const fractureGroup = new THREE.Group();
     root.add(fractureGroup);
@@ -826,8 +835,8 @@ function ThreeWaxBall({
       root.rotation.y = -0.24 + Math.sin(elapsed * 0.55) * 0.12;
       root.rotation.x = -0.08 + Math.sin(elapsed * 0.42) * 0.05;
       const pressedScale = new THREE.Vector3(
-        1 + pressAmount * 0.32,
-        1 - pressAmount * 0.48,
+        1 + pressAmount * 0.42,
+        1 - pressAmount * 0.68,
         1 + pressAmount * 0.04,
       );
       ball.scale.lerp(
@@ -892,7 +901,7 @@ function getThreePalette(name: string) {
   }
 
   return {
-    clay: 0xffffff,
+    clay: 0xeee9dc,
     crack: 0xffffff,
     patch: 0x8ce000,
     patchColors: [0x8fd10a, 0x9ee32d, 0x6fb800],
@@ -913,7 +922,7 @@ function getPressCenters(crackPoints: CrackPoint[]) {
 function getPressOffsetForPiece(x: number, y: number, crackPoints: CrackPoint[]) {
   return getPressCenters(crackPoints).reduce((offset, point) => {
     const distanceSq = (x - point.x) ** 2 + (y - point.y) ** 2;
-    return offset + Math.exp(-distanceSq / 0.18) * 0.024 * point.force;
+    return offset + Math.exp(-distanceSq / 0.2) * 0.03 * point.force;
   }, 0);
 }
 
@@ -944,13 +953,13 @@ function makeSurfacePatchGeometry({
     const raw = Math.sin(seed * 37.17 + value * 19.91) * 43758.5453;
     return raw - Math.floor(raw);
   };
-  const pointCount = 5 + (seed % 4);
+  const pointCount = 5 + (seed % 2);
   const localPoints = Array.from({ length: pointCount }, (_, index) => {
     const angle =
       (Math.PI * 2 * index) / pointCount +
-      (random(index + 1) - 0.5) * 0.34;
-    const radiusX = width * (0.38 + random(index + 11) * 0.22);
-    const radiusY = height * (0.34 + random(index + 21) * 0.24);
+      (random(index + 1) - 0.5) * 0.18;
+    const radiusX = width * (0.43 + random(index + 11) * 0.12);
+    const radiusY = height * (0.41 + random(index + 21) * 0.12);
     return [Math.cos(angle) * radiusX, Math.sin(angle) * radiusY];
   });
   const wobble = (value: number) => (random(value) - 0.5) * 0.08;
@@ -961,7 +970,7 @@ function makeSurfacePatchGeometry({
       const t = step / 3;
       const x = THREE.MathUtils.lerp(startX, endX, t);
       const y = THREE.MathUtils.lerp(startY, endY, t);
-      const bulge = Math.sin(t * Math.PI) * (0.018 + Math.abs(wobble(index + step + 18)) * 0.025);
+      const bulge = Math.sin(t * Math.PI) * (0.008 + Math.abs(wobble(index + step + 18)) * 0.008);
       const edgeLength = Math.hypot(endX - startX, endY - startY) || 1;
       const normalX = -(endY - startY) / edgeLength;
       const normalY = (endX - startX) / edgeLength;
@@ -1033,7 +1042,7 @@ function applyPressedClayDeformation(geometry: THREE.BufferGeometry, crackPoints
       const dx = x - point.x;
       const dy = y - point.y;
       const influence = Math.exp(-(dx * dx + dy * dy) / 0.26) * point.force * edgeFalloff;
-      dent += influence * 0.072;
+      dent += influence * 0.085;
     });
 
     position.setXYZ(
@@ -1052,14 +1061,14 @@ function getBaseShellPieces(style: ThreePalette["style"]): ShellPieceSpec[] {
   const scale = style === "dubai" ? 1.08 : style === "cotton" ? 1 : 0.96;
   const startId = style === "dubai" ? 1 : style === "cotton" ? 40 : 80;
   const layout = [
-    [-0.54, 0.42, 0.66, 0.54, -0.32],
-    [0.2, 0.56, 0.72, 0.48, 0.18],
-    [0.76, 0.08, 0.54, 0.56, 0.58],
-    [-0.76, -0.04, 0.56, 0.62, -0.54],
-    [-0.12, -0.08, 0.78, 0.66, 0.34],
-    [0.46, -0.56, 0.62, 0.46, -0.22],
-    [-0.44, -0.68, 0.58, 0.42, 0.16],
-    [0.02, 0.92, 0.42, 0.3, -0.06],
+    [-0.62, 0.48, 0.78, 0.58, -0.26],
+    [0.18, 0.62, 0.82, 0.54, 0.16],
+    [0.84, 0.1, 0.62, 0.62, 0.52],
+    [-0.84, -0.02, 0.64, 0.68, -0.5],
+    [-0.12, -0.08, 0.88, 0.72, 0.3],
+    [0.54, -0.64, 0.72, 0.52, -0.2],
+    [-0.52, -0.74, 0.68, 0.5, 0.14],
+    [0.02, 0.98, 0.5, 0.34, -0.04],
   ];
 
   return layout.map(([x, y, width, height, rotation], index) => ({
