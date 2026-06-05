@@ -594,17 +594,19 @@ function ThreeWaxBall({
       applyCottonMarbleColors(ballGeometry);
     }
     applyPressedClayDeformation(ballGeometry, crackPoints);
+    const fractureTexture = fractureAmount > 0 ? makeFractureTexture(palette.style) : null;
     const shellMaterial = new THREE.MeshPhysicalMaterial({
       clearcoat: fractureAmount > 0 ? (palette.style === "apple" ? 0 : palette.style === "dubai" ? 0.35 : 0.45) : 1,
       clearcoatRoughness: fractureAmount > 0 ? (palette.style === "apple" ? 0.75 : 0.2) : 0.045,
-      color: fractureAmount > 0 && palette.style !== "cotton" ? palette.clay : palette.shell,
+      color: fractureTexture ? 0xffffff : palette.shell,
+      map: fractureTexture,
       metalness: 0.02,
       opacity: 1,
       roughness: fractureAmount > 0 ? (palette.style === "apple" ? 0.92 : 0.32) : palette.style === "apple" ? 0.045 : palette.style === "dubai" ? 0.08 : 0.06,
       sheen: palette.style === "apple" && fractureAmount > 0 ? 0 : 0.35,
       transparent: false,
       transmission: 0,
-      vertexColors: palette.style === "cotton",
+      vertexColors: palette.style === "cotton" && !fractureTexture,
     });
 
     const ball = new THREE.Mesh(
@@ -719,7 +721,7 @@ function ThreeWaxBall({
 
     const fractureGroup = new THREE.Group();
     root.add(fractureGroup);
-    if (fractureAmount > 0) {
+    if (fractureAmount > 0 && crackPoints.length > 999) {
       const firstImpact = crackPoints[0];
       const impactCenter = firstImpact
         ? new THREE.Vector2(
@@ -769,8 +771,9 @@ function ThreeWaxBall({
           width: width * gapScale,
         });
         const shellPiece = new THREE.Mesh(shellGeometry, makeShellMaterial());
-        shellPiece.renderOrder = 2;
+        shellPiece.renderOrder = 1;
         shellPiece.castShadow = false;
+        shellPiece.scale.setScalar(0.42);
         fractureGroup.add(shellPiece);
 
         if (index % 4 === 0) {
@@ -910,6 +913,121 @@ function getThreePalette(name: string) {
     shellOpacity: 0.86,
     style: "apple",
   } satisfies ThreePalette;
+}
+
+function makeFractureTexture(style: ThreePalette["style"]) {
+  const size = 1024;
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  const context = canvas.getContext("2d")!;
+
+  if (style === "cotton") {
+    const gradient = context.createLinearGradient(0, 0, size, size);
+    gradient.addColorStop(0, "#a8dcf3");
+    gradient.addColorStop(0.42, "#f4e6a8");
+    gradient.addColorStop(1, "#f7a8c6");
+    context.fillStyle = gradient;
+    context.fillRect(0, 0, size, size);
+    context.globalAlpha = 0.32;
+    [["#f7a8c6", 0.18, 0.3], ["#a8dcf3", 0.7, 0.2], ["#f4e6a8", 0.42, 0.72]].forEach(
+      ([color, x, y]) => {
+        const glow = context.createRadialGradient(Number(x) * size, Number(y) * size, 0, Number(x) * size, Number(y) * size, size * 0.42);
+        glow.addColorStop(0, String(color));
+        glow.addColorStop(1, "rgba(255,255,255,0)");
+        context.fillStyle = glow;
+        context.fillRect(0, 0, size, size);
+      },
+    );
+    context.globalAlpha = 1;
+  } else {
+    context.fillStyle = style === "dubai" ? "#c7d88a" : "#efe7d7";
+    context.fillRect(0, 0, size, size);
+  }
+
+  const waxColors =
+    style === "dubai"
+      ? ["#2f1a12", "#4a2618", "#62341f", "#7a4328"]
+      : style === "cotton"
+        ? ["rgba(255,255,255,0.9)", "rgba(255,252,246,0.82)", "rgba(248,244,238,0.86)"]
+        : ["#7dd90e", "#8eea22", "#9af52a", "#6fc600"];
+  const anchors = [
+    [0.12, 0.2, 0.13, 0.1],
+    [0.32, 0.13, 0.16, 0.1],
+    [0.55, 0.14, 0.13, 0.12],
+    [0.78, 0.2, 0.16, 0.11],
+    [0.94, 0.34, 0.1, 0.14],
+    [0.08, 0.43, 0.12, 0.14],
+    [0.28, 0.4, 0.18, 0.13],
+    [0.5, 0.38, 0.16, 0.15],
+    [0.72, 0.43, 0.18, 0.13],
+    [0.9, 0.55, 0.13, 0.13],
+    [0.12, 0.64, 0.15, 0.12],
+    [0.34, 0.62, 0.18, 0.13],
+    [0.58, 0.63, 0.16, 0.12],
+    [0.78, 0.68, 0.16, 0.11],
+    [0.22, 0.82, 0.14, 0.09],
+    [0.47, 0.86, 0.17, 0.09],
+    [0.7, 0.84, 0.14, 0.1],
+    [0.96, 0.78, 0.08, 0.1],
+    [0.03, 0.78, 0.08, 0.1],
+  ];
+
+  const random = (seed: number) => {
+    const raw = Math.sin(seed * 91.731) * 47453.5453;
+    return raw - Math.floor(raw);
+  };
+
+  anchors.forEach(([u, v, width, height], index) => {
+    const points = 11 + (index % 4);
+    const centerX = u * size;
+    const centerY = v * size;
+    const radiusX = width * size * (0.72 + random(index + 2) * 0.22);
+    const radiusY = height * size * (0.72 + random(index + 7) * 0.22);
+    const rotation = random(index + 19) * Math.PI;
+
+    context.save();
+    context.translate(centerX, centerY);
+    context.rotate(rotation);
+    context.shadowColor = style === "dubai" ? "rgba(30,18,10,0.34)" : "rgba(80,72,58,0.18)";
+    context.shadowBlur = style === "apple" ? 13 : 18;
+    context.shadowOffsetY = 9;
+    context.beginPath();
+
+    for (let point = 0; point <= points; point += 1) {
+      const angle = (point / points) * Math.PI * 2;
+      const wobble = 0.82 + random(index * 17 + point * 3) * 0.28;
+      const x = Math.cos(angle) * radiusX * wobble;
+      const y = Math.sin(angle) * radiusY * (0.78 + random(index * 23 + point) * 0.22);
+      if (point === 0) {
+        context.moveTo(x, y);
+      } else {
+        const prevAngle = ((point - 0.5) / points) * Math.PI * 2;
+        const controlX = Math.cos(prevAngle) * radiusX * 1.03;
+        const controlY = Math.sin(prevAngle) * radiusY * 1.03;
+        context.quadraticCurveTo(controlX, controlY, x, y);
+      }
+    }
+
+    context.closePath();
+    context.fillStyle = waxColors[index % waxColors.length];
+    context.fill();
+    context.shadowColor = "transparent";
+    context.globalAlpha = style === "dubai" ? 0.32 : 0.44;
+    context.fillStyle = "rgba(255,255,255,0.72)";
+    context.scale(0.58, 0.36);
+    context.translate(-radiusX * 0.28, -radiusY * 0.4);
+    context.beginPath();
+    context.ellipse(0, 0, radiusX * 0.5, radiusY * 0.32, -0.35, 0, Math.PI * 2);
+    context.fill();
+    context.restore();
+  });
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.anisotropy = 8;
+  texture.needsUpdate = true;
+  return texture;
 }
 
 function getPressCenters(crackPoints: CrackPoint[]) {
