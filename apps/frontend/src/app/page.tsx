@@ -574,7 +574,7 @@ function ThreeWaxBall({
     camera.position.set(0, 0.15, 7.8);
 
     const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 3));
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.domElement.style.display = "block";
@@ -616,13 +616,13 @@ function ThreeWaxBall({
     root.add(ball);
 
     const clearOuterShell = new THREE.Mesh(
-      new THREE.SphereGeometry(1.58, 96, 64),
+      new THREE.SphereGeometry(1.58, 160, 96),
       new THREE.MeshPhysicalMaterial({
         clearcoat: 1,
         clearcoatRoughness: 0.03,
         color: 0xf5fdff,
         depthWrite: false,
-        opacity: fractureAmount > 0 ? 0.11 : palette.style === "dubai" ? 0.1 : palette.style === "cotton" ? 0.24 : 0.18,
+        opacity: fractureAmount > 0 ? 0.085 : palette.style === "dubai" ? 0.1 : palette.style === "cotton" ? 0.24 : 0.18,
         roughness: 0.035,
         side: THREE.FrontSide,
         transparent: true,
@@ -982,13 +982,13 @@ function makeSurfacePatchGeometry({
   const edgeLimit = radius * 0.94;
   const vertices: number[] = [];
   const normals: number[] = [];
-  const centerDistance = Math.hypot(centerX, centerY);
-  const centerClamp = centerDistance > edgeLimit ? edgeLimit / centerDistance : 1;
-  const safeCenterX = centerX * centerClamp;
-  const safeCenterY = centerY * centerClamp;
+  const radialDistance = Math.hypot(centerX, centerY);
+  const radialClamp = radialDistance > edgeLimit ? edgeLimit / radialDistance : 1;
+  const safeCenterX = centerX * radialClamp;
+  const safeCenterY = centerY * radialClamp;
   const edgeRatio = THREE.MathUtils.clamp(Math.hypot(safeCenterX, safeCenterY) / edgeLimit, 0, 1);
-  const curvatureScale = 1 - edgeRatio * edgeRatio * 0.34;
-  const surfaceOffset = 0.018 - edgeRatio * 0.008;
+  const curvatureScale = 1 - edgeRatio * edgeRatio * 0.46;
+  const surfaceOffset = 0.017 - edgeRatio * 0.012;
   const centerZ = getFrontSurfaceZ(safeCenterX, safeCenterY, radius) + surfaceOffset - pressOffset;
 
   vertices.push(safeCenterX, safeCenterY, centerZ);
@@ -1064,14 +1064,30 @@ function getBaseShellPieces(style: ThreePalette["style"]): ShellPieceSpec[] {
   const scale = style === "dubai" ? 1.08 : style === "cotton" ? 1 : 0.96;
   const startId = style === "dubai" ? 1 : style === "cotton" ? 40 : 80;
   const layout = [
-    [-0.88, 0.66, 0.72, 0.52, -0.28],
-    [-0.04, 0.82, 0.8, 0.52, 0.12],
-    [0.86, 0.54, 0.62, 0.48, 0.52],
-    [-1.04, -0.04, 0.58, 0.66, -0.5],
-    [-0.2, 0.02, 0.9, 0.68, 0.28],
-    [0.78, -0.08, 0.72, 0.62, -0.16],
-    [-0.64, -0.82, 0.72, 0.48, 0.14],
-    [0.46, -0.9, 0.72, 0.46, -0.1],
+    [-0.08, 0.12, 0.46, 0.36, 0.2],
+    [-0.58, 0.36, 0.4, 0.34, -0.38],
+    [0.48, 0.42, 0.42, 0.32, 0.34],
+    [-0.42, -0.34, 0.38, 0.34, 0.48],
+    [0.46, -0.32, 0.4, 0.34, -0.18],
+    [-0.02, -0.58, 0.44, 0.3, 0.06],
+    [-0.12, 0.68, 0.42, 0.3, -0.08],
+    [-0.98, 0.62, 0.36, 0.26, -0.48],
+    [-0.54, 0.96, 0.34, 0.24, 0.28],
+    [0.26, 1.02, 0.36, 0.24, -0.12],
+    [0.92, 0.68, 0.34, 0.26, 0.54],
+    [1.12, 0.12, 0.32, 0.3, -0.34],
+    [0.94, -0.48, 0.34, 0.28, 0.2],
+    [0.54, -0.98, 0.36, 0.24, -0.44],
+    [-0.2, -1.1, 0.34, 0.24, 0.36],
+    [-0.82, -0.76, 0.34, 0.26, -0.16],
+    [-1.12, -0.2, 0.32, 0.3, 0.4],
+    [-1.24, 0.22, 0.3, 0.26, -0.22],
+    [1.24, -0.18, 0.3, 0.26, 0.16],
+    [0.02, 1.28, 0.28, 0.2, 0.08],
+    [0.06, -1.3, 0.28, 0.2, -0.18],
+    [-0.94, 0.02, 0.28, 0.22, 0.12],
+    [0.76, 0.02, 0.3, 0.24, -0.08],
+    [0.06, -0.02, 0.32, 0.24, -0.34],
   ];
 
   return layout.map(([x, y, width, height, rotation], index) => ({
@@ -1085,21 +1101,23 @@ function getBaseShellPieces(style: ThreePalette["style"]): ShellPieceSpec[] {
 }
 
 function buildSubdividedShellPieces(style: ThreePalette["style"], clickCount: number, impactCenter: THREE.Vector2) {
-  const maxPieces = style === "dubai" ? 24 : style === "cotton" ? 28 : 30;
-  const spread = Math.min(1, Math.max(0, clickCount - 1) / 2);
+  const maxPieces = style === "dubai" ? 34 : style === "cotton" ? 38 : 40;
   let pieces = getBaseShellPieces(style).map((piece) => ({ ...piece }));
 
   for (let step = 2; step <= clickCount && pieces.length < maxPieces; step += 1) {
-    const splitCount = Math.min(style === "dubai" ? 2 : 3, maxPieces - pieces.length);
-    const centerWeight = Math.max(0, 1 - spread) * 0.03;
+    const splitCount = Math.min(style === "dubai" ? 3 : 4, maxPieces - pieces.length);
     const ordered = pieces
       .map((piece, index) => {
         const impactDistance = new THREE.Vector2(piece.x, piece.y).distanceTo(impactCenter);
         const edgeBonus = Math.min(1, Math.hypot(piece.x, piece.y));
-        const wholeBallOrder = Math.abs(Math.sin(piece.id * 4.81 + step * 1.73)) - edgeBonus * 0.18 + index * 0.004;
+        const wholeBallOrder =
+          Math.abs(Math.sin(piece.id * 4.81 + step * 1.73)) -
+          edgeBonus * 0.24 +
+          impactDistance * 0.01 +
+          index * 0.004;
         return {
           piece,
-          score: impactDistance * centerWeight + wholeBallOrder * (1 - centerWeight),
+          score: wholeBallOrder,
         };
       })
       .sort((left, right) => {
