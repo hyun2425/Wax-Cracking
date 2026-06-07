@@ -1006,15 +1006,15 @@ function makeFractureTexture(style: ThreePalette["style"], clickCount: number) {
   }
 
   fragments.forEach(({ height, rotation, u, v, width }, index) => {
-    const points = 5 + Math.floor(random(index * 11 + 5) * 5);
-    const centerJitter = 0.045 * (1 - progress * 0.25);
+    const points = makeFracturedPlatePoints(index, width, height, random);
+    const centerJitter = 0.012 * (1 - progress * 0.35);
     const centerX = (u + (random(index * 43 + 3) - 0.5) * centerJitter) * size;
     const centerY = (v + (random(index * 47 + 9) - 0.5) * centerJitter) * size;
-    const coverageScale = (style === "cotton" ? 0.75 : 0.75) * (1 - progress * 0.02);
+    const coverageScale = (style === "cotton" ? 0.8 : 0.78) * (1 - progress * 0.018);
     const balancedWidth = THREE.MathUtils.lerp(width, height, 0.28);
     const balancedHeight = THREE.MathUtils.lerp(height, width, 0.24);
-    const radiusX = balancedWidth * size * coverageScale * (0.9 + random(index + 2) * 0.12);
-    const radiusY = balancedHeight * size * coverageScale * (0.88 + random(index + 7) * 0.12);
+    const radiusX = balancedWidth * size * coverageScale * (0.92 + random(index + 2) * 0.08);
+    const radiusY = balancedHeight * size * coverageScale * (0.9 + random(index + 7) * 0.08);
     const rotated = rotation + random(index + 19) * 0.18;
 
     context.save();
@@ -1030,23 +1030,15 @@ function makeFractureTexture(style: ThreePalette["style"], clickCount: number) {
     context.shadowOffsetY = style === "cotton" ? 4 : 5;
     context.beginPath();
 
-    let angle = random(index * 29 + 4) * 0.28;
-
-    for (let point = 0; point <= points; point += 1) {
-      if (point > 0) {
-        angle +=
-          (Math.PI * 2) / points *
-          (0.72 + random(index * 31 + point * 7) * 0.52);
-      }
-      const wobble = 0.78 + random(index * 17 + point * 3) * 0.36;
-      const x = Math.cos(angle) * radiusX * wobble;
-      const y = Math.sin(angle) * radiusY * (0.78 + random(index * 23 + point) * 0.34);
+    points.forEach(([unitX, unitY], point) => {
+      const x = unitX * radiusX;
+      const y = unitY * radiusY;
       if (point === 0) {
         context.moveTo(x, y);
       } else {
         context.lineTo(x, y);
       }
-    }
+    });
 
     context.closePath();
     context.fillStyle = waxColors[index % waxColors.length];
@@ -1087,6 +1079,34 @@ type TextureFragment = {
   v: number;
   width: number;
 };
+
+function makeFracturedPlatePoints(
+  seed: number,
+  width: number,
+  height: number,
+  random: (seed: number) => number,
+) {
+  const aspect = THREE.MathUtils.clamp(width / Math.max(height, 0.01), 0.72, 1.38);
+  const xScale = aspect > 1 ? 1 : aspect;
+  const yScale = aspect > 1 ? 1 / aspect : 1;
+  const cornerCuts = Array.from({ length: 4 }, (_, index) => 0.11 + random(seed * 31 + index * 7) * 0.12);
+  const edgeBites = Array.from({ length: 4 }, (_, index) => (random(seed * 43 + index * 9) - 0.5) * 0.13);
+
+  return [
+    [-1 + cornerCuts[0], -1],
+    [-0.2 + edgeBites[0], -1 + random(seed + 5) * 0.08],
+    [1 - cornerCuts[1], -1],
+    [1, -1 + cornerCuts[1]],
+    [1 + edgeBites[1] * 0.45, -0.12 + edgeBites[1]],
+    [1, 1 - cornerCuts[2]],
+    [1 - cornerCuts[2], 1],
+    [0.18 + edgeBites[2], 1 - random(seed + 11) * 0.08],
+    [-1 + cornerCuts[3], 1],
+    [-1, 1 - cornerCuts[3]],
+    [-1 - edgeBites[3] * 0.45, 0.1 + edgeBites[3]],
+    [-1, -1 + cornerCuts[0]],
+  ].map(([x, y]) => [x * xScale, y * yScale]);
+}
 
 function getTextureBaseFragments(): TextureFragment[] {
   return [
