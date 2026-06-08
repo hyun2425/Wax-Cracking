@@ -929,15 +929,15 @@ function makeFractureTexture(style: ThreePalette["style"], clickCount: number) {
   const progress = THREE.MathUtils.clamp((clickCount - 1) / 14, 0, 1);
 
   if (style === "cotton") {
-    context.fillStyle = "#f26fb0";
+    context.fillStyle = "#f6a8cb";
     context.fillRect(0, 0, size, size);
     [
-      ["#58d9ef", 0.22, 0.26, 0.5, 0.98],
-      ["#58d9ef", 0.73, 0.22, 0.44, 0.82],
-      ["#ffc93d", 0.48, 0.72, 0.45, 0.86],
-      ["#ffc93d", 0.88, 0.56, 0.28, 0.62],
-      ["#f26fb0", 0.72, 0.72, 0.42, 0.82],
-      ["#f26fb0", 0.16, 0.7, 0.34, 0.64],
+      ["#9ee8f4", 0.22, 0.26, 0.5, 0.94],
+      ["#9ee8f4", 0.73, 0.22, 0.44, 0.74],
+      ["#f8d983", 0.48, 0.72, 0.45, 0.78],
+      ["#f8d983", 0.88, 0.56, 0.28, 0.54],
+      ["#f6a8cb", 0.72, 0.72, 0.42, 0.74],
+      ["#f6a8cb", 0.16, 0.7, 0.34, 0.56],
     ].forEach(([color, x, y, radius, alpha]) => {
       context.globalAlpha = Number(alpha);
       const glow = context.createRadialGradient(
@@ -963,7 +963,7 @@ function makeFractureTexture(style: ThreePalette["style"], clickCount: number) {
     style === "dubai"
       ? ["#4a2618"]
       : style === "cotton"
-        ? ["rgba(255,248,239,0.42)"]
+        ? ["rgba(255,248,239,0.48)"]
         : ["#8eea22"];
   let fragments = getTextureBaseFragments();
 
@@ -1089,22 +1089,27 @@ function makeFracturedPlatePoints(
   const aspect = THREE.MathUtils.clamp(width / Math.max(height, 0.01), 0.72, 1.38);
   const xScale = aspect > 1 ? 1 : aspect;
   const yScale = aspect > 1 ? 1 / aspect : 1;
-  const cornerCuts = Array.from({ length: 4 }, (_, index) => 0.11 + random(seed * 31 + index * 7) * 0.12);
-  const edgeBites = Array.from({ length: 4 }, (_, index) => (random(seed * 43 + index * 9) - 0.5) * 0.13);
+  const cornerCuts = Array.from({ length: 4 }, (_, index) => 0.08 + random(seed * 31 + index * 7) * 0.18);
+  const edgeBites = Array.from({ length: 8 }, (_, index) => (random(seed * 43 + index * 9) - 0.5) * 0.22);
+  const chip = (edge: number, amount = 0.1) => edgeBites[edge] * amount;
 
   return [
-    [-1 + cornerCuts[0], -1],
-    [-0.2 + edgeBites[0], -1 + random(seed + 5) * 0.08],
-    [1 - cornerCuts[1], -1],
-    [1, -1 + cornerCuts[1]],
-    [1 + edgeBites[1] * 0.45, -0.12 + edgeBites[1]],
-    [1, 1 - cornerCuts[2]],
-    [1 - cornerCuts[2], 1],
-    [0.18 + edgeBites[2], 1 - random(seed + 11) * 0.08],
-    [-1 + cornerCuts[3], 1],
-    [-1, 1 - cornerCuts[3]],
-    [-1 - edgeBites[3] * 0.45, 0.1 + edgeBites[3]],
-    [-1, -1 + cornerCuts[0]],
+    [-1 + cornerCuts[0], -1 + chip(0, 0.16)],
+    [-0.58 + chip(1, 0.72), -1 - chip(0, 0.28)],
+    [-0.18 + chip(2, 0.5), -1 + chip(1, 0.22)],
+    [0.32 + chip(3, 0.55), -1 - chip(2, 0.22)],
+    [1 - cornerCuts[1], -1 + chip(3, 0.18)],
+    [1 + chip(4, 0.2), -0.62 + cornerCuts[1] * 0.35],
+    [1 - chip(5, 0.18), -0.12 + edgeBites[4]],
+    [1 + chip(6, 0.22), 0.42 + edgeBites[5] * 0.35],
+    [1 - cornerCuts[2], 1 - chip(6, 0.16)],
+    [0.5 + chip(7, 0.5), 1 + chip(5, 0.22)],
+    [0.08 + chip(0, 0.45), 1 - chip(7, 0.2)],
+    [-0.42 + chip(1, 0.55), 1 + chip(6, 0.18)],
+    [-1 + cornerCuts[3], 1 - chip(2, 0.18)],
+    [-1 - chip(3, 0.18), 0.5 + edgeBites[7] * 0.28],
+    [-1 + chip(4, 0.14), -0.04 + edgeBites[0] * 0.42],
+    [-1 - chip(5, 0.2), -0.56 + edgeBites[1] * 0.28],
   ].map(([x, y]) => [x * xScale, y * yScale]);
 }
 
