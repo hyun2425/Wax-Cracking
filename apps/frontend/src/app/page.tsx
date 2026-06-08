@@ -108,6 +108,8 @@ export default function Home() {
   const [freezerMinutes, setFreezerMinutes] = useState(0);
   const [waxStage, setWaxStage] = useState<WaxStage>("shelf");
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [heroCrackProgress, setHeroCrackProgress] = useState(0);
+  const [heroCrackPoints, setHeroCrackPoints] = useState<CrackPoint[]>([]);
   const [crackProgress, setCrackProgress] = useState(0);
   const [crackPoints, setCrackPoints] = useState<CrackPoint[]>([]);
   const [apiState, setApiState] = useState<ApiState>({ status: "checking" });
@@ -116,13 +118,15 @@ export default function Home() {
   const freezerState = getFreezerState(freezerMinutes);
   const healthUrl = useMemo(() => `${apiBaseUrl}/api/health`, []);
   const fractureThreshold = 15;
+  const heroCrackPercent = Math.min(100, Math.round((heroCrackProgress / fractureThreshold) * 100));
+  const isHeroBroken = heroCrackPercent >= 100;
   const crackPercent = Math.min(100, Math.round((crackProgress / fractureThreshold) * 100));
   const isBroken = crackPercent >= 100;
   const isFreezing = waxStage === "freezer";
 
-  const playReferenceCrunch = useCallback((isFinal = false) => {
+  const playReferenceCrunch = useCallback((isFinal = false, volumeMinutes = freezerMinutes) => {
     const audio = new Audio(referenceCrunchUrl);
-    const freezerVolume = 0.32 + (freezerMinutes / 20) * 0.58;
+    const freezerVolume = 0.32 + (volumeMinutes / 20) * 0.58;
     audio.volume = Math.min(1, freezerVolume + (isFinal ? 0.12 : 0));
     audio.playbackRate = isFinal ? 0.96 : 1.04;
 
@@ -193,14 +197,16 @@ export default function Home() {
     return () => controller.abort();
   }, [healthUrl]);
 
-  const playCrackSound = useCallback((isFinal = false) => {
-    playReferenceCrunch(isFinal);
-  }, [playReferenceCrunch]);
+  const playCrackSound = useCallback((isFinal = false, volumeMinutes = freezerMinutes) => {
+    playReferenceCrunch(isFinal, volumeMinutes);
+  }, [freezerMinutes, playReferenceCrunch]);
 
   function handleSelectWax(index: number) {
     setSelectedIndex(index);
     setWaxStage("shelf");
     setFreezerMinutes(0);
+    setHeroCrackProgress(0);
+    setHeroCrackPoints([]);
     setCrackProgress(0);
     setCrackPoints([]);
   }
@@ -208,6 +214,8 @@ export default function Home() {
   function handleDragStart(index: number) {
     setDraggedIndex(index);
     setSelectedIndex(index);
+    setHeroCrackProgress(0);
+    setHeroCrackPoints([]);
   }
 
   function allowDrop(event: DragEvent<HTMLElement>) {
@@ -250,8 +258,32 @@ export default function Home() {
     setFreezerMinutes(0);
     setWaxStage("shelf");
     setDraggedIndex(null);
+    setHeroCrackProgress(0);
+    setHeroCrackPoints([]);
     setCrackProgress(0);
     setCrackPoints([]);
+  }
+
+  function handleHeroCrack(event: MouseEvent<HTMLButtonElement>) {
+    const rect = event.currentTarget.getBoundingClientRect();
+    const next = heroCrackProgress + 1;
+    const isFinal = next >= fractureThreshold;
+    const x = ((event.clientX - rect.left) / rect.width) * 100;
+    const y = ((event.clientY - rect.top) / rect.height) * 100;
+    const force = 0.72 + next / fractureThreshold / 2.2;
+
+    setHeroCrackPoints((current) => [
+      ...current,
+      {
+        id: Date.now() + current.length,
+        x,
+        y,
+        rotation: (current.length * 47 + Math.round(x - y)) % 126 - 63,
+        force,
+      },
+    ]);
+    setHeroCrackProgress(next);
+    playCrackSound(isFinal, 0);
   }
 
   function handleCrack(event: MouseEvent<HTMLButtonElement>) {
@@ -277,7 +309,7 @@ export default function Home() {
       },
     ]);
     setCrackProgress(next);
-    playCrackSound(isFinal);
+    playCrackSound(isFinal, freezerMinutes);
 
   }
 
@@ -321,13 +353,13 @@ export default function Home() {
           </div>
 
           <WaxPreview
-            canCrack={waxStage === "cracking"}
-            crackPoints={crackPoints}
-            crackPercent={crackPercent}
-            freezerMinutes={freezerMinutes}
+            canCrack
+            crackPoints={heroCrackPoints}
+            crackPercent={heroCrackPercent}
+            freezerMinutes={0}
             freezerState={freezerState.state}
-            isBroken={isBroken}
-            onCrack={handleCrack}
+            isBroken={isHeroBroken}
+            onCrack={handleHeroCrack}
             selectedWax={selectedWax}
           />
         </section>
