@@ -755,14 +755,24 @@ function ThreeWaxBall({
     applyPressedClayDeformation(ballGeometry, crackPoints);
     const fractureTexture = fractureAmount > 0 ? makeFractureTexture(palette.style, crackPoints.length) : null;
     const shellMaterial = new THREE.MeshPhysicalMaterial({
-      clearcoat: fractureAmount > 0 ? (palette.style === "cotton" ? 0.16 : 0.42) : 1,
-      clearcoatRoughness: fractureAmount > 0 ? (palette.style === "cotton" ? 0.36 : 0.16) : 0.045,
+      clearcoat: 1,
+      clearcoatRoughness: fractureAmount > 0 ? (palette.style === "cotton" ? 0.08 : 0.055) : 0.045,
       color: fractureTexture ? (palette.style === "cotton" ? 0xfffbf7 : 0xffffff) : palette.shell,
       map: fractureTexture,
       metalness: 0.02,
       opacity: 1,
-      roughness: fractureAmount > 0 ? (palette.style === "cotton" ? 0.42 : palette.style === "apple" ? 0.3 : 0.38) : palette.style === "apple" ? 0.045 : palette.style === "dubai" ? 0.08 : 0.06,
-      sheen: palette.style === "cotton" && fractureAmount > 0 ? 0.08 : palette.style === "apple" && fractureAmount > 0 ? 0.14 : 0.28,
+      roughness: fractureAmount > 0
+        ? palette.style === "apple"
+          ? 0.075
+          : palette.style === "dubai"
+            ? 0.09
+            : 0.11
+        : palette.style === "apple"
+          ? 0.045
+          : palette.style === "dubai"
+            ? 0.08
+            : 0.06,
+      sheen: palette.style === "cotton" && fractureAmount > 0 ? 0.2 : palette.style === "apple" && fractureAmount > 0 ? 0.22 : 0.28,
       transparent: false,
       transmission: 0,
       vertexColors: palette.style === "cotton" && !fractureTexture,
@@ -783,7 +793,7 @@ function ThreeWaxBall({
         clearcoatRoughness: 0.03,
         color: 0xf5fdff,
         depthWrite: false,
-        opacity: fractureAmount > 0 ? 0.085 : palette.style === "dubai" ? 0.1 : palette.style === "cotton" ? 0.24 : 0.18,
+        opacity: palette.style === "dubai" ? 0.12 : palette.style === "cotton" ? 0.22 : 0.19,
         roughness: 0.035,
         side: THREE.FrontSide,
         transparent: true,
@@ -969,9 +979,9 @@ function ThreeWaxBall({
     const keyLight = new THREE.DirectionalLight(
       0xffffff,
       palette.style === "cotton" && fractureAmount > 0
-        ? 2.05
+        ? 2.65
         : palette.style === "apple" && fractureAmount > 0
-          ? 2.05
+          ? 2.75
           : 3.2,
     );
     keyLight.position.set(3.6, 4.2, 5.8);
@@ -981,9 +991,9 @@ function ThreeWaxBall({
     const rimLight = new THREE.DirectionalLight(
       0xc8f7ff,
       palette.style === "cotton" && fractureAmount > 0
-        ? 0.82
+        ? 1.25
         : palette.style === "apple" && fractureAmount > 0
-          ? 1.15
+          ? 1.45
           : 2.2,
     );
     rimLight.position.set(-3.8, 1.8, 3.2);
@@ -992,9 +1002,9 @@ function ThreeWaxBall({
     const warmLight = new THREE.PointLight(
       0xfff1dd,
       palette.style === "cotton" && fractureAmount > 0
-        ? 1.9
+        ? 2.55
         : palette.style === "apple" && fractureAmount > 0
-          ? 2.1
+          ? 2.75
           : 4.8,
       9,
     );
@@ -1005,9 +1015,9 @@ function ThreeWaxBall({
         0xfff7ed,
         0xd8e8f0,
         palette.style === "cotton" && fractureAmount > 0
-          ? 1.05
+          ? 1.22
           : palette.style === "apple" && fractureAmount > 0
-            ? 0.85
+            ? 1.08
             : 1.45,
       ),
     );
@@ -1205,12 +1215,12 @@ function makeFractureTexture(style: ThreePalette["style"], clickCount: number) {
     context.rotate(rotated);
     context.shadowColor =
       style === "dubai"
-        ? "rgba(30,18,10,0.24)"
+        ? "rgba(30,18,10,0.18)"
         : style === "cotton"
-          ? "rgba(214,150,180,0.08)"
-          : "rgba(80,72,58,0.14)";
-    context.shadowBlur = style === "apple" ? 6 : style === "cotton" ? 4 : 8;
-    context.shadowOffsetY = style === "cotton" ? 2 : 5;
+          ? "rgba(214,150,180,0.06)"
+          : "rgba(80,72,58,0.1)";
+    context.shadowBlur = style === "apple" ? 4 : style === "cotton" ? 3 : 5;
+    context.shadowOffsetY = style === "cotton" ? 1.5 : 3;
     context.beginPath();
 
     points.forEach(([unitX, unitY], point) => {
@@ -1227,18 +1237,19 @@ function makeFractureTexture(style: ThreePalette["style"], clickCount: number) {
     context.fillStyle = waxColors[index % waxColors.length];
     context.fill();
     context.shadowColor = "transparent";
-    context.lineJoin = "miter";
-    context.lineWidth = (style === "cotton" ? 3.2 : 2.9) + progress * 1.4;
+    context.lineJoin = "round";
+    context.lineCap = "round";
+    context.lineWidth = (style === "cotton" ? 2.1 : 1.8) + progress * 0.55;
     context.strokeStyle =
       style === "dubai"
         ? "rgba(199,216,138,0.55)"
         : style === "cotton"
-          ? "rgba(225,166,190,0.18)"
-          : "rgba(255,251,242,0.48)";
+          ? "rgba(226,166,190,0.12)"
+          : "rgba(255,251,242,0.32)";
     context.stroke();
     context.shadowColor = "transparent";
-    context.globalAlpha = style === "cotton" ? 0 : style === "dubai" ? 0.06 : 0.055;
-    context.fillStyle = "rgba(255,255,255,0.72)";
+    context.globalAlpha = style === "cotton" ? 0.045 : style === "dubai" ? 0.09 : 0.085;
+    context.fillStyle = "rgba(255,255,255,0.82)";
     context.scale(0.58, 0.36);
     context.translate(-radiusX * 0.28, -radiusY * 0.4);
     context.beginPath();
