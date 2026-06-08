@@ -390,9 +390,7 @@ export default function Home() {
                 onDragStart={() => handleDragStart(index)}
                 type="button"
               >
-                <span
-                  className={`aspect-square w-12 shrink-0 rounded-full bg-gradient-to-br ${wax.ballClassName} shadow-[inset_-8px_-10px_14px_rgba(0,0,0,0.2)]`}
-                />
+                <WaxShelfIcon wax={wax} />
                 <span>
                   <strong className="block text-base">{wax.name}</strong>
                   <span className="text-sm leading-6 text-[#6f685e]">
@@ -737,6 +735,38 @@ function WaxPreview({
   );
 }
 
+function WaxShelfIcon({ wax }: { wax: WaxType }) {
+  const palette = getThreePalette(wax.name);
+  const baseClass =
+    palette.style === "dubai"
+      ? "bg-[radial-gradient(circle_at_28%_24%,#8b5e3c_0%,#4b2e20_38%,#20100b_100%)]"
+      : palette.style === "cotton"
+        ? "bg-[conic-gradient(from_30deg,#f7b6d2_0_34%,#b7eef7_34%_68%,#fdeca6_68%_100%)]"
+        : "bg-[radial-gradient(circle_at_28%_24%,#eaffb4_0%,#91ec2a_42%,#5da50e_100%)]";
+  const patchClass =
+    palette.style === "dubai"
+      ? "bg-[#c7d88a]/80"
+      : palette.style === "cotton"
+        ? "bg-white/60"
+        : "bg-white/72";
+
+  return (
+    <span className="relative aspect-square w-14 shrink-0">
+      <span className="absolute inset-0 rounded-full bg-white/35 shadow-[0_10px_16px_rgba(68,78,82,0.16)]" />
+      <span
+        className={`absolute inset-[5px] overflow-hidden rounded-full ${baseClass} shadow-[inset_-9px_-11px_14px_rgba(0,0,0,0.24),inset_5px_6px_10px_rgba(255,255,255,0.34)]`}
+      >
+        <span className={`absolute left-2 top-3 h-3 w-5 -rotate-12 rounded-[55%_45%_60%_40%] ${patchClass}`} />
+        <span className={`absolute right-2 top-4 h-4 w-4 rotate-12 rounded-[45%_55%_42%_58%] ${patchClass}`} />
+        <span className={`absolute bottom-3 left-4 h-3 w-6 rotate-6 rounded-[45%_55%_58%_42%] ${patchClass}`} />
+        <span className="absolute left-3 top-2 h-2 w-2 rounded-full bg-white/75 blur-[1px]" />
+      </span>
+      <span className="absolute left-1/2 top-0 h-4 w-3 -translate-x-1/2 -translate-y-1 rounded-[45%_45%_35%_35%] bg-white/70 shadow-[inset_-1px_-2px_3px_rgba(85,110,120,0.16)]" />
+      <span className="absolute left-[47%] top-[10px] h-[3px] w-6 -translate-x-1/2 -rotate-12 rounded-full bg-[#c9e4ef]/90 shadow-[0_1px_2px_rgba(70,100,115,0.2)]" />
+    </span>
+  );
+}
+
 function ThreeWaxBall({
   crackPoints,
   freezerMinutes,
@@ -779,12 +809,12 @@ function ThreeWaxBall({
 
     const palette = getThreePalette(selectedWax.name);
     const fractureAmount = Math.min(1, crackPoints.length / 15);
-    const pressAmount = Math.min(0.22, crackPoints.length * 0.03);
-    const ballGeometry = new THREE.SphereGeometry(1.42, 72, 48);
+    const pressAmount = Math.min(0.3, crackPoints.length * 0.045);
+    const ballGeometry = new THREE.SphereGeometry(fractureAmount > 0 ? 1.26 : 1.42, 72, 48);
     if (palette.style === "cotton") {
       applyCottonMarbleColors(ballGeometry);
     }
-    applyPressedClayDeformation(ballGeometry, crackPoints);
+    applyPressedClayDeformation(ballGeometry, crackPoints, 1);
     const fractureTexture = fractureAmount > 0 ? makeFractureTexture(palette.style, crackPoints.length) : null;
     const shellMaterial = new THREE.MeshPhysicalMaterial({
       clearcoat: 1,
@@ -825,7 +855,17 @@ function ThreeWaxBall({
         clearcoatRoughness: 0.03,
         color: 0xf5fdff,
         depthWrite: false,
-        opacity: palette.style === "dubai" ? 0.12 : palette.style === "cotton" ? 0.22 : 0.19,
+        opacity: fractureAmount > 0
+          ? palette.style === "dubai"
+            ? 0.2
+            : palette.style === "cotton"
+              ? 0.3
+              : 0.27
+          : palette.style === "dubai"
+            ? 0.12
+            : palette.style === "cotton"
+              ? 0.22
+              : 0.19,
         roughness: 0.035,
         side: THREE.FrontSide,
         transparent: true,
@@ -834,6 +874,7 @@ function ThreeWaxBall({
     );
     clearOuterShell.castShadow = false;
     clearOuterShell.renderOrder = 3;
+    applyPressedClayDeformation(clearOuterShell.geometry, crackPoints, 1.08);
     root.add(clearOuterShell);
 
     const innerClay = new THREE.Mesh(
@@ -1067,14 +1108,14 @@ function ThreeWaxBall({
 
     function animate() {
       const pressedScale = new THREE.Vector3(
-        1 + pressAmount * 0.5,
-        1 - pressAmount * 0.82,
+        1 + pressAmount * 0.44,
+        1 - pressAmount * 0.76,
         1 + pressAmount * 0.04,
       );
       const rubberScale = new THREE.Vector3(
-        1 + pressAmount * 0.16,
-        1 - pressAmount * 0.24,
-        1,
+        1 + pressAmount * 0.52,
+        1 - pressAmount * 0.78,
+        1 + pressAmount * 0.04,
       );
       ball.scale.copy(pressedScale);
       clearOuterShell.scale.copy(rubberScale);
@@ -1188,7 +1229,7 @@ function makeFractureTexture(style: ThreePalette["style"], clickCount: number) {
     style === "dubai"
       ? ["#4a2618"]
       : style === "cotton"
-        ? ["rgba(255,251,246,0.26)"]
+        ? ["rgba(255,251,246,0.48)"]
         : ["#8eea22"];
   let fragments = getTextureBaseFragments();
 
@@ -1235,7 +1276,7 @@ function makeFractureTexture(style: ThreePalette["style"], clickCount: number) {
     const centerJitter = 0.004 * (1 - progress * 0.35);
     const centerX = (u + (random(index * 43 + 3) - 0.5) * centerJitter) * size;
     const centerY = (v + (random(index * 47 + 9) - 0.5) * centerJitter) * size;
-    const coverageScale = (style === "cotton" ? 0.64 : 0.69) * (1 - progress * 0.085);
+    const coverageScale = (style === "cotton" ? 0.6 : 0.64) * (1 - progress * 0.095);
     const balancedWidth = THREE.MathUtils.lerp(width, height, 0.28);
     const balancedHeight = THREE.MathUtils.lerp(height, width, 0.24);
     const radiusX = balancedWidth * size * coverageScale * (0.92 + random(index + 2) * 0.08);
@@ -1520,7 +1561,11 @@ function makeSurfacePatchGeometry({
   return geometry;
 }
 
-function applyPressedClayDeformation(geometry: THREE.BufferGeometry, crackPoints: CrackPoint[]) {
+function applyPressedClayDeformation(
+  geometry: THREE.BufferGeometry,
+  crackPoints: CrackPoint[],
+  strength = 1,
+) {
   if (crackPoints.length === 0) {
     return;
   }
@@ -1544,14 +1589,14 @@ function applyPressedClayDeformation(geometry: THREE.BufferGeometry, crackPoints
       const dx = x - point.x;
       const dy = y - point.y;
       const influence = Math.exp(-(dx * dx + dy * dy) / 0.26) * point.force * edgeFalloff;
-      dent += influence * 0.085;
+      dent += influence * 0.085 * strength;
     });
 
     position.setXYZ(
       index,
       x,
       y,
-      Math.max(1.14, z - dent),
+      Math.max(strength < 1 ? 1.33 : 1.08, z - dent),
     );
   }
 
