@@ -373,7 +373,7 @@ export default function Home() {
           <SectionHeading eyebrow="Play" title="왁뿌볼 깨기 체험" />
 
           <p className="mb-3 text-sm font-extrabold text-[#6f685e]">
-            진열대에서 왁뿌볼을 집어 냉장고로 드래그하세요.
+            진열대에서 왁뿌볼을 집어 냉동고로 드래그하세요.
           </p>
           <div className="grid gap-3">
             {waxTypes.map((wax, index) => (
@@ -407,7 +407,7 @@ export default function Home() {
             onDrop={handleDropToFreezer}
           >
             <div className="flex items-center justify-between gap-3">
-              <strong className="text-lg">귀여운 냉장고</strong>
+              <strong className="text-lg">냉동고</strong>
               <span className="rounded-full border border-[#cbddeb] bg-white px-3 py-2 text-xs font-extrabold text-[#315f7a]">
                 {freezerMinutes}초 보관
               </span>
@@ -440,16 +440,14 @@ export default function Home() {
                       onDragEnd={() => setDraggedIndex(null)}
                       onDragStart={() => handleDragStart(selectedIndex)}
                     >
-                      <span
-                        className={`aspect-square w-20 rounded-full bg-gradient-to-br ${selectedWax.ballClassName} shadow-[inset_-14px_-16px_18px_rgba(0,0,0,0.24),0_10px_18px_rgba(54,104,132,0.22)]`}
-                      />
+                      <WaxShelfIcon sizeClassName="w-20" wax={selectedWax} />
                       <span className="rounded-full bg-white/85 px-3 py-2 text-center text-xs font-extrabold text-[#557084]">
                         작업대로 드래그해서 꺼내기
                       </span>
                     </div>
                   ) : (
                     <div className="absolute inset-x-5 top-[88px] rounded-2xl border-2 border-dashed border-[#9ccfe9] bg-white/55 px-4 py-5 text-center text-sm font-extrabold text-[#6c8798]">
-                      왁뿌볼을 냉장고 안으로 넣어주세요
+                      왁뿌볼을 냉동고 안으로 넣어주세요
                     </div>
                   )}
                 </div>
@@ -518,7 +516,7 @@ export default function Home() {
             />
           </div>
           <p className="mt-2 text-sm font-bold text-[#6f685e]">
-            냉장고에서 꺼낸 왁뿌볼을 이 작업대로 드래그하면 클릭해서 부술 수 있습니다.
+            냉동고에서 꺼낸 왁뿌볼을 이 작업대로 드래그하면 클릭해서 부술 수 있습니다.
           </p>
           <div className="mt-5 rounded-lg bg-[#f7f1e9]">
             {waxStage === "cracking" ? (
@@ -540,7 +538,7 @@ export default function Home() {
                     아직 작업대가 비어 있어요
                   </p>
                   <p className="mt-2 text-sm font-bold leading-6 text-[#8a8176]">
-                    냉장고에 있던 왁뿌볼을 이곳으로 드래그해서 올려주세요.
+                    냉동고에 있던 왁뿌볼을 이곳으로 드래그해서 올려주세요.
                   </p>
                 </div>
               </div>
@@ -725,7 +723,7 @@ function WaxPreview({
         </button>
         <span className="absolute bottom-5 right-5 z-10 rounded-full border border-[#dfd2c4] bg-white/75 px-3 py-2 text-xs font-extrabold text-[#4d8a10] backdrop-blur">
           {!canCrack
-            ? "냉장고에서 작업대로 드래그"
+            ? "냉동고에서 작업대로 드래그"
             : isBroken
               ? "완전 파괴 · 콰작 다시 듣기"
               : `${crackPercent}% 균열 · 3D 공 직접 클릭`}
@@ -735,7 +733,13 @@ function WaxPreview({
   );
 }
 
-function WaxShelfIcon({ wax }: { wax: WaxType }) {
+function WaxShelfIcon({
+  sizeClassName = "w-14",
+  wax,
+}: {
+  sizeClassName?: string;
+  wax: WaxType;
+}) {
   const palette = getThreePalette(wax.name);
   const baseClass =
     palette.style === "dubai"
@@ -743,23 +747,16 @@ function WaxShelfIcon({ wax }: { wax: WaxType }) {
       : palette.style === "cotton"
         ? "bg-[conic-gradient(from_30deg,#f7b6d2_0_34%,#b7eef7_34%_68%,#fdeca6_68%_100%)]"
         : "bg-[radial-gradient(circle_at_28%_24%,#eaffb4_0%,#91ec2a_42%,#5da50e_100%)]";
-  const patchClass =
-    palette.style === "dubai"
-      ? "bg-[#c7d88a]/80"
-      : palette.style === "cotton"
-        ? "bg-white/60"
-        : "bg-white/72";
 
   return (
-    <span className="relative aspect-square w-14 shrink-0">
+    <span className={`relative aspect-square ${sizeClassName} shrink-0`}>
       <span className="absolute inset-0 rounded-full bg-white/35 shadow-[0_10px_16px_rgba(68,78,82,0.16)]" />
       <span
         className={`absolute inset-[5px] overflow-hidden rounded-full ${baseClass} shadow-[inset_-9px_-11px_14px_rgba(0,0,0,0.24),inset_5px_6px_10px_rgba(255,255,255,0.34)]`}
       >
-        <span className={`absolute left-2 top-3 h-3 w-5 -rotate-12 rounded-[55%_45%_60%_40%] ${patchClass}`} />
-        <span className={`absolute right-2 top-4 h-4 w-4 rotate-12 rounded-[45%_55%_42%_58%] ${patchClass}`} />
-        <span className={`absolute bottom-3 left-4 h-3 w-6 rotate-6 rounded-[45%_55%_58%_42%] ${patchClass}`} />
-        <span className="absolute left-3 top-2 h-2 w-2 rounded-full bg-white/75 blur-[1px]" />
+        <span className="absolute left-[24%] top-[18%] h-[18%] w-[18%] rounded-full bg-white/75 blur-[1px]" />
+        <span className="absolute left-[14%] top-[10%] h-[58%] w-[22%] rotate-[-22deg] rounded-full bg-white/20 blur-[2px]" />
+        <span className="absolute bottom-[10%] right-[8%] h-[34%] w-[36%] rounded-full bg-black/10 blur-[4px]" />
       </span>
       <span className="absolute left-1/2 top-0 h-4 w-3 -translate-x-1/2 -translate-y-1 rounded-[45%_45%_35%_35%] bg-white/70 shadow-[inset_-1px_-2px_3px_rgba(85,110,120,0.16)]" />
       <span className="absolute left-[47%] top-[10px] h-[3px] w-6 -translate-x-1/2 -rotate-12 rounded-full bg-[#c9e4ef]/90 shadow-[0_1px_2px_rgba(70,100,115,0.2)]" />
