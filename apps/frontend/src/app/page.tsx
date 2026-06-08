@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import {
+  type DragEvent,
   type MouseEvent,
   useRef,
   useCallback,
@@ -105,7 +106,8 @@ function getFreezerState(minutes: number) {
 export default function Home() {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [freezerMinutes, setFreezerMinutes] = useState(0);
-  const [isFreezing, setIsFreezing] = useState(false);
+  const [waxStage, setWaxStage] = useState<WaxStage>("shelf");
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [crackProgress, setCrackProgress] = useState(0);
   const [crackPoints, setCrackPoints] = useState<CrackPoint[]>([]);
   const [apiState, setApiState] = useState<ApiState>({ status: "checking" });
@@ -116,6 +118,7 @@ export default function Home() {
   const fractureThreshold = 15;
   const crackPercent = Math.min(100, Math.round((crackProgress / fractureThreshold) * 100));
   const isBroken = crackPercent >= 100;
+  const isFreezing = waxStage === "freezer";
 
   const playReferenceCrunch = useCallback((isFinal = false) => {
     const audio = new Audio(referenceCrunchUrl);
@@ -141,23 +144,18 @@ export default function Home() {
   }, [freezerMinutes]);
 
   useEffect(() => {
-    if (!isFreezing) {
+    if (waxStage !== "freezer" || freezerMinutes >= 20) {
       return;
     }
 
     const timerId = window.setInterval(() => {
       setFreezerMinutes((current) => {
-        if (current >= 19) {
-          setIsFreezing(false);
-          return 20;
-        }
-
-        return current + 1;
+        return Math.min(20, current + 1);
       });
     }, 1000);
 
     return () => window.clearInterval(timerId);
-  }, [isFreezing]);
+  }, [freezerMinutes, waxStage]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -201,24 +199,66 @@ export default function Home() {
 
   function handleSelectWax(index: number) {
     setSelectedIndex(index);
+    setWaxStage("shelf");
+    setFreezerMinutes(0);
+    setCrackProgress(0);
+    setCrackPoints([]);
+  }
+
+  function handleDragStart(index: number) {
+    setDraggedIndex(index);
+    setSelectedIndex(index);
+  }
+
+  function allowDrop(event: DragEvent<HTMLElement>) {
+    event.preventDefault();
+  }
+
+  function handleDropToFreezer(event: DragEvent<HTMLElement>) {
+    event.preventDefault();
+    const nextIndex = draggedIndex ?? selectedIndex;
+    setSelectedIndex(nextIndex);
+    setDraggedIndex(null);
+    setWaxStage("freezer");
+    setFreezerMinutes(0);
     setCrackProgress(0);
     setCrackPoints([]);
   }
 
   function handleStartFreezer() {
+    setWaxStage("freezer");
+    setFreezerMinutes(0);
     setCrackProgress(0);
     setCrackPoints([]);
-    setIsFreezing(true);
+  }
+
+  function handleDropToCracking(event: DragEvent<HTMLElement>) {
+    event.preventDefault();
+    if (waxStage !== "freezer" && freezerMinutes === 0) {
+      setDraggedIndex(null);
+      return;
+    }
+
+    setSelectedIndex(draggedIndex ?? selectedIndex);
+    setDraggedIndex(null);
+    setWaxStage("cracking");
+    setCrackProgress(0);
+    setCrackPoints([]);
   }
 
   function handleReset() {
     setFreezerMinutes(0);
-    setIsFreezing(false);
+    setWaxStage("shelf");
+    setDraggedIndex(null);
     setCrackProgress(0);
     setCrackPoints([]);
   }
 
   function handleCrack(event: MouseEvent<HTMLButtonElement>) {
+    if (waxStage !== "cracking") {
+      return;
+    }
+
     const rect = event.currentTarget.getBoundingClientRect();
     const next = crackProgress + 1;
     const isFinal = next >= fractureThreshold;
@@ -281,6 +321,7 @@ export default function Home() {
           </div>
 
           <WaxPreview
+            canCrack={waxStage === "cracking"}
             crackPoints={crackPoints}
             crackPercent={crackPercent}
             freezerMinutes={freezerMinutes}
@@ -293,22 +334,28 @@ export default function Home() {
       </header>
 
       <section
-        className="mx-auto grid w-[min(1120px,calc(100%-32px))] grid-cols-[minmax(0,0.92fr)_minmax(360px,1fr)] gap-8 py-20 max-md:grid-cols-1"
+        className="mx-auto grid w-[min(1120px,calc(100%-32px))] grid-cols-[minmax(260px,0.72fr)_minmax(360px,1fr)] gap-8 py-20 max-lg:grid-cols-1"
         id="simulator"
       >
         <div className="rounded-lg border border-[#e6ded2] bg-white p-5 shadow-sm">
           <SectionHeading eyebrow="Play" title="왁뿌볼 깨기 체험" />
 
+          <p className="mb-3 text-sm font-extrabold text-[#6f685e]">
+            진열대에서 왁뿌볼을 집어 냉장고로 드래그하세요.
+          </p>
           <div className="grid gap-3">
             {waxTypes.map((wax, index) => (
               <button
-                className={`flex min-h-20 items-center gap-4 rounded-lg border p-4 text-left transition ${
+                className={`flex min-h-20 cursor-grab items-center gap-4 rounded-lg border p-4 text-left transition active:cursor-grabbing ${
                   selectedIndex === index
                     ? "border-[#3f88c5] bg-[#eef8fd]"
                     : "border-[#e6ded2] bg-white hover:border-[#9ccce7]"
                 }`}
                 key={wax.name}
+                draggable
                 onClick={() => handleSelectWax(index)}
+                onDragEnd={() => setDraggedIndex(null)}
+                onDragStart={() => handleDragStart(index)}
                 type="button"
               >
                 <span
@@ -324,7 +371,76 @@ export default function Home() {
             ))}
           </div>
 
-          <div className="mt-5 grid grid-cols-2 gap-2 max-sm:grid-cols-1">
+          <div
+            className="mt-5 rounded-lg border border-[#d9e7ef] bg-[#f2fbff] p-4 shadow-[0_18px_35px_rgba(63,136,197,0.14)]"
+            onDragOver={allowDrop}
+            onDrop={handleDropToFreezer}
+          >
+            <div className="flex items-center justify-between gap-3">
+              <strong className="text-lg">귀여운 냉장고</strong>
+              <span className="rounded-full border border-[#cbddeb] bg-white px-3 py-2 text-xs font-extrabold text-[#315f7a]">
+                {freezerMinutes}초 보관
+              </span>
+            </div>
+
+            <div className="relative mx-auto mt-4 h-[310px] max-w-[260px]">
+              <div className="absolute inset-x-8 bottom-0 h-5 rounded-full bg-[#b8d4e4]/35 blur-sm" />
+              <div
+                className={`absolute inset-x-3 top-0 h-[292px] rounded-[28px] border-4 border-[#b7d9ea] bg-[linear-gradient(145deg,#ffffff_0%,#e9f8ff_48%,#c9ebfa_100%)] p-4 shadow-[inset_-10px_-16px_24px_rgba(68,139,179,0.18),0_18px_28px_rgba(69,122,150,0.18)] transition ${
+                  waxStage === "freezer"
+                    ? "scale-[1.02] border-[#7dbde0]"
+                    : "border-dashed"
+                }`}
+              >
+                <div className="mb-3 flex items-center justify-between">
+                  <span className="h-3 w-3 rounded-full bg-[#ff9eb2] shadow-[18px_0_0_#ffe38f,36px_0_0_#9ee7ff]" />
+                  <span className="rounded-full bg-[#dff3fb] px-3 py-1 text-xs font-extrabold text-[#4c7b92]">
+                    FREEZER
+                  </span>
+                </div>
+
+                <div className="relative h-[220px] overflow-hidden rounded-[22px] border border-[#b9dced] bg-[linear-gradient(180deg,#fafdff_0%,#e5f7ff_52%,#d4effa_100%)] shadow-[inset_0_0_28px_rgba(111,184,222,0.25)]">
+                  <div className="absolute left-4 right-4 top-16 h-1 rounded-full bg-white/80 shadow-[0_78px_0_rgba(255,255,255,0.82)]" />
+                  <div className="absolute left-5 top-7 h-8 w-9 rounded-lg bg-white/60 shadow-[90px_76px_0_rgba(255,255,255,0.48)]" />
+                  <div className="absolute right-5 top-7 h-11 w-4 rounded-full bg-[#8ac8e7]" />
+                  {waxStage === "freezer" ? (
+                    <div
+                      className="absolute inset-x-0 top-[92px] flex cursor-grab flex-col items-center gap-3 active:cursor-grabbing"
+                      draggable
+                      onDragEnd={() => setDraggedIndex(null)}
+                      onDragStart={() => handleDragStart(selectedIndex)}
+                    >
+                      <span
+                        className={`aspect-square w-20 rounded-full bg-gradient-to-br ${selectedWax.ballClassName} shadow-[inset_-14px_-16px_18px_rgba(0,0,0,0.24),0_10px_18px_rgba(54,104,132,0.22)]`}
+                      />
+                      <span className="rounded-full bg-white/85 px-3 py-2 text-center text-xs font-extrabold text-[#557084]">
+                        작업대로 드래그해서 꺼내기
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="absolute inset-x-5 top-[88px] rounded-2xl border-2 border-dashed border-[#9ccfe9] bg-white/55 px-4 py-5 text-center text-sm font-extrabold text-[#6c8798]">
+                      왁뿌볼을 냉장고 안으로 넣어주세요
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="absolute right-0 top-24 h-24 w-4 rounded-full bg-[#8ac8e7] shadow-[inset_-2px_-4px_6px_rgba(48,101,128,0.2)]" />
+              <div className="absolute left-10 top-[276px] h-3 w-10 rounded-full bg-[#a7cfe3]" />
+              <div className="absolute right-10 top-[276px] h-3 w-10 rounded-full bg-[#a7cfe3]" />
+            </div>
+
+            <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/80">
+              <div
+                className="h-full rounded-full bg-[#3f88c5] transition-all"
+                style={{ width: `${freezerMinutes * 5}%` }}
+              />
+            </div>
+            <p className="mt-2 text-sm font-bold text-[#557084]">
+              1초 = 1분, 최대 20초까지 냉동합니다.
+            </p>
+          </div>
+
+          <div className="hidden">
             <button
               className="min-h-12 rounded-lg bg-[#191611] px-4 text-sm font-extrabold text-white disabled:cursor-not-allowed disabled:bg-[#b8aea2]"
               disabled={isFreezing || freezerMinutes >= 20}
@@ -343,7 +459,15 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="rounded-lg border border-[#e6ded2] bg-[#f7efe2] p-5">
+        <div
+          className={`rounded-lg border-2 border-dashed p-5 transition ${
+            waxStage === "cracking"
+              ? "border-[#8abc3f] bg-[#fbfff4]"
+              : "border-[#e0d5c6] bg-[#f7efe2]"
+          }`}
+          onDragOver={allowDrop}
+          onDrop={handleDropToCracking}
+        >
           <div className="grid gap-4">
             <StatusMetric label="선택한 왁뿌볼" value={selectedWax.name} />
             <StatusMetric
@@ -364,10 +488,36 @@ export default function Home() {
             />
           </div>
           <p className="mt-2 text-sm font-bold text-[#6f685e]">
-            1초 = 1분, 최대 냉동 시간은 20분입니다.
+            냉장고에서 꺼낸 왁뿌볼을 이 작업대로 드래그하면 클릭해서 부술 수 있습니다.
           </p>
+          <div className="mt-5 rounded-lg bg-[#f7f1e9]">
+            {waxStage === "cracking" ? (
+              <WaxPreview
+                canCrack
+                crackPoints={crackPoints}
+                crackPercent={crackPercent}
+                freezerMinutes={freezerMinutes}
+                freezerState={freezerState.state}
+                isBroken={isBroken}
+                onCrack={handleCrack}
+                selectedWax={selectedWax}
+              />
+            ) : (
+              <div className="grid min-h-[460px] place-items-center rounded-lg border border-dashed border-[#d8cdbf] bg-[linear-gradient(180deg,#fbf6ee,#f0e7dc)] p-6 text-center max-md:min-h-[360px]">
+                <div>
+                  <div className="mx-auto mb-5 h-3 w-48 rounded-full bg-[#d6c8b9]/55 shadow-[0_18px_32px_rgba(105,83,61,0.18)]" />
+                  <p className="text-lg font-extrabold text-[#6f685e]">
+                    아직 작업대가 비어 있어요
+                  </p>
+                  <p className="mt-2 text-sm font-bold leading-6 text-[#8a8176]">
+                    냉장고에 있던 왁뿌볼을 이곳으로 드래그해서 올려주세요.
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
           <p className="mt-3 rounded-md bg-white px-4 py-3 text-sm font-extrabold text-[#3f88c5]">
-            위쪽 왁뿌볼을 직접 클릭해서 깨뜨려 보세요. 마지막 균열에서 파괴음이 재생됩니다.
+            작업대에 놓인 왁뿌볼을 직접 클릭해서 깨보세요. 냉동 시간이 길수록 소리가 커집니다.
           </p>
         </div>
       </section>
@@ -503,6 +653,7 @@ export default function Home() {
 }
 
 function WaxPreview({
+  canCrack,
   crackPoints,
   crackPercent,
   freezerMinutes,
@@ -511,6 +662,7 @@ function WaxPreview({
   onCrack,
   selectedWax,
 }: {
+  canCrack: boolean;
   crackPoints: CrackPoint[];
   crackPercent: number;
   freezerMinutes: number;
@@ -527,7 +679,10 @@ function WaxPreview({
         </span>
         <button
           aria-label={`${selectedWax.name} 직접 깨기`}
-          className="absolute inset-0 cursor-pointer border-0 bg-transparent p-0"
+          className={`absolute inset-0 border-0 bg-transparent p-0 ${
+            canCrack ? "cursor-pointer" : "cursor-default"
+          }`}
+          disabled={!canCrack}
           onClick={onCrack}
           type="button"
         >
@@ -539,7 +694,11 @@ function WaxPreview({
           />
         </button>
         <span className="absolute bottom-5 right-5 z-10 rounded-full border border-[#dfd2c4] bg-white/75 px-3 py-2 text-xs font-extrabold text-[#4d8a10] backdrop-blur">
-          {isBroken ? "완전 파괴 · 콰작 다시 듣기" : `${crackPercent}% 균열 · 3D 공 직접 클릭`}
+          {!canCrack
+            ? "냉장고에서 작업대로 드래그"
+            : isBroken
+              ? "완전 파괴 · 콰작 다시 듣기"
+              : `${crackPercent}% 균열 · 3D 공 직접 클릭`}
         </span>
       </div>
     </div>
@@ -1103,6 +1262,8 @@ type TextureFragment = {
   v: number;
   width: number;
 };
+
+type WaxStage = "shelf" | "freezer" | "cracking";
 
 function makeFracturedPlatePoints(
   seed: number,
