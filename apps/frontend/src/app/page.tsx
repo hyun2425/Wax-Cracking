@@ -596,14 +596,14 @@ function ThreeWaxBall({
     applyPressedClayDeformation(ballGeometry, crackPoints);
     const fractureTexture = fractureAmount > 0 ? makeFractureTexture(palette.style, crackPoints.length) : null;
     const shellMaterial = new THREE.MeshPhysicalMaterial({
-      clearcoat: fractureAmount > 0 ? (palette.style === "cotton" ? 0.02 : 0.42) : 1,
-      clearcoatRoughness: fractureAmount > 0 ? (palette.style === "cotton" ? 0.82 : 0.16) : 0.045,
-      color: fractureTexture ? 0xffffff : palette.shell,
+      clearcoat: fractureAmount > 0 ? (palette.style === "cotton" ? 0.16 : 0.42) : 1,
+      clearcoatRoughness: fractureAmount > 0 ? (palette.style === "cotton" ? 0.36 : 0.16) : 0.045,
+      color: fractureTexture ? (palette.style === "cotton" ? 0xfffbf7 : 0xffffff) : palette.shell,
       map: fractureTexture,
       metalness: 0.02,
       opacity: 1,
-      roughness: fractureAmount > 0 ? (palette.style === "cotton" ? 0.88 : palette.style === "apple" ? 0.3 : 0.38) : palette.style === "apple" ? 0.045 : palette.style === "dubai" ? 0.08 : 0.06,
-      sheen: palette.style === "cotton" && fractureAmount > 0 ? 0 : palette.style === "apple" && fractureAmount > 0 ? 0.14 : 0.28,
+      roughness: fractureAmount > 0 ? (palette.style === "cotton" ? 0.42 : palette.style === "apple" ? 0.3 : 0.38) : palette.style === "apple" ? 0.045 : palette.style === "dubai" ? 0.08 : 0.06,
+      sheen: palette.style === "cotton" && fractureAmount > 0 ? 0.08 : palette.style === "apple" && fractureAmount > 0 ? 0.14 : 0.28,
       transparent: false,
       transmission: 0,
       vertexColors: palette.style === "cotton" && !fractureTexture,
@@ -810,7 +810,7 @@ function ThreeWaxBall({
     const keyLight = new THREE.DirectionalLight(
       0xffffff,
       palette.style === "cotton" && fractureAmount > 0
-        ? 1.35
+        ? 2.05
         : palette.style === "apple" && fractureAmount > 0
           ? 2.05
           : 3.2,
@@ -822,7 +822,7 @@ function ThreeWaxBall({
     const rimLight = new THREE.DirectionalLight(
       0xc8f7ff,
       palette.style === "cotton" && fractureAmount > 0
-        ? 0.55
+        ? 0.82
         : palette.style === "apple" && fractureAmount > 0
           ? 1.15
           : 2.2,
@@ -833,7 +833,7 @@ function ThreeWaxBall({
     const warmLight = new THREE.PointLight(
       0xfff1dd,
       palette.style === "cotton" && fractureAmount > 0
-        ? 1.45
+        ? 1.9
         : palette.style === "apple" && fractureAmount > 0
           ? 2.1
           : 4.8,
@@ -846,7 +846,7 @@ function ThreeWaxBall({
         0xfff7ed,
         0xd8e8f0,
         palette.style === "cotton" && fractureAmount > 0
-          ? 0.55
+          ? 1.05
           : palette.style === "apple" && fractureAmount > 0
             ? 0.85
             : 1.45,
@@ -875,12 +875,9 @@ function ThreeWaxBall({
         1 - pressAmount * 0.24,
         1,
       );
-      ball.scale.lerp(
-        pressedScale,
-        0.08,
-      );
-      clearOuterShell.scale.lerp(rubberScale, 0.08);
-      innerClay.scale.lerp(pressedScale, 0.08);
+      ball.scale.copy(pressedScale);
+      clearOuterShell.scale.copy(rubberScale);
+      innerClay.scale.copy(pressedScale);
       renderer.render(scene, camera);
       animationId = window.requestAnimationFrame(animate);
     }
@@ -956,15 +953,15 @@ function makeFractureTexture(style: ThreePalette["style"], clickCount: number) {
   const progress = THREE.MathUtils.clamp((clickCount - 1) / 14, 0, 1);
 
   if (style === "cotton") {
-    context.fillStyle = "#f0a1c7";
+    context.fillStyle = "#f6b7d2";
     context.fillRect(0, 0, size, size);
     [
-      ["#86dce9", 0.22, 0.26, 0.5, 0.9],
-      ["#86dce9", 0.73, 0.22, 0.44, 0.7],
-      ["#f2d16f", 0.48, 0.72, 0.45, 0.72],
-      ["#f2d16f", 0.88, 0.56, 0.28, 0.48],
-      ["#f0a1c7", 0.72, 0.72, 0.42, 0.7],
-      ["#f0a1c7", 0.16, 0.7, 0.34, 0.54],
+      ["#b8edf4", 0.2, 0.24, 0.5, 0.92],
+      ["#b8edf4", 0.72, 0.22, 0.4, 0.68],
+      ["#f3e49c", 0.46, 0.7, 0.44, 0.76],
+      ["#f3e49c", 0.88, 0.56, 0.25, 0.46],
+      ["#f6b7d2", 0.72, 0.72, 0.42, 0.72],
+      ["#f6b7d2", 0.18, 0.72, 0.34, 0.58],
     ].forEach(([color, x, y, radius, alpha]) => {
       context.globalAlpha = Number(alpha);
       const glow = context.createRadialGradient(
@@ -990,7 +987,7 @@ function makeFractureTexture(style: ThreePalette["style"], clickCount: number) {
     style === "dubai"
       ? ["#4a2618"]
       : style === "cotton"
-        ? ["rgba(255,248,239,0.38)"]
+        ? ["rgba(255,251,246,0.26)"]
         : ["#8eea22"];
   let fragments = getTextureBaseFragments();
 
@@ -1037,7 +1034,7 @@ function makeFractureTexture(style: ThreePalette["style"], clickCount: number) {
     const centerJitter = 0.004 * (1 - progress * 0.35);
     const centerX = (u + (random(index * 43 + 3) - 0.5) * centerJitter) * size;
     const centerY = (v + (random(index * 47 + 9) - 0.5) * centerJitter) * size;
-    const coverageScale = (style === "cotton" ? 0.68 : 0.72) * (1 - progress * 0.075);
+    const coverageScale = (style === "cotton" ? 0.64 : 0.69) * (1 - progress * 0.085);
     const balancedWidth = THREE.MathUtils.lerp(width, height, 0.28);
     const balancedHeight = THREE.MathUtils.lerp(height, width, 0.24);
     const radiusX = balancedWidth * size * coverageScale * (0.92 + random(index + 2) * 0.08);
@@ -1051,10 +1048,10 @@ function makeFractureTexture(style: ThreePalette["style"], clickCount: number) {
       style === "dubai"
         ? "rgba(30,18,10,0.24)"
         : style === "cotton"
-          ? "rgba(130,94,62,0.18)"
+          ? "rgba(214,150,180,0.08)"
           : "rgba(80,72,58,0.14)";
-    context.shadowBlur = style === "apple" ? 6 : style === "cotton" ? 7 : 8;
-    context.shadowOffsetY = style === "cotton" ? 4 : 5;
+    context.shadowBlur = style === "apple" ? 6 : style === "cotton" ? 4 : 8;
+    context.shadowOffsetY = style === "cotton" ? 2 : 5;
     context.beginPath();
 
     points.forEach(([unitX, unitY], point) => {
@@ -1077,7 +1074,7 @@ function makeFractureTexture(style: ThreePalette["style"], clickCount: number) {
       style === "dubai"
         ? "rgba(199,216,138,0.55)"
         : style === "cotton"
-          ? "rgba(184,146,98,0.24)"
+          ? "rgba(225,166,190,0.18)"
           : "rgba(255,251,242,0.48)";
     context.stroke();
     context.shadowColor = "transparent";
