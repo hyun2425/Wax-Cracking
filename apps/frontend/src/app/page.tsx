@@ -596,14 +596,14 @@ function ThreeWaxBall({
     applyPressedClayDeformation(ballGeometry, crackPoints);
     const fractureTexture = fractureAmount > 0 ? makeFractureTexture(palette.style, crackPoints.length) : null;
     const shellMaterial = new THREE.MeshPhysicalMaterial({
-      clearcoat: fractureAmount > 0 ? (palette.style === "cotton" ? 0.1 : 0.42) : 1,
-      clearcoatRoughness: fractureAmount > 0 ? (palette.style === "cotton" ? 0.55 : 0.16) : 0.045,
+      clearcoat: fractureAmount > 0 ? (palette.style === "cotton" ? 0.02 : 0.42) : 1,
+      clearcoatRoughness: fractureAmount > 0 ? (palette.style === "cotton" ? 0.82 : 0.16) : 0.045,
       color: fractureTexture ? 0xffffff : palette.shell,
       map: fractureTexture,
       metalness: 0.02,
       opacity: 1,
-      roughness: fractureAmount > 0 ? (palette.style === "cotton" ? 0.72 : palette.style === "apple" ? 0.3 : 0.38) : palette.style === "apple" ? 0.045 : palette.style === "dubai" ? 0.08 : 0.06,
-      sheen: palette.style === "cotton" && fractureAmount > 0 ? 0.05 : palette.style === "apple" && fractureAmount > 0 ? 0.14 : 0.28,
+      roughness: fractureAmount > 0 ? (palette.style === "cotton" ? 0.88 : palette.style === "apple" ? 0.3 : 0.38) : palette.style === "apple" ? 0.045 : palette.style === "dubai" ? 0.08 : 0.06,
+      sheen: palette.style === "cotton" && fractureAmount > 0 ? 0 : palette.style === "apple" && fractureAmount > 0 ? 0.14 : 0.28,
       transparent: false,
       transmission: 0,
       vertexColors: palette.style === "cotton" && !fractureTexture,
@@ -929,15 +929,15 @@ function makeFractureTexture(style: ThreePalette["style"], clickCount: number) {
   const progress = THREE.MathUtils.clamp((clickCount - 1) / 14, 0, 1);
 
   if (style === "cotton") {
-    context.fillStyle = "#f59ac4";
+    context.fillStyle = "#f26fb0";
     context.fillRect(0, 0, size, size);
     [
-      ["#8fe7f5", 0.22, 0.26, 0.5, 0.96],
-      ["#8fe7f5", 0.73, 0.22, 0.44, 0.78],
-      ["#ffd86f", 0.48, 0.72, 0.45, 0.88],
-      ["#ffd86f", 0.88, 0.56, 0.28, 0.66],
-      ["#f59ac4", 0.72, 0.72, 0.42, 0.82],
-      ["#f59ac4", 0.16, 0.7, 0.34, 0.64],
+      ["#58d9ef", 0.22, 0.26, 0.5, 0.98],
+      ["#58d9ef", 0.73, 0.22, 0.44, 0.82],
+      ["#ffc93d", 0.48, 0.72, 0.45, 0.86],
+      ["#ffc93d", 0.88, 0.56, 0.28, 0.62],
+      ["#f26fb0", 0.72, 0.72, 0.42, 0.82],
+      ["#f26fb0", 0.16, 0.7, 0.34, 0.64],
     ].forEach(([color, x, y, radius, alpha]) => {
       context.globalAlpha = Number(alpha);
       const glow = context.createRadialGradient(
@@ -963,7 +963,7 @@ function makeFractureTexture(style: ThreePalette["style"], clickCount: number) {
     style === "dubai"
       ? ["#4a2618"]
       : style === "cotton"
-        ? ["rgba(255,248,239,0.62)"]
+        ? ["rgba(255,248,239,0.42)"]
         : ["#8eea22"];
   let fragments = getTextureBaseFragments();
 
@@ -1010,7 +1010,7 @@ function makeFractureTexture(style: ThreePalette["style"], clickCount: number) {
     const centerJitter = 0.012 * (1 - progress * 0.35);
     const centerX = (u + (random(index * 43 + 3) - 0.5) * centerJitter) * size;
     const centerY = (v + (random(index * 47 + 9) - 0.5) * centerJitter) * size;
-    const coverageScale = (style === "cotton" ? 0.8 : 0.78) * (1 - progress * 0.018);
+    const coverageScale = (style === "cotton" ? 0.76 : 0.78) * (1 - progress * 0.018);
     const balancedWidth = THREE.MathUtils.lerp(width, height, 0.28);
     const balancedHeight = THREE.MathUtils.lerp(height, width, 0.24);
     const radiusX = balancedWidth * size * coverageScale * (0.92 + random(index + 2) * 0.08);
@@ -1110,17 +1110,17 @@ function makeFracturedPlatePoints(
 
 function getTextureBaseFragments(): TextureFragment[] {
   return [
-    [0.13, 0.2, 0.2, 0.19, -0.32],
-    [0.38, 0.13, 0.25, 0.2, 0.18],
-    [0.68, 0.25, 0.22, 0.21, -0.08],
-    [0.88, 0.16, 0.17, 0.18, 0.34],
-    [0.2, 0.47, 0.22, 0.21, 0.1],
-    [0.5, 0.38, 0.28, 0.23, -0.22],
-    [0.79, 0.53, 0.24, 0.22, 0.2],
-    [0.08, 0.68, 0.16, 0.18, -0.08],
-    [0.31, 0.82, 0.23, 0.19, 0.28],
-    [0.58, 0.72, 0.25, 0.2, -0.14],
-    [0.86, 0.84, 0.19, 0.18, 0.06],
+    [0.15, 0.17, 0.27, 0.24, -0.08],
+    [0.43, 0.15, 0.31, 0.24, 0.06],
+    [0.74, 0.18, 0.29, 0.25, -0.04],
+    [0.92, 0.35, 0.18, 0.25, 0.08],
+    [0.17, 0.45, 0.3, 0.28, 0.05],
+    [0.48, 0.44, 0.33, 0.29, -0.06],
+    [0.78, 0.49, 0.29, 0.28, 0.04],
+    [0.08, 0.73, 0.18, 0.25, -0.05],
+    [0.29, 0.78, 0.29, 0.25, 0.08],
+    [0.58, 0.76, 0.31, 0.25, -0.04],
+    [0.86, 0.79, 0.26, 0.24, 0.06],
   ].map(([u, v, width, height, rotation], index) => ({
     height,
     id: index + 1,
