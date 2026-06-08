@@ -845,6 +845,40 @@ function ThreeWaxBall({
     ball.receiveShadow = true;
     root.add(ball);
 
+    const cleanClayRim = new THREE.Mesh(
+      new THREE.SphereGeometry(fractureAmount > 0 ? 1.35 : 1.43, 144, 88),
+      new THREE.ShaderMaterial({
+        depthWrite: false,
+        fragmentShader: `
+          uniform vec3 rimColor;
+          uniform float rimOpacity;
+          varying vec3 vNormal;
+
+          void main() {
+            float edge = pow(1.0 - abs(normalize(vNormal).z), 2.65);
+            float alpha = smoothstep(0.26, 0.82, edge) * rimOpacity;
+            gl_FragColor = vec4(rimColor, alpha);
+          }
+        `,
+        transparent: true,
+        uniforms: {
+          rimColor: { value: new THREE.Color(palette.clay) },
+          rimOpacity: { value: fractureAmount > 0 ? 0.7 : 0.08 },
+        },
+        vertexShader: `
+          varying vec3 vNormal;
+
+          void main() {
+            vNormal = normalize(normalMatrix * normal);
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+          }
+        `,
+      }),
+    );
+    cleanClayRim.renderOrder = 2;
+    applyPressedClayDeformation(cleanClayRim.geometry, crackPoints, 0.84);
+    root.add(cleanClayRim);
+
     const clearOuterShell = new THREE.Mesh(
       new THREE.SphereGeometry(1.58, 160, 96),
       new THREE.MeshPhysicalMaterial({
@@ -1115,6 +1149,7 @@ function ThreeWaxBall({
         1 + pressAmount * 0.04,
       );
       ball.scale.copy(pressedScale);
+      cleanClayRim.scale.copy(pressedScale);
       clearOuterShell.scale.copy(rubberScale);
       innerClay.scale.copy(pressedScale);
       renderer.render(scene, camera);
