@@ -807,23 +807,53 @@ function ThreeWaxBall({
     floor.scale.set(1.35, 0.38, 1);
     scene.add(floor);
 
-    const keyLight = new THREE.DirectionalLight(0xffffff, palette.style === "apple" && fractureAmount > 0 ? 2.05 : 3.2);
+    const keyLight = new THREE.DirectionalLight(
+      0xffffff,
+      palette.style === "cotton" && fractureAmount > 0
+        ? 1.35
+        : palette.style === "apple" && fractureAmount > 0
+          ? 2.05
+          : 3.2,
+    );
     keyLight.position.set(3.6, 4.2, 5.8);
     keyLight.castShadow = true;
     scene.add(keyLight);
 
-    const rimLight = new THREE.DirectionalLight(0xc8f7ff, palette.style === "apple" && fractureAmount > 0 ? 1.15 : 2.2);
+    const rimLight = new THREE.DirectionalLight(
+      0xc8f7ff,
+      palette.style === "cotton" && fractureAmount > 0
+        ? 0.55
+        : palette.style === "apple" && fractureAmount > 0
+          ? 1.15
+          : 2.2,
+    );
     rimLight.position.set(-3.8, 1.8, 3.2);
     scene.add(rimLight);
 
-    const warmLight = new THREE.PointLight(0xfff1dd, palette.style === "apple" && fractureAmount > 0 ? 2.1 : 4.8, 9);
+    const warmLight = new THREE.PointLight(
+      0xfff1dd,
+      palette.style === "cotton" && fractureAmount > 0
+        ? 1.45
+        : palette.style === "apple" && fractureAmount > 0
+          ? 2.1
+          : 4.8,
+      9,
+    );
     warmLight.position.set(-2.8, -2.1, 3.4);
     scene.add(warmLight);
-    scene.add(new THREE.HemisphereLight(0xfff7ed, 0xd8e8f0, palette.style === "apple" && fractureAmount > 0 ? 0.85 : 1.45));
+    scene.add(
+      new THREE.HemisphereLight(
+        0xfff7ed,
+        0xd8e8f0,
+        palette.style === "cotton" && fractureAmount > 0
+          ? 0.55
+          : palette.style === "apple" && fractureAmount > 0
+            ? 0.85
+            : 1.45,
+      ),
+    );
 
     let animationId = 0;
-    const start = performance.now();
-
     function resize() {
       const rect = mountElement.getBoundingClientRect();
       const width = Math.max(1, rect.width);
@@ -835,9 +865,6 @@ function ThreeWaxBall({
     }
 
     function animate() {
-      const elapsed = (performance.now() - start) / 1000;
-      root.rotation.y = -0.24 + Math.sin(elapsed * 0.55) * 0.12;
-      root.rotation.x = -0.08 + Math.sin(elapsed * 0.42) * 0.05;
       const pressedScale = new THREE.Vector3(
         1 + pressAmount * 0.5,
         1 - pressAmount * 0.82,
@@ -929,15 +956,15 @@ function makeFractureTexture(style: ThreePalette["style"], clickCount: number) {
   const progress = THREE.MathUtils.clamp((clickCount - 1) / 14, 0, 1);
 
   if (style === "cotton") {
-    context.fillStyle = "#f6a8cb";
+    context.fillStyle = "#f0a1c7";
     context.fillRect(0, 0, size, size);
     [
-      ["#9ee8f4", 0.22, 0.26, 0.5, 0.94],
-      ["#9ee8f4", 0.73, 0.22, 0.44, 0.74],
-      ["#f8d983", 0.48, 0.72, 0.45, 0.78],
-      ["#f8d983", 0.88, 0.56, 0.28, 0.54],
-      ["#f6a8cb", 0.72, 0.72, 0.42, 0.74],
-      ["#f6a8cb", 0.16, 0.7, 0.34, 0.56],
+      ["#86dce9", 0.22, 0.26, 0.5, 0.9],
+      ["#86dce9", 0.73, 0.22, 0.44, 0.7],
+      ["#f2d16f", 0.48, 0.72, 0.45, 0.72],
+      ["#f2d16f", 0.88, 0.56, 0.28, 0.48],
+      ["#f0a1c7", 0.72, 0.72, 0.42, 0.7],
+      ["#f0a1c7", 0.16, 0.7, 0.34, 0.54],
     ].forEach(([color, x, y, radius, alpha]) => {
       context.globalAlpha = Number(alpha);
       const glow = context.createRadialGradient(
@@ -963,7 +990,7 @@ function makeFractureTexture(style: ThreePalette["style"], clickCount: number) {
     style === "dubai"
       ? ["#4a2618"]
       : style === "cotton"
-        ? ["rgba(255,248,239,0.48)"]
+        ? ["rgba(255,248,239,0.38)"]
         : ["#8eea22"];
   let fragments = getTextureBaseFragments();
 
@@ -1007,10 +1034,10 @@ function makeFractureTexture(style: ThreePalette["style"], clickCount: number) {
 
   fragments.forEach(({ height, rotation, u, v, width }, index) => {
     const points = makeFracturedPlatePoints(index, width, height, random);
-    const centerJitter = 0.012 * (1 - progress * 0.35);
+    const centerJitter = 0.004 * (1 - progress * 0.35);
     const centerX = (u + (random(index * 43 + 3) - 0.5) * centerJitter) * size;
     const centerY = (v + (random(index * 47 + 9) - 0.5) * centerJitter) * size;
-    const coverageScale = (style === "cotton" ? 0.76 : 0.78) * (1 - progress * 0.018);
+    const coverageScale = (style === "cotton" ? 0.68 : 0.72) * (1 - progress * 0.075);
     const balancedWidth = THREE.MathUtils.lerp(width, height, 0.28);
     const balancedHeight = THREE.MathUtils.lerp(height, width, 0.24);
     const radiusX = balancedWidth * size * coverageScale * (0.92 + random(index + 2) * 0.08);
