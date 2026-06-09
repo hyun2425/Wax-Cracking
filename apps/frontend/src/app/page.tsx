@@ -327,6 +327,7 @@ export default function Home() {
             <Link href="/">mk.ver</Link>
             <Link href="/hsj-ver">hsj.ver</Link>
             <Link href="/njjey-ver">njjey.ver</Link>
+            <Link href="/ruby-gamja-walk-quest">ruby-gamja</Link>
           </div>
         </nav>
 
