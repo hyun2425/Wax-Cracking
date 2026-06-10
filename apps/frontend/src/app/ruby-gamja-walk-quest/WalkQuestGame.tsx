@@ -55,6 +55,7 @@ const dog = {
     poop: "/ruby-gamja/cutouts-v3/gamja-poop.png",
     heart: "/ruby-gamja/cutouts-v3/gamja-heart.png",
   },
+  intro: "/ruby-gamja/cutouts-v2/duo-heart.png",
   duo: "/ruby-gamja/custom/intro-ruby-gamja.jpg",
 };
 
@@ -114,8 +115,8 @@ const phaseInfo: Record<Phase, { scene: string; mission: string; bg: string }> =
   living: { scene: "1층 거실", mission: "루비 또는 감자를 부르고, 산책 말을 해보세요.", bg: "living" },
   excited: { scene: "거실", mission: "강아지들이 신났어요. 이제 목줄을 준비하세요.", bg: "living" },
   leashPrep: { scene: "현관", mission: "먼저 앉아를 입력/클릭한 뒤 목줄 미션을 시작하세요.", bg: "entry" },
-  leashMission: { scene: "현관", mission: "10초 안에 루비와 감자 목을 클릭하고 목줄을 드래그하세요.", bg: "entry" },
-  leashZoom: { scene: "목줄 확대", mission: "목줄을 목 고리까지 드래그해서 채우세요.", bg: "entry" },
+  leashMission: { scene: "현관", mission: "10초 안에 선반의 목줄을 루비와 감자에게 채워주세요.", bg: "entry" },
+  leashZoom: { scene: "목줄 확대", mission: "목줄을 목 고리까지 옮겨 채우세요.", bg: "entry" },
   poopBag: { scene: "현관문", mission: "똥봉투를 챙기세요. 안 챙겨도 두 번 누르면 나갈 수 있어요.", bg: "entry" },
   garden: { scene: "정원", mission: "정원을 지나 대문 앞으로 가세요.", bg: "garden" },
   gate: { scene: "대문 앞", mission: "루비는 앉아, 감자는 조용히 해. 진정 후 대문을 여세요.", bg: "gate" },
@@ -123,7 +124,7 @@ const phaseInfo: Record<Phase, { scene: string; mission: string; bg: string }> =
   pull: { scene: "산책길", mission: "루비가 당겨요. 5초 안에 천천히를 클릭하세요.", bg: "street" },
   poop: { scene: "산책길", mission: "감자 똥을 처리하세요.", bg: "street" },
   run: { scene: "산책길", mission: "스페이스바를 빠르게 눌러 속도를 따라가세요.", bg: "street" },
-  car: { scene: "차 오는 골목", mission: "멈춰 → 길 옆으로 드래그 → 기다려 순서로 처리하세요.", bg: "road" },
+  car: { scene: "차 오는 골목", mission: "멈춰 → 길 옆으로 이동 → 기다려 순서로 처리하세요.", bg: "road" },
   barkingDog: { scene: "담장 옆", mission: "다른 집 강아지가 짖어요. 5초 안에 무시해를 클릭하세요.", bg: "fence" },
   boss: { scene: "마지막 보스", mission: "풀려 있는 강아지가 달려와요. 5초 안에 블로킹!", bg: "fence" },
   home: { scene: "집 앞", mission: "집에 도착했어요. 마지막으로 문을 열고 들어가세요.", bg: "gate" },
@@ -156,6 +157,7 @@ export default function WalkQuestGame() {
 
   const info = phaseInfo[phase];
   const needsInput = ["living", "leashPrep"].includes(phase);
+  const showDogs = !(phase === "upstairs" || (phase === "living" && !calledDogs));
 
   function showHearts(text: string) {
     setMessage(text);
@@ -351,7 +353,7 @@ export default function WalkQuestGame() {
     setPhase("leashMission");
     setTimeLeft(10);
     playSound("leash");
-    setMessage("강아지 목을 클릭하면 확대됩니다. 목줄을 드래그해서 채워주세요.");
+    setMessage("선반의 목줄을 루비와 감자에게 각각 채워주세요.");
   }
 
   function openLeashZoom(target: Dog) {
@@ -362,7 +364,7 @@ export default function WalkQuestGame() {
     setZoomDog(target);
     setPhase("leashZoom");
     playSound("leash");
-    setMessage(`${target === "ruby" ? "루비" : "감자"} 목 부분 확대. 목줄을 고리로 드래그하세요.`);
+    setMessage(`${target === "ruby" ? "루비" : "감자"} 목 부분 확대. 목줄을 고리로 옮겨주세요.`);
   }
 
   function finishLeash(target: Dog) {
@@ -413,9 +415,9 @@ export default function WalkQuestGame() {
   function choosePoopTool(tool: PoopTool) {
     setPoopTool(tool);
     playSound("poop");
-    if (tool === "leaf") setMessage("나뭇잎을 똥 위로 드래그해보세요.");
-    if (tool === "sock") setMessage("양말을 벗었습니다. 양말을 똥 위로 드래그하세요.");
-    if (tool === "bag") setMessage("똥봉투를 똥 위로 드래그하세요.");
+    if (tool === "leaf") setMessage("나뭇잎을 똥 위로 옮겨보세요.");
+    if (tool === "sock") setMessage("양말을 벗었습니다. 양말을 똥 위로 옮겨주세요.");
+    if (tool === "bag") setMessage("똥봉투를 똥 위로 옮겨주세요.");
   }
 
   function dropPoopTool() {
@@ -451,7 +453,7 @@ export default function WalkQuestGame() {
       return;
     }
     if (!dogsRoadside) {
-      setMessage("강아지들을 길 옆 안전 구역으로 드래그해야 해요.");
+      setMessage("강아지들을 길 옆 안전 구역으로 옮겨야 해요.");
       return;
     }
     resumeWalk("루감이를 안전하게 지켜냈어요!");
@@ -496,7 +498,7 @@ export default function WalkQuestGame() {
         <section className={`scene bg-${info.bg}`}>
           <div className="first-person" />
           <SceneFurniture phase={phase} />
-          <DogLayer pose={dogPose} phase={phase} rubyCalm={rubyCalm} hearts={hearts || phase === "clear"} peePulse={peePulse} />
+          {showDogs && <DogLayer pose={dogPose} phase={phase} rubyCalm={rubyCalm} gamjaQuiet={gamjaQuiet} hearts={hearts || phase === "clear"} peePulse={peePulse} />}
           <SceneContent
             phase={phase}
             timeLeft={timeLeft}
@@ -535,11 +537,11 @@ export default function WalkQuestGame() {
             blockBoss={blockBoss}
           />
           {needsInput && (
-            <form className="command" onSubmit={submitCommand}>
+            <form className={`command ${phase === "leashPrep" ? "command-side" : ""}`} onSubmit={submitCommand}>
               <input
                 value={input}
                 onChange={(event) => setInput(event.target.value)}
-                placeholder={phase === "living" ? "루비 / 감자 / 산책가자 / 나가자 / 나갈까" : "앉아"}
+                placeholder={phase === "living" ? "말을 입력해 주세요" : "앉아"}
                 autoFocus
               />
               <button type="submit">말하기</button>
@@ -557,19 +559,19 @@ export default function WalkQuestGame() {
       </section>
 
       <style jsx global>{`
-        @import url("https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Jua&family=Poor+Story&display=swap");
+        @import url("https://fonts.googleapis.com/css2?family=Jua&family=Nanum+Pen+Script&display=swap");
       `}</style>
       <style jsx>{`
         .walk-page {
           min-height: 100vh;
           padding: 24px;
           background:
-            radial-gradient(circle at 20% 5%, rgba(255, 236, 205, 0.75), transparent 18rem),
-            radial-gradient(circle at 80% 16%, rgba(206, 226, 220, 0.68), transparent 22rem),
-            linear-gradient(135deg, #e3d5c5, #cbd7d2);
+            radial-gradient(circle at 16% 4%, rgba(255, 237, 189, 0.82), transparent 18rem),
+            radial-gradient(circle at 82% 14%, rgba(184, 222, 255, 0.7), transparent 24rem),
+            linear-gradient(135deg, #f9efd7, #d8eef7 55%, #e8f3d2);
           color: #231a15;
-          font-family: "Gaegu", "Jua", "Poor Story", "NanumSquareRound", "Pretendard", "Segoe UI", sans-serif;
-          font-size: 1.12rem;
+          font-family: "Jua", "NanumSquareRound", "Pretendard", "Segoe UI", sans-serif;
+          font-size: 1.05rem;
         }
 
         .back-link {
@@ -583,7 +585,7 @@ export default function WalkQuestGame() {
           margin: 18px auto 0;
           border: 2px solid rgba(72, 50, 35, 0.28);
           border-radius: 24px;
-          background: #241b15;
+          background: #fffaf1;
           overflow: hidden;
           box-shadow: 0 28px 80px rgba(37, 28, 22, 0.28);
         }
@@ -594,14 +596,14 @@ export default function WalkQuestGame() {
           align-items: end;
           gap: 18px;
           padding: 20px 22px 16px;
-          border-bottom: 1px solid rgba(255, 240, 219, 0.18);
-          background: linear-gradient(180deg, #4d392b, #2f231c);
-          color: #fff8ec;
+          border-bottom: 1px solid rgba(135, 101, 66, 0.18);
+          background: linear-gradient(180deg, #fff7e8, #f2d9ad);
+          color: #4b3424;
         }
 
         .topbar p {
           margin: 0 0 6px;
-          color: #efd9bd;
+          color: #8b674c;
           font-size: 1rem;
           font-weight: 900;
         }
@@ -610,10 +612,10 @@ export default function WalkQuestGame() {
           margin: 0;
           font-size: clamp(2.1rem, 4.8vw, 3.6rem);
           letter-spacing: 0;
-          color: #fff7e8;
+          color: #3d2b20;
           text-shadow:
-            0 4px 0 rgba(70, 47, 32, 0.95),
-            0 9px 18px rgba(0,0,0,0.38);
+            0 3px 0 rgba(255, 255, 255, 0.9),
+            0 9px 18px rgba(120, 86, 55, 0.24);
         }
 
         .hud-pills {
@@ -637,8 +639,8 @@ export default function WalkQuestGame() {
           position: absolute;
           inset: 0;
           background:
-            radial-gradient(circle at 50% 36%, transparent 0 34%, rgba(22, 16, 12, 0.22) 72%),
-            linear-gradient(90deg, rgba(24, 18, 15, 0.36), transparent 35%, rgba(24, 18, 15, 0.18));
+            radial-gradient(circle at 50% 34%, transparent 0 38%, rgba(255, 255, 255, 0.15) 74%),
+            linear-gradient(90deg, rgba(255, 248, 236, 0.16), transparent 32%, rgba(54, 42, 31, 0.08));
           pointer-events: none;
         }
 
@@ -652,26 +654,23 @@ export default function WalkQuestGame() {
 
         .bg-stairs {
           background:
-            radial-gradient(circle at 78% 18%, rgba(255,255,255,0.72), transparent 18rem),
-            linear-gradient(180deg, #f7f3ee 0 38%, transparent 38%),
-            repeating-linear-gradient(42deg, rgba(173,164,154,0.16) 0 2px, transparent 2px 64px),
-            linear-gradient(180deg, #fbfaf7 0 48%, #eee8df 48% 100%);
+            linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,248,236,0.2)),
+            url("/ruby-gamja/custom/stairs-sleep-scene.png") center / cover no-repeat;
         }
 
         .bg-living,
         .bg-entry {
           background:
-            radial-gradient(circle at 72% 22%, rgba(255,255,255,0.8), transparent 18rem),
-            linear-gradient(180deg, #f6f1e9 0 50%, transparent 50%),
-            repeating-linear-gradient(35deg, rgba(171,162,152,0.18) 0 2px, transparent 2px 68px),
-            linear-gradient(180deg, #fbfaf8 0 50%, #ece6dd 50% 100%);
+            radial-gradient(circle at 78% 18%, rgba(255,255,255,0.72), transparent 18rem),
+            linear-gradient(180deg, rgba(255,255,255,0.34), rgba(255,248,236,0.12)),
+            url("/ruby-gamja/custom/stairs-sleep-scene.png") center / cover no-repeat;
         }
 
         .bg-garden,
         .bg-gate {
           background:
-            radial-gradient(circle at 50% 20%, rgba(255,255,255,0.72), transparent 16rem),
-            linear-gradient(180deg, #e7eee8 0 47%, #93b481 47% 100%);
+            radial-gradient(circle at 22% 14%, rgba(255,255,255,0.72), transparent 16rem),
+            linear-gradient(180deg, #b9daf1 0 34%, #d8eebf 34% 56%, #78a96a 56% 100%);
         }
 
         .bg-street,
@@ -707,6 +706,14 @@ export default function WalkQuestGame() {
           border: 2px solid rgba(83, 60, 43, 0.2);
           box-shadow: 0 18px 48px rgba(0,0,0,0.24);
           transform: translateX(-50%);
+        }
+
+        .command-side {
+          left: 24px;
+          top: 24px;
+          bottom: auto;
+          width: min(360px, calc(100% - 48px));
+          transform: none;
         }
 
         input {
@@ -849,12 +856,14 @@ function DogLayer({
   pose,
   phase,
   rubyCalm,
+  gamjaQuiet,
   hearts,
   peePulse,
 }: {
   pose: string;
   phase: Phase;
   rubyCalm: boolean;
+  gamjaQuiet: boolean;
   hearts: boolean;
   peePulse: boolean;
 }) {
@@ -865,6 +874,7 @@ function DogLayer({
     <div className={`dogs dogs-${pose} ${rubySpinning ? "dogs-spin" : ""}`}>
       <DogSprite src={rubySrc} name="루비" side="left" hearts={hearts} spinning={rubySpinning} />
       <DogSprite src={peePulse ? dog.gamja.pee : gamjaSrc} name="감자" side="right" hearts={hearts} />
+      {phase === "gate" && !gamjaQuiet && <div className="bark-bubble">멍! 멍!</div>}
       {peePulse && <div className="pee-mark">영역 표시 중</div>}
       <style jsx>{`
         .dogs {
@@ -906,11 +916,35 @@ function DogLayer({
           color: #77512f;
           font-weight: 900;
         }
+        .bark-bubble {
+          position: absolute;
+          right: 13%;
+          top: 20px;
+          padding: 10px 14px;
+          border-radius: 18px;
+          background: #fff6e4;
+          color: #4b3322;
+          font-weight: 950;
+          box-shadow: 0 10px 22px rgba(0,0,0,0.18);
+          animation: barkPop 0.42s ease-in-out infinite alternate;
+        }
+        .bark-bubble::after {
+          content: "";
+          position: absolute;
+          right: 24px;
+          bottom: -9px;
+          border: 10px solid transparent;
+          border-top-color: #fff6e4;
+          border-bottom: 0;
+        }
         @keyframes hop {
           to { transform: translateX(-50%) translateY(-18px); }
         }
         @keyframes run {
           to { transform: translateX(-50%) translateY(-8px) scale(1.02); }
+        }
+        @keyframes barkPop {
+          to { transform: translateY(-5px) scale(1.04); }
         }
       `}</style>
     </div>
@@ -990,22 +1024,20 @@ function DogSprite({
 function SceneFurniture({ phase }: { phase: Phase }) {
   return (
     <div className="furniture">
-      {["living", "excited"].includes(phase) && (
-        <>
-          <div className="sofa" />
-          <div className="rug" />
-          <div className="plant" />
-        </>
-      )}
       {["poopBag", "leashPrep", "leashMission", "leashZoom"].includes(phase) && (
         <>
           <div className="shoe-cabinet" />
           <div className="mirror" />
         </>
       )}
-      {phase === "upstairs" && <div className="stairs-real">{Array.from({ length: 8 }).map((_, i) => <span key={i} />)}</div>}
       {["poopBag", "leashPrep", "leashMission"].includes(phase) && <div className="entry-table" />}
-      {["garden", "gate", "home"].includes(phase) && <div className="gate-shape" />}
+      {["garden", "gate", "home"].includes(phase) && (
+        <>
+          <div className="garden-path" />
+          <div className="flower-bed" />
+          <div className="gate-shape" />
+        </>
+      )}
       {["walk", "pull", "poop", "run", "car", "barkingDog", "boss"].includes(phase) && <div className="road-perspective" />}
       <style jsx>{`
         .furniture {
@@ -1147,8 +1179,38 @@ function SceneFurniture({ phase }: { phase: Phase }) {
           height: 260px;
           border: 10px solid rgba(78,48,30,0.75);
           border-radius: 20px 20px 8px 8px;
-          background: rgba(105,65,40,0.46);
+          background:
+            repeating-linear-gradient(90deg, rgba(22, 24, 22, 0.82) 0 12px, transparent 12px 50px),
+            linear-gradient(90deg, transparent 48%, rgba(22, 24, 22, 0.92) 48% 52%, transparent 52%),
+            rgba(255,255,255,0.08);
+          box-shadow: 0 18px 36px rgba(35, 48, 29, 0.26);
           transform: translateX(-50%);
+        }
+        .garden-path {
+          position: absolute;
+          left: 50%;
+          bottom: -52px;
+          width: min(560px, 82vw);
+          height: 380px;
+          border-radius: 44% 44% 0 0;
+          background:
+            repeating-linear-gradient(18deg, rgba(255,255,255,0.18) 0 2px, transparent 2px 56px),
+            linear-gradient(180deg, #d7c7ad, #a99275);
+          box-shadow: 0 -20px 50px rgba(49, 76, 40, 0.18);
+          transform: translateX(-50%) perspective(420px) rotateX(58deg);
+        }
+        .flower-bed {
+          position: absolute;
+          left: 5%;
+          right: 5%;
+          bottom: 120px;
+          height: 120px;
+          background:
+            radial-gradient(circle at 12% 60%, #f08ca0 0 8px, transparent 9px),
+            radial-gradient(circle at 18% 35%, #f4c15c 0 7px, transparent 8px),
+            radial-gradient(circle at 82% 42%, #f08ca0 0 8px, transparent 9px),
+            radial-gradient(circle at 88% 70%, #fff1a3 0 7px, transparent 8px),
+            linear-gradient(180deg, transparent 0 40%, rgba(54, 105, 45, 0.55) 40% 100%);
         }
         .road-perspective {
           position: absolute;
@@ -1204,7 +1266,7 @@ function SceneContent(props: {
 }) {
   const p = props;
   if (p.phase === "intro") {
-    return <CenterCard title="루비 감자와 산책" body="현실형 1인칭 산책 미션을 시작합니다." button="Start" onClick={p.start} image={dog.duo} />;
+    return <CenterCard title="루비 감자와 산책하기" button="산책 START" onClick={p.start} image={dog.intro} variant="intro" />;
   }
   if (p.phase === "upstairs") {
     return <ActionDock><button onClick={() => { p.setPhase("living"); p.setMessage("1층 거실입니다. 루비와 감자를 불러보세요."); }}>계단 내려가기</button></ActionDock>;
@@ -1228,8 +1290,7 @@ function SceneContent(props: {
     return (
       <ActionDock>
         <GearShelf rubyLeashed={p.rubyLeashed} gamjaLeashed={p.gamjaLeashed} hasPoopBag={p.hasPoopBag} />
-        <button disabled={p.rubyLeashed} onClick={() => p.openLeashZoom("ruby")}>루비 목 클릭</button>
-        <button disabled={p.gamjaLeashed} onClick={() => p.openLeashZoom("gamja")}>감자 목 클릭</button>
+        <LeashTargets rubyLeashed={p.rubyLeashed} gamjaLeashed={p.gamjaLeashed} finish={p.finishLeash} />
       </ActionDock>
     );
   }
@@ -1279,7 +1340,7 @@ function SceneContent(props: {
             event.dataTransfer.setData("text/plain", "dogs-roadside");
           }}
         >
-          루감이 드래그
+          루감이
         </div>
         <button onClick={p.finishCar}>기다려</button>
       </ActionDock>
@@ -1441,6 +1502,74 @@ function LeashZoom({ dogKey, finish }: { dogKey: Dog; finish: (dog: Dog) => void
   );
 }
 
+function LeashTargets({ rubyLeashed, gamjaLeashed, finish }: { rubyLeashed: boolean; gamjaLeashed: boolean; finish: (dog: Dog) => void }) {
+  const makeDrop = (target: Dog) => (event: ReactDragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    const dragged = event.dataTransfer.getData("text/plain");
+    if (dragged !== `${target}-leash`) return;
+    finish(target);
+  };
+
+  return (
+    <div className="leash-targets">
+      <div
+        className={`dog-target ruby ${rubyLeashed ? "done" : ""}`}
+        onDragOver={(event) => event.preventDefault()}
+        onDrop={makeDrop("ruby")}
+      >
+        <Image src={dog.ruby.sit} alt="루비" fill sizes="160px" />
+        <span>루비</span>
+      </div>
+      <div
+        className={`dog-target gamja ${gamjaLeashed ? "done" : ""}`}
+        onDragOver={(event) => event.preventDefault()}
+        onDrop={makeDrop("gamja")}
+      >
+        <Image src={dog.gamja.sit} alt="감자" fill sizes="160px" />
+        <span>감자</span>
+      </div>
+      <style jsx>{`
+        .leash-targets {
+          display: flex;
+          gap: 10px;
+          flex-wrap: wrap;
+          justify-content: center;
+        }
+        .dog-target {
+          position: relative;
+          width: 150px;
+          height: 120px;
+          border-radius: 22px;
+          background: rgba(255, 250, 242, 0.78);
+          border: 2px dashed rgba(96, 68, 47, 0.28);
+          box-shadow: inset 0 0 0 999px rgba(255,255,255,0.02), 0 12px 24px rgba(66, 45, 30, 0.14);
+          overflow: hidden;
+        }
+        .dog-target.done {
+          border-style: solid;
+          background: #e9f5dc;
+        }
+        .dog-target :global(img) {
+          object-fit: contain;
+          padding: 10px 12px 22px;
+          filter: drop-shadow(0 8px 10px rgba(0,0,0,0.22));
+        }
+        span {
+          position: absolute;
+          left: 50%;
+          bottom: 7px;
+          padding: 4px 10px;
+          border-radius: 999px;
+          background: rgba(255, 247, 232, 0.92);
+          color: #4b3322;
+          font-weight: 950;
+          transform: translateX(-50%);
+        }
+      `}</style>
+    </div>
+  );
+}
+
 function PoopTools({ hasPoopBag, tool, choose, drop }: { hasPoopBag: boolean; tool: PoopTool; choose: (tool: PoopTool) => void; drop: () => void }) {
   return (
     <div className="poop-ui">
@@ -1449,6 +1578,7 @@ function PoopTools({ hasPoopBag, tool, choose, drop }: { hasPoopBag: boolean; to
         onDragOver={(event) => event.preventDefault()}
         onDrop={drop}
       >
+        <span className="poop-pile" />
         감자 똥
       </div>
       <div className="choices">
@@ -1467,7 +1597,7 @@ function PoopTools({ hasPoopBag, tool, choose, drop }: { hasPoopBag: boolean; to
               event.dataTransfer.setData("text/plain", tool);
             }}
           >
-            {tool === "bag" ? "똥봉투" : tool === "leaf" ? "나뭇잎" : "양말"} 드래그
+            {tool === "bag" ? "똥봉투" : tool === "leaf" ? "나뭇잎" : "양말"}
           </div>
         )}
       </div>
@@ -1488,6 +1618,22 @@ function PoopTools({ hasPoopBag, tool, choose, drop }: { hasPoopBag: boolean; to
           background: rgba(255,250,242,0.92);
           box-shadow: 0 16px 38px rgba(0,0,0,0.22);
           font-weight: 950;
+        }
+        .poop-target {
+          display: grid;
+          place-items: center;
+          gap: 4px;
+          min-width: 104px;
+        }
+        .poop-pile {
+          width: 42px;
+          height: 34px;
+          border-radius: 50% 50% 46% 46%;
+          background:
+            radial-gradient(circle at 50% 16%, #7a4a24 0 9px, transparent 10px),
+            radial-gradient(circle at 34% 56%, #6a3b1d 0 14px, transparent 15px),
+            radial-gradient(circle at 62% 60%, #8a562b 0 15px, transparent 16px);
+          filter: drop-shadow(0 5px 5px rgba(0,0,0,0.18));
         }
         .choices {
           display: flex;
@@ -1631,10 +1777,11 @@ function PoopBagDock({
     <ActionDock>
       <GearShelf rubyLeashed gamjaLeashed hasPoopBag={hasPoopBag} />
       <div
-        className={hasPoopBag ? "drop-zone done" : "drop-zone"}
+        className={hasPoopBag ? "drop-zone bag-drop done" : "drop-zone bag-drop"}
         onDragOver={(event) => event.preventDefault()}
         onDrop={collectBag}
       >
+        <span />
         산책 가방
       </div>
       <div
@@ -1645,10 +1792,37 @@ function PoopBagDock({
           event.dataTransfer.setData("text/plain", "poop-bag");
         }}
       >
-        똥봉투 드래그
+        똥봉투
       </div>
       <button onClick={collectBag}>똥봉투 챙기기</button>
       <button onClick={goOut}>{warning ? "그래도 나가기" : "나가기"}</button>
+      <style jsx>{`
+        .bag-drop {
+          display: grid;
+          place-items: center;
+          min-width: 120px;
+          min-height: 82px;
+        }
+        .bag-drop span {
+          position: relative;
+          width: 54px;
+          height: 42px;
+          border-radius: 12px 12px 18px 18px;
+          background: linear-gradient(180deg, #8a6b48, #4f3826);
+          box-shadow: inset 0 8px 0 rgba(255,255,255,0.18), 0 8px 14px rgba(0,0,0,0.18);
+        }
+        .bag-drop span::before {
+          content: "";
+          position: absolute;
+          left: 15px;
+          top: -12px;
+          width: 24px;
+          height: 18px;
+          border: 5px solid #6d5135;
+          border-bottom: 0;
+          border-radius: 18px 18px 0 0;
+        }
+      `}</style>
     </ActionDock>
   );
 }
@@ -1697,12 +1871,26 @@ function ActionDock({ children }: { children: ReactNode }) {
   );
 }
 
-function CenterCard({ title, body, button, onClick, image }: { title: string; body: string; button: string; onClick: () => void; image: string }) {
+function CenterCard({
+  title,
+  body,
+  button,
+  onClick,
+  image,
+  variant = "",
+}: {
+  title: string;
+  body?: string;
+  button: string;
+  onClick: () => void;
+  image: string;
+  variant?: "intro" | "";
+}) {
   return (
-    <div className="center-card">
+    <div className={`center-card ${variant}`}>
       <div className="hero-dogs"><Image src={image} alt="루비와 감자" fill sizes="520px" priority /></div>
       <h2>{title}</h2>
-      <p>{body}</p>
+      {body && <p>{body}</p>}
       <button onClick={onClick}>{button}</button>
       <style jsx>{`
         .center-card {
@@ -1712,16 +1900,22 @@ function CenterCard({ title, body, button, onClick, image }: { title: string; bo
           top: 50%;
           width: min(560px, calc(100% - 32px));
           min-height: 430px;
-          padding: 250px 28px 28px;
+          padding: 250px 28px 34px;
           border-radius: 30px;
           background:
-            linear-gradient(180deg, rgba(18, 13, 10, 0.16), rgba(18, 13, 10, 0.52)),
+            linear-gradient(180deg, rgba(255,255,255,0.04), rgba(32, 24, 18, 0.34)),
             rgba(255,250,242,0.9);
           text-align: center;
           box-shadow: 0 28px 72px rgba(0,0,0,0.3);
           transform: translate(-50%, -50%);
           overflow: hidden;
           color: #fff9ef;
+        }
+        .center-card.intro {
+          background:
+            radial-gradient(circle at 80% 18%, rgba(255,255,255,0.72), transparent 13rem),
+            linear-gradient(180deg, #bfe2ff 0 45%, #dff2bd 45% 66%, #8fc06d 66% 100%);
+          color: #3d2b20;
         }
         .hero-dogs {
           position: absolute;
@@ -1740,9 +1934,23 @@ function CenterCard({ title, body, button, onClick, image }: { title: string; bo
             linear-gradient(90deg, rgba(18, 13, 10, 0.66), rgba(18, 13, 10, 0.1) 50%, rgba(18, 13, 10, 0.38));
         }
         .hero-dogs :global(img) { object-fit: cover; }
+        .intro .hero-dogs {
+          inset: 54px 16px auto;
+          height: 230px;
+          z-index: 0;
+          filter: drop-shadow(0 22px 24px rgba(54, 68, 42, 0.28));
+        }
+        .intro .hero-dogs::after {
+          display: none;
+        }
+        .intro .hero-dogs :global(img) {
+          object-fit: contain;
+        }
         h2 {
+          position: relative;
+          z-index: 1;
           margin: 0 0 10px;
-          font-size: clamp(2.6rem, 8vw, 5.5rem);
+          font-size: clamp(2.4rem, 7vw, 5rem);
           line-height: 0.92;
           color: #fff6e8;
           text-shadow:
@@ -1756,6 +1964,8 @@ function CenterCard({ title, body, button, onClick, image }: { title: string; bo
           vertical-align: top;
         }
         p {
+          position: relative;
+          z-index: 1;
           margin: 0 0 18px;
           color: #fff3df;
           font-weight: 850;
@@ -1763,9 +1973,15 @@ function CenterCard({ title, body, button, onClick, image }: { title: string; bo
           text-shadow: 0 2px 6px rgba(0,0,0,0.4);
         }
         button {
+          position: relative;
+          z-index: 1;
           background: linear-gradient(180deg, #fff3d7, #dfbf8c);
           color: #4b3322;
           border: 2px solid rgba(255, 255, 255, 0.35);
+          min-width: 240px;
+          padding: 18px 26px;
+          border-radius: 22px;
+          font-size: clamp(1.25rem, 3vw, 1.8rem);
         }
       `}</style>
     </div>
