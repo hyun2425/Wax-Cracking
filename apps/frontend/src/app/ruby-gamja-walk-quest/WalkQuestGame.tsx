@@ -29,6 +29,7 @@ type Phase =
 type Dog = "ruby" | "gamja";
 type PoopTool = "bag" | "leaf" | "sock" | null;
 
+// Replace only these paths when swapping Ruby/Gamja cutout assets later.
 const dog = {
   ruby: {
     call: "/ruby-gamja/cutouts-v2/ruby-call.png",
@@ -42,20 +43,67 @@ const dog = {
     heart: "/ruby-gamja/cutouts-v2/ruby-heart.png",
   },
   gamja: {
-    call: "/ruby-gamja/cutouts-v2/gamja-call.png",
-    hop: "/ruby-gamja/cutouts-v2/gamja-hop.png",
-    stairs: "/ruby-gamja/cutouts-v2/gamja-stairs.png",
-    sleep: "/ruby-gamja/cutouts-v2/gamja-sleep.png",
-    sit: "/ruby-gamja/cutouts-v2/gamja-sit.png",
-    walk: "/ruby-gamja/cutouts-v2/gamja-walk.png",
-    alert: "/ruby-gamja/cutouts-v2/gamja-alert.png",
-    run: "/ruby-gamja/cutouts-v2/gamja-run.png",
-    pee: "/ruby-gamja/cutouts-v2/gamja-pee.png",
-    poop: "/ruby-gamja/cutouts-v2/gamja-poop.png",
-    heart: "/ruby-gamja/cutouts-v2/gamja-heart.png",
+    call: "/ruby-gamja/cutouts-v3/gamja-call.png",
+    hop: "/ruby-gamja/cutouts-v3/gamja-hop.png",
+    stairs: "/ruby-gamja/cutouts-v3/gamja-stairs.png",
+    sleep: "/ruby-gamja/cutouts-v3/gamja-sleep.png",
+    sit: "/ruby-gamja/cutouts-v3/gamja-sit.png",
+    walk: "/ruby-gamja/cutouts-v3/gamja-walk.png",
+    alert: "/ruby-gamja/cutouts-v3/gamja-alert.png",
+    run: "/ruby-gamja/cutouts-v3/gamja-run.png",
+    pee: "/ruby-gamja/cutouts-v3/gamja-pee.png",
+    poop: "/ruby-gamja/cutouts-v3/gamja-poop.png",
+    heart: "/ruby-gamja/cutouts-v3/gamja-heart.png",
   },
   duo: "/ruby-gamja/cutouts-v2/duo-heart.png",
 };
+
+type SoundName = "bark" | "happy" | "leash" | "success" | "fall" | "car" | "poop" | "step";
+
+function playSound(name: SoundName) {
+  if (typeof window === "undefined") return;
+  const AudioContextClass = window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+  if (!AudioContextClass) return;
+  const ctx = new AudioContextClass();
+  const now = ctx.currentTime;
+  const gain = ctx.createGain();
+  gain.connect(ctx.destination);
+  gain.gain.setValueAtTime(0.0001, now);
+  gain.gain.exponentialRampToValueAtTime(name === "car" ? 0.18 : 0.08, now + 0.015);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.42);
+
+  const playTone = (frequency: number, start: number, duration: number, type: OscillatorType = "sine") => {
+    const osc = ctx.createOscillator();
+    osc.type = type;
+    osc.frequency.setValueAtTime(frequency, now + start);
+    osc.connect(gain);
+    osc.start(now + start);
+    osc.stop(now + start + duration);
+  };
+
+  if (name === "bark") {
+    playTone(240, 0, 0.12, "square");
+    playTone(190, 0.14, 0.14, "square");
+  } else if (name === "car") {
+    playTone(360, 0, 0.18, "sawtooth");
+    playTone(300, 0.22, 0.2, "sawtooth");
+  } else if (name === "fall") {
+    playTone(120, 0, 0.34, "sawtooth");
+  } else if (name === "leash") {
+    playTone(680, 0, 0.07, "triangle");
+    playTone(460, 0.08, 0.08, "triangle");
+  } else if (name === "poop") {
+    playTone(180, 0, 0.08, "triangle");
+    playTone(140, 0.1, 0.08, "triangle");
+  } else if (name === "step") {
+    playTone(150, 0, 0.05, "sine");
+  } else {
+    playTone(520, 0, 0.08, "triangle");
+    playTone(760, 0.09, 0.1, "triangle");
+  }
+
+  window.setTimeout(() => void ctx.close(), 520);
+}
 
 const callWords = ["루비", "감자"];
 const walkWords = ["산책가자", "나가자", "나갈까"];
@@ -112,6 +160,7 @@ export default function WalkQuestGame() {
   function showHearts(text: string) {
     setMessage(text);
     setHearts(true);
+    playSound("success");
     window.setTimeout(() => setHearts(false), 1300);
   }
 
@@ -140,12 +189,14 @@ export default function WalkQuestGame() {
   }
 
   function start() {
+    playSound("happy");
     reset();
     setPhase("upstairs");
     setMessage("2층입니다. 아래층에서 조용한 강아지 기척이 느껴져요.");
   }
 
   function fall(reason: string) {
+    playSound("fall");
     const next = falls + 1;
     setFalls(next);
     setTimeLeft(null);
@@ -159,6 +210,7 @@ export default function WalkQuestGame() {
   }
 
   function hardFail(reason: string) {
+    playSound("fall");
     setPhase("fail");
     setTimeLeft(null);
     setMessage(reason);
@@ -173,8 +225,9 @@ export default function WalkQuestGame() {
           setRubyLeashed(false);
           setGamjaLeashed(false);
           setZoomDog(null);
-          setPhase("leashPrep");
-          setMessage("10초 안에 못 채웠어요. 루비와 감자가 다시 일어나서 콩콩 뛰어요. 다시 앉아부터!");
+        setPhase("leashPrep");
+        playSound("bark");
+        setMessage("10초 안에 못 채웠어요. 루비와 감자가 다시 일어나서 콩콩 뛰어요. 다시 앉아부터!");
         } else if (phase === "pull") {
           fall("루비가 앞으로 확 당겼어요.");
         } else if (phase === "barkingDog") {
@@ -268,6 +321,7 @@ export default function WalkQuestGame() {
     if (phase === "living") {
       if (callWords.includes(command)) {
         setCalledDogs(true);
+        playSound("happy");
         showHearts("루비와 감자가 고개를 들고 나에게 다가와요.");
       } else if (walkWords.includes(command)) {
         setPhase("excited");
@@ -285,6 +339,7 @@ export default function WalkQuestGame() {
 
   function sitDogs() {
     setDogsSitting(true);
+    playSound("success");
     showHearts("루비와 감자가 얌전히 앉았어요.");
   }
 
@@ -295,6 +350,7 @@ export default function WalkQuestGame() {
     }
     setPhase("leashMission");
     setTimeLeft(10);
+    playSound("leash");
     setMessage("강아지 목을 클릭하면 확대됩니다. 목줄을 드래그해서 채워주세요.");
   }
 
@@ -305,12 +361,14 @@ export default function WalkQuestGame() {
     }
     setZoomDog(target);
     setPhase("leashZoom");
+    playSound("leash");
     setMessage(`${target === "ruby" ? "루비" : "감자"} 목 부분 확대. 목줄을 고리로 드래그하세요.`);
   }
 
   function finishLeash(target: Dog) {
     if (target === "ruby") setRubyLeashed(true);
     if (target === "gamja") setGamjaLeashed(true);
+    playSound("leash");
     const nextRuby = target === "ruby" || rubyLeashed;
     const nextGamja = target === "gamja" || gamjaLeashed;
     setZoomDog(null);
@@ -330,7 +388,8 @@ export default function WalkQuestGame() {
       setMessage("뭐 잊은 게 있지 않니?");
       return;
     }
-    setPhase("garden");
+      setPhase("garden");
+    playSound("step");
     setMessage(hasPoopBag ? "똥봉투까지 챙겼어요. 정원으로 나갑니다." : "똥봉투 없이 나왔어요. 나중에 선택지가 생길 수 있어요.");
   }
 
@@ -341,6 +400,7 @@ export default function WalkQuestGame() {
       return;
     }
     setPhase("walk");
+    playSound("step");
     setMessage("안전하게 대문을 나섰어요. 늘 가던 산책길입니다.");
   }
 
@@ -352,6 +412,7 @@ export default function WalkQuestGame() {
 
   function choosePoopTool(tool: PoopTool) {
     setPoopTool(tool);
+    playSound("poop");
     if (tool === "leaf") setMessage("나뭇잎을 똥 위로 드래그해보세요.");
     if (tool === "sock") setMessage("양말을 벗었습니다. 양말을 똥 위로 드래그하세요.");
     if (tool === "bag") setMessage("똥봉투를 똥 위로 드래그하세요.");
@@ -372,11 +433,13 @@ export default function WalkQuestGame() {
 
   function ignoreDog() {
     setTimeLeft(null);
+    playSound("bark");
     resumeWalk("무시해 성공! 루비와 감자가 조용히 지나갔어요.");
   }
 
   function blockBoss() {
     setTimeLeft(null);
+    playSound("bark");
     setWalkStep(5);
     setPhase("home");
     showHearts("사나운 강아지로부터 귀여운 루감이를 지켜냈어요.");
@@ -393,6 +456,13 @@ export default function WalkQuestGame() {
     }
     resumeWalk("루감이를 안전하게 지켜냈어요!");
   }
+
+  useEffect(() => {
+    if (phase === "gate" || phase === "barkingDog" || phase === "boss") playSound("bark");
+    if (phase === "car") playSound("car");
+    if (phase === "poop") playSound("poop");
+    if (phase === "run") playSound("happy");
+  }, [phase]);
 
   const dogPose = useMemo(() => {
     if (phase === "intro" || phase === "clear") return "heart";
@@ -426,7 +496,7 @@ export default function WalkQuestGame() {
         <section className={`scene bg-${info.bg}`}>
           <div className="first-person" />
           <SceneFurniture phase={phase} />
-          <DogLayer pose={dogPose} hearts={hearts || phase === "clear"} peePulse={peePulse} />
+          <DogLayer pose={dogPose} phase={phase} rubyCalm={rubyCalm} hearts={hearts || phase === "clear"} peePulse={peePulse} />
           <SceneContent
             phase={phase}
             timeLeft={timeLeft}
@@ -492,6 +562,7 @@ export default function WalkQuestGame() {
           padding: 24px;
           background: linear-gradient(135deg, #ebe1d6, #d8e2df);
           color: #231a15;
+          font-family: "Jua", "NanumSquareRound", "Pretendard", "Segoe UI", sans-serif;
         }
 
         .back-link {
@@ -529,6 +600,8 @@ export default function WalkQuestGame() {
         h1 {
           margin: 0;
           font-size: clamp(1.75rem, 4vw, 2.8rem);
+          letter-spacing: 0;
+          text-shadow: 0 2px 0 rgba(255, 255, 255, 0.8);
         }
 
         .hud-pills {
@@ -542,7 +615,7 @@ export default function WalkQuestGame() {
           position: relative;
           min-height: 650px;
           overflow: hidden;
-          background: #ddd0c2;
+          background: #f2eee8;
         }
 
         .scene::before {
@@ -555,28 +628,34 @@ export default function WalkQuestGame() {
 
         .bg-home {
           background:
-            radial-gradient(circle at 70% 24%, rgba(255,255,255,0.48), transparent 18rem),
-            linear-gradient(180deg, #e5ddd2 0 52%, #796254 52% 100%);
+            radial-gradient(circle at 72% 18%, rgba(255,255,255,0.8), transparent 18rem),
+            linear-gradient(180deg, #f4f1ed 0 48%, transparent 48%),
+            repeating-linear-gradient(42deg, rgba(180,171,160,0.18) 0 2px, transparent 2px 72px),
+            linear-gradient(180deg, #fbfaf7 0 50%, #e9e4dc 50% 100%);
         }
 
         .bg-stairs {
           background:
-            repeating-linear-gradient(110deg, rgba(79,52,37,0.52) 0 28px, rgba(145,102,72,0.52) 28px 56px),
-            linear-gradient(180deg, #e9e0d6 0 42%, #704b35 42% 100%);
+            radial-gradient(circle at 78% 18%, rgba(255,255,255,0.72), transparent 18rem),
+            linear-gradient(180deg, #f7f3ee 0 38%, transparent 38%),
+            repeating-linear-gradient(42deg, rgba(173,164,154,0.16) 0 2px, transparent 2px 64px),
+            linear-gradient(180deg, #fbfaf7 0 48%, #eee8df 48% 100%);
         }
 
         .bg-living,
         .bg-entry {
           background:
-            linear-gradient(180deg, #ded5cb 0 55%, #6e5040 55% 100%),
-            repeating-linear-gradient(90deg, rgba(255,255,255,0.2) 0 2px, transparent 2px 72px);
+            radial-gradient(circle at 72% 22%, rgba(255,255,255,0.8), transparent 18rem),
+            linear-gradient(180deg, #f6f1e9 0 50%, transparent 50%),
+            repeating-linear-gradient(35deg, rgba(171,162,152,0.18) 0 2px, transparent 2px 68px),
+            linear-gradient(180deg, #fbfaf8 0 50%, #ece6dd 50% 100%);
         }
 
         .bg-garden,
         .bg-gate {
           background:
-            radial-gradient(circle at 50% 20%, rgba(255,255,255,0.44), transparent 16rem),
-            linear-gradient(180deg, #c5d7d1 0 46%, #527349 46% 100%);
+            radial-gradient(circle at 50% 20%, rgba(255,255,255,0.72), transparent 16rem),
+            linear-gradient(180deg, #e7eee8 0 47%, #93b481 47% 100%);
         }
 
         .bg-street,
@@ -708,12 +787,25 @@ function Pill({ label, value, alert = false }: { label: string; value: string; a
   );
 }
 
-function DogLayer({ pose, hearts, peePulse }: { pose: string; hearts: boolean; peePulse: boolean }) {
+function DogLayer({
+  pose,
+  phase,
+  rubyCalm,
+  hearts,
+  peePulse,
+}: {
+  pose: string;
+  phase: Phase;
+  rubyCalm: boolean;
+  hearts: boolean;
+  peePulse: boolean;
+}) {
   const rubySrc = dog.ruby[pose as keyof typeof dog.ruby] || dog.ruby.walk;
   const gamjaSrc = dog.gamja[pose as keyof typeof dog.gamja] || dog.gamja.walk;
+  const rubySpinning = phase === "gate" && !rubyCalm;
   return (
-    <div className={`dogs dogs-${pose}`}>
-      <DogSprite src={rubySrc} name="루비" side="left" hearts={hearts} />
+    <div className={`dogs dogs-${pose} ${rubySpinning ? "dogs-spin" : ""}`}>
+      <DogSprite src={rubySrc} name="루비" side="left" hearts={hearts} spinning={rubySpinning} />
       <DogSprite src={peePulse ? dog.gamja.pee : gamjaSrc} name="감자" side="right" hearts={hearts} />
       {peePulse && <div className="pee-mark">영역 표시 중</div>}
       <style jsx>{`
@@ -739,6 +831,9 @@ function DogLayer({ pose, hearts, peePulse }: { pose: string; hearts: boolean; p
         .dogs-run {
           animation: run 0.28s ease-in-out infinite alternate;
         }
+        .dogs-spin {
+          bottom: 104px;
+        }
         .pee-mark {
           position: absolute;
           right: 18%;
@@ -760,9 +855,21 @@ function DogLayer({ pose, hearts, peePulse }: { pose: string; hearts: boolean; p
   );
 }
 
-function DogSprite({ src, name, side, hearts }: { src: string; name: string; side: "left" | "right"; hearts: boolean }) {
+function DogSprite({
+  src,
+  name,
+  side,
+  hearts,
+  spinning = false,
+}: {
+  src: string;
+  name: string;
+  side: "left" | "right";
+  hearts: boolean;
+  spinning?: boolean;
+}) {
   return (
-    <figure className={`sprite ${side}`}>
+    <figure className={`sprite ${side} ${spinning ? "spinning" : ""}`}>
       {hearts && <span className="heart">♥</span>}
       <Image src={src} alt={name} fill sizes="300px" />
       <figcaption>{name}</figcaption>
@@ -799,8 +906,19 @@ function DogSprite({ src, name, side, hearts }: { src: string; name: string; sid
           transform: translateX(-50%);
           animation: heartPop 0.8s ease-in-out infinite alternate;
         }
+        .spinning {
+          animation: sideSpin 0.62s ease-in-out infinite;
+          transform-origin: 50% 82%;
+        }
+        .spinning :global(img) {
+          transform: rotateY(56deg) rotateZ(-8deg);
+        }
         @keyframes heartPop {
           to { transform: translateX(-50%) translateY(-8px) scale(1.12); }
+        }
+        @keyframes sideSpin {
+          0%, 100% { transform: rotate(-5deg) translateX(-6px); }
+          50% { transform: rotate(11deg) translateX(10px); }
         }
       `}</style>
     </figure>
@@ -810,6 +928,19 @@ function DogSprite({ src, name, side, hearts }: { src: string; name: string; sid
 function SceneFurniture({ phase }: { phase: Phase }) {
   return (
     <div className="furniture">
+      {["living", "excited"].includes(phase) && (
+        <>
+          <div className="sofa" />
+          <div className="rug" />
+          <div className="plant" />
+        </>
+      )}
+      {["poopBag", "leashPrep", "leashMission", "leashZoom"].includes(phase) && (
+        <>
+          <div className="shoe-cabinet" />
+          <div className="mirror" />
+        </>
+      )}
       {phase === "upstairs" && <div className="stairs-real">{Array.from({ length: 8 }).map((_, i) => <span key={i} />)}</div>}
       {["poopBag", "leashPrep", "leashMission"].includes(phase) && <div className="entry-table" />}
       {["garden", "gate", "home"].includes(phase) && <div className="gate-shape" />}
@@ -849,6 +980,85 @@ function SceneFurniture({ phase }: { phase: Phase }) {
           border-radius: 16px;
           background: linear-gradient(180deg, #7b5237, #3d261c);
           box-shadow: 0 20px 48px rgba(0,0,0,0.3);
+        }
+        .sofa {
+          position: absolute;
+          left: 7%;
+          bottom: 215px;
+          width: min(380px, 42vw);
+          height: 132px;
+          border-radius: 32px 32px 18px 18px;
+          background: linear-gradient(180deg, #d9c4ae, #a3836c);
+          box-shadow: 0 22px 40px rgba(80, 58, 43, 0.22);
+        }
+        .sofa::before {
+          content: "";
+          position: absolute;
+          left: 24px;
+          right: 24px;
+          top: -34px;
+          height: 72px;
+          border-radius: 24px;
+          background: #e7d8c6;
+        }
+        .rug {
+          position: absolute;
+          left: 13%;
+          bottom: 74px;
+          width: min(480px, 54vw);
+          height: 110px;
+          border-radius: 50%;
+          background: radial-gradient(ellipse, rgba(188, 144, 117, 0.36), rgba(188, 144, 117, 0.08) 70%);
+        }
+        .plant {
+          position: absolute;
+          right: 10%;
+          bottom: 205px;
+          width: 70px;
+          height: 150px;
+          border-radius: 0 0 18px 18px;
+          background: linear-gradient(180deg, transparent 0 55%, #b58a63 55% 100%);
+        }
+        .plant::before {
+          content: "";
+          position: absolute;
+          left: -36px;
+          right: -36px;
+          top: 0;
+          height: 104px;
+          background:
+            radial-gradient(ellipse at 30% 50%, #6f9c5d 0 38%, transparent 39%),
+            radial-gradient(ellipse at 60% 35%, #7fb36d 0 36%, transparent 37%),
+            radial-gradient(ellipse at 70% 70%, #5f8f50 0 34%, transparent 35%);
+        }
+        .shoe-cabinet {
+          position: absolute;
+          right: 7%;
+          bottom: 155px;
+          width: min(360px, 42vw);
+          height: 158px;
+          border-radius: 18px;
+          background: linear-gradient(180deg, #f2eee8, #cdbda9);
+          box-shadow: 0 20px 40px rgba(80, 58, 43, 0.2);
+        }
+        .shoe-cabinet::before {
+          content: "";
+          position: absolute;
+          left: 20px;
+          right: 20px;
+          top: 48%;
+          height: 2px;
+          background: rgba(102, 73, 52, 0.28);
+        }
+        .mirror {
+          position: absolute;
+          right: 11%;
+          top: 70px;
+          width: 130px;
+          height: 210px;
+          border-radius: 999px 999px 18px 18px;
+          border: 8px solid rgba(190, 174, 154, 0.75);
+          background: linear-gradient(135deg, rgba(255,255,255,0.7), rgba(202,222,226,0.34));
         }
         .gate-shape {
           position: absolute;
@@ -954,8 +1164,8 @@ function SceneContent(props: {
   if (p.phase === "gate") {
     return (
       <ActionDock>
-        <button className={p.rubyCalm ? "done" : ""} onClick={() => { p.setRubyCalm(true); p.setMessage("루비가 빙글빙글 돌다가 앉았어요."); }}>앉아</button>
-        <button className={p.gamjaQuiet ? "done" : ""} onClick={() => { p.setGamjaQuiet(true); p.setMessage("감자가 짖음을 멈췄어요."); }}>조용히 해</button>
+        <button className={p.rubyCalm ? "done" : ""} onClick={() => { playSound("success"); p.setRubyCalm(true); p.setMessage("루비가 빙글빙글 돌다가 앉았어요."); }}>앉아</button>
+        <button className={p.gamjaQuiet ? "done" : ""} onClick={() => { playSound("bark"); p.setGamjaQuiet(true); p.setMessage("감자가 짖음을 멈췄어요."); }}>조용히 해</button>
         <button onClick={p.openGate}>대문 열기</button>
       </ActionDock>
     );
@@ -972,7 +1182,7 @@ function SceneContent(props: {
   if (p.phase === "car") {
     return (
       <ActionDock>
-        <button className={p.carStopped ? "done" : ""} onClick={() => { p.setCarStopped(true); p.setMessage("멈췄어요. 이제 길 옆으로 이동!"); }}>멈춰</button>
+        <button className={p.carStopped ? "done" : ""} onClick={() => { playSound("car"); p.setCarStopped(true); p.setMessage("멈췄어요. 이제 길 옆으로 이동!"); }}>멈춰</button>
         <div
           className={p.dogsRoadside ? "drop-zone done" : "drop-zone"}
           onDragOver={(event) => event.preventDefault()}
@@ -980,7 +1190,16 @@ function SceneContent(props: {
         >
           길 옆 안전 구역
         </div>
-        <div draggable className="drag-chip">루감이 드래그</div>
+        <div
+          draggable
+          className="drag-chip"
+          onDragStart={(event) => {
+            event.dataTransfer.effectAllowed = "move";
+            event.dataTransfer.setData("text/plain", "dogs-roadside");
+          }}
+        >
+          루감이 드래그
+        </div>
         <button onClick={p.finishCar}>기다려</button>
       </ActionDock>
     );
@@ -1012,12 +1231,25 @@ function LeashZoom({ dogKey, finish }: { dogKey: Dog; finish: (dog: Dog) => void
         <div
           className="collar"
           onDragOver={(event) => event.preventDefault()}
-          onDrop={() => finish(dogKey)}
+          onDrop={(event) => {
+            event.preventDefault();
+            finish(dogKey);
+          }}
         >
           고리
         </div>
       </div>
-      <div draggable className="leash">목줄 드래그</div>
+      <div
+        draggable
+        className="leash"
+        onDragStart={(event) => {
+          event.dataTransfer.setData("text/plain", `${dogKey}-leash`);
+          event.dataTransfer.effectAllowed = "move";
+        }}
+      >
+        <span />
+        목줄 드래그
+      </div>
       <style jsx>{`
         .zoom {
           position: absolute;
@@ -1055,13 +1287,24 @@ function LeashZoom({ dogKey, finish }: { dogKey: Dog; finish: (dog: Dog) => void
         .leash {
           display: grid;
           place-items: center;
+          gap: 8px;
           min-height: 88px;
           border-radius: 22px;
-          background: linear-gradient(135deg, #f0a0a3, #4b3024);
-          color: white;
+          background: linear-gradient(135deg, #fff7ec, #f0c7a3);
+          color: #4b3024;
           font-weight: 950;
           cursor: grab;
           box-shadow: 0 18px 42px rgba(0,0,0,0.25);
+          user-select: none;
+        }
+        .leash span {
+          width: 62px;
+          height: 42px;
+          border: 7px solid #c46e7e;
+          border-radius: 50%;
+          box-shadow:
+            0 0 0 4px rgba(255,255,255,0.7) inset,
+            18px 10px 0 -8px #6d4938;
         }
       `}</style>
     </div>
@@ -1085,7 +1328,18 @@ function PoopTools({ hasPoopBag, tool, choose, drop }: { hasPoopBag: boolean; to
             <button onClick={() => choose("sock")}>양말을 벗으시겠습니까?</button>
           </>
         )}
-        {tool && <div draggable className="drag-chip">{tool === "bag" ? "똥봉투" : tool === "leaf" ? "나뭇잎" : "양말"} 드래그</div>}
+        {tool && (
+          <div
+            draggable
+            className="drag-chip"
+            onDragStart={(event) => {
+              event.dataTransfer.effectAllowed = "move";
+              event.dataTransfer.setData("text/plain", tool);
+            }}
+          >
+            {tool === "bag" ? "똥봉투" : tool === "leaf" ? "나뭇잎" : "양말"} 드래그
+          </div>
+        )}
       </div>
       <style jsx>{`
         .poop-ui {
