@@ -25,14 +25,14 @@ type DogKey = "ruby" | "gamja";
 type CarStep = "stop" | "sit";
 
 const photos = {
-  rubyClose: "/ruby-gamja/ruby-close.jpg",
-  gamjaLying: "/ruby-gamja/gamja-lying.jpg",
-  gamjaFront: "/ruby-gamja/gamja-front.jpg",
-  pairBed: "/ruby-gamja/ruby-gamja-bed.jpg",
-  rubySit: "/ruby-gamja/ruby-sit.jpg",
-  rubyCrate: "/ruby-gamja/ruby-crate.jpg",
-  rubyHappy: "/ruby-gamja/ruby-happy.jpg",
-  rubyCrateSide: "/ruby-gamja/ruby-crate-side.jpg",
+  rubyClose: "/ruby-gamja/cutouts/ruby-face.png",
+  gamjaLying: "/ruby-gamja/cutouts/gamja-lying.png",
+  gamjaFront: "/ruby-gamja/cutouts/gamja-front.png",
+  pairBed: "/ruby-gamja/cutouts/ruby-gamja-duo.png",
+  rubySit: "/ruby-gamja/cutouts/ruby-sit.png",
+  rubyCrate: "/ruby-gamja/cutouts/ruby-sit.png",
+  rubyHappy: "/ruby-gamja/cutouts/ruby-face.png",
+  rubyCrateSide: "/ruby-gamja/cutouts/ruby-sit.png",
 };
 
 const callWords = ["루비", "감자", "산책", "나가자"];
@@ -41,77 +41,77 @@ const stageCopy: Record<Stage, { mission: string; scene: string; backdrop: strin
   intro: {
     mission: "Start 버튼을 눌러 루비와 감자의 산책을 시작하세요.",
     scene: "우리집 산책 준비",
-    backdrop: photos.pairBed,
+    backdrop: "bedroom",
   },
   secondFloor: {
     mission: "2층에서 계단을 내려가 1층으로 가세요.",
     scene: "우리집 2층",
-    backdrop: photos.rubyHappy,
+    backdrop: "upstairs",
   },
   livingRoom: {
     mission: "산책을 가기 위해 강아지를 불러보세요.",
     scene: "1층 거실",
-    backdrop: photos.gamjaLying,
+    backdrop: "living",
   },
   leashShelf: {
     mission: "목줄 2개를 챙기고, 먼저 '앉아'라고 말해 강아지들을 앉히세요.",
     scene: "현관 선반",
-    backdrop: photos.rubyCrate,
+    backdrop: "entry",
   },
   leashMission: {
     mission: "10초 안에 루비와 감자 목을 클릭한 뒤 확대 화면에서 목줄을 드래그해 채우세요.",
     scene: "목줄 채우기",
-    backdrop: photos.rubySit,
+    backdrop: "entry",
   },
   leashZoom: {
     mission: "목줄을 강아지 목의 반짝이는 고리까지 드래그하세요.",
     scene: "목줄 확대",
-    backdrop: photos.rubySit,
+    backdrop: "entry",
   },
   poopBag: {
     mission: "문 옆 똥봉투를 챙긴 뒤 정원으로 나가세요.",
     scene: "현관문 앞",
-    backdrop: photos.rubyCrateSide,
+    backdrop: "entry",
   },
   garden: {
     mission: "대문 앞에서 루비와 감자의 흥분을 먼저 가라앉히세요.",
     scene: "우리집 정원",
-    backdrop: photos.rubyHappy,
+    backdrop: "garden",
   },
   gateCalm: {
     mission: "루비에게 '앉아', 감자에게 '조용히 해'를 입력해 진정시킨 뒤 대문을 여세요.",
     scene: "대문 앞",
-    backdrop: photos.rubyHappy,
+    backdrop: "gate",
   },
   neighborhood: {
     mission: "동네 한 바퀴를 안전하게 완료하세요.",
     scene: "동네 산책길",
-    backdrop: photos.rubyClose,
+    backdrop: "street",
   },
   rubyPull: {
     mission: "루비가 앞으로 당겨요. 5초 안에 '천천히'를 입력하세요.",
     scene: "대문 밖 골목",
-    backdrop: photos.rubyClose,
+    backdrop: "street",
   },
   carStop: {
     mission: "차가 옵니다. 먼저 '멈춰', 다음 '앉아'를 입력하세요.",
     scene: "횡단 골목",
-    backdrop: photos.rubyClose,
+    backdrop: "street",
   },
   poopCleanup: {
     mission: "감자가 똥을 쌌어요. 똥봉투로 치워주세요.",
     scene: "산책길 중간",
-    backdrop: photos.gamjaFront,
+    backdrop: "street",
   },
   clear: {
     mission: "산책 완료! 루비와 감자가 행복해 보여요.",
     scene: "집으로 돌아오는 길",
-    backdrop: photos.pairBed,
+    backdrop: "bedroom",
   },
   fail: {
     mission: "산책 실패... 다시 도전해볼까요?",
     scene: "다시 도전",
-    backdrop: photos.pairBed,
+    backdrop: "bedroom",
   },
 };
 
@@ -773,7 +773,7 @@ function GameView({
 
   return (
     <section className={sceneClass}>
-      <div className="photo-backdrop" style={{ backgroundImage: `url(${copy.backdrop})` }} />
+      <div className={`photo-backdrop backdrop-${copy.backdrop}`} />
       <div className="scene-glass" />
 
       <div className="scene-label">
@@ -828,10 +828,50 @@ function GameView({
         .photo-backdrop {
           position: absolute;
           inset: 0;
-          background-position: center;
-          background-size: cover;
-          filter: saturate(0.92) contrast(1.02);
-          transform: scale(1.04);
+          background:
+            radial-gradient(circle at 70% 22%, rgba(255, 255, 255, 0.42), transparent 18rem),
+            linear-gradient(180deg, #eadfce, #aa8a70);
+          transform: scale(1.01);
+        }
+
+        .backdrop-bedroom {
+          background:
+            linear-gradient(90deg, rgba(255,255,255,0.55), rgba(255,255,255,0) 34%),
+            radial-gradient(circle at 78% 28%, rgba(255,255,255,0.38), transparent 15rem),
+            linear-gradient(180deg, #ded4c8 0 48%, #f5f0e9 48% 52%, #6b5143 52% 100%);
+        }
+
+        .backdrop-upstairs {
+          background:
+            linear-gradient(115deg, rgba(50, 32, 22, 0.24), transparent 42%),
+            repeating-linear-gradient(90deg, rgba(255,255,255,0.16) 0 1px, transparent 1px 58px),
+            linear-gradient(180deg, #e8dfd4 0 44%, #8b654b 44% 100%);
+        }
+
+        .backdrop-living {
+          background:
+            radial-gradient(circle at 22% 76%, rgba(72,54,45,0.3), transparent 10rem),
+            linear-gradient(180deg, #e9e1d8 0 58%, #6b5448 58% 100%);
+        }
+
+        .backdrop-entry {
+          background:
+            linear-gradient(90deg, rgba(48,31,22,0.32), transparent 22%, rgba(255,255,255,0.22)),
+            repeating-linear-gradient(0deg, rgba(72,48,35,0.42) 0 42px, rgba(114,78,56,0.36) 42px 84px),
+            linear-gradient(180deg, #e5ded5 0 52%, #5c4233 52% 100%);
+        }
+
+        .backdrop-garden,
+        .backdrop-gate {
+          background:
+            radial-gradient(circle at 50% 26%, rgba(255,255,255,0.4), transparent 16rem),
+            linear-gradient(180deg, #b9d4d0 0 48%, #47633d 48% 100%);
+        }
+
+        .backdrop-street {
+          background:
+            linear-gradient(180deg, #bcced2 0 42%, #6f7574 42% 100%),
+            repeating-linear-gradient(90deg, rgba(255,255,255,0.2) 0 80px, transparent 80px 160px);
         }
 
         .scene-glass {
@@ -958,13 +998,17 @@ function IntroPanel({ startGame }: { startGame: () => void }) {
         .hero-photo {
           position: relative;
           min-height: 390px;
-          overflow: hidden;
+          overflow: visible;
           border-radius: 26px;
-          box-shadow: 0 26px 58px rgba(0, 0, 0, 0.32);
+          background:
+            radial-gradient(ellipse at 50% 88%, rgba(0, 0, 0, 0.26), transparent 50%),
+            linear-gradient(180deg, rgba(255, 248, 239, 0.46), rgba(255, 248, 239, 0.08));
+          box-shadow: none;
         }
 
         .hero-photo :global(img) {
-          object-fit: cover;
+          object-fit: contain;
+          filter: drop-shadow(0 28px 34px rgba(0, 0, 0, 0.32));
         }
 
         .intro-copy {
@@ -1269,16 +1313,19 @@ function LeashMission({
           position: relative;
           width: min(280px, 38vw);
           height: 330px;
-          overflow: hidden;
+          overflow: visible;
           border: 4px solid rgba(255,255,255,0.68);
           border-radius: 24px;
-          background: #15120f;
+          background:
+            radial-gradient(ellipse at 50% 92%, rgba(0,0,0,0.32), transparent 50%),
+            rgba(255, 248, 239, 0.18);
           box-shadow: 0 24px 54px rgba(0,0,0,0.34);
           cursor: pointer;
         }
 
         .dog-target :global(img) {
-          object-fit: cover;
+          object-fit: contain;
+          filter: drop-shadow(0 20px 24px rgba(0, 0, 0, 0.28));
         }
 
         .dog-target span {
@@ -1353,14 +1400,18 @@ function LeashZoom({ dog, finishLeashDog }: { dog: DogKey; finishLeashDog: (dog:
         .zoom-photo {
           position: relative;
           height: min(470px, 62vh);
-          overflow: hidden;
+          overflow: visible;
           border-radius: 28px;
           border: 1px solid rgba(255,255,255,0.35);
-          box-shadow: 0 30px 74px rgba(0,0,0,0.44);
+          background:
+            radial-gradient(ellipse at 50% 94%, rgba(0,0,0,0.34), transparent 46%),
+            linear-gradient(180deg, rgba(255,248,239,0.22), rgba(255,248,239,0.05));
+          box-shadow: none;
         }
 
         .zoom-photo :global(img) {
-          object-fit: cover;
+          object-fit: contain;
+          filter: drop-shadow(0 26px 30px rgba(0, 0, 0, 0.34));
         }
 
         .collar-target {
@@ -1869,15 +1920,16 @@ function PhotoCard({ src, label, className = "" }: { src: string; label: string;
           width: 230px;
           height: 280px;
           margin: 0;
-          overflow: hidden;
+          overflow: visible;
           border-radius: 26px;
-          border: 1px solid rgba(255, 255, 255, 0.36);
-          background: #1d1713;
-          box-shadow: 0 24px 54px rgba(0, 0, 0, 0.34);
+          border: 0;
+          background: transparent;
+          box-shadow: none;
+          filter: drop-shadow(0 24px 28px rgba(0, 0, 0, 0.34));
         }
 
         .photo-card :global(img) {
-          object-fit: cover;
+          object-fit: contain;
         }
 
         figcaption {
