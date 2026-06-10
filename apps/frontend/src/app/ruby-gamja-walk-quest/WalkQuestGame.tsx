@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { type DragEvent as ReactDragEvent, FormEvent, type ReactNode, useEffect, useMemo, useState } from "react";
 
 type Phase =
   | "intro"
@@ -35,7 +35,7 @@ const dog = {
     call: "/ruby-gamja/cutouts-v2/ruby-call.png",
     hop: "/ruby-gamja/cutouts-v2/ruby-hop.png",
     stairs: "/ruby-gamja/cutouts-v2/ruby-stairs.png",
-    sleep: "/ruby-gamja/cutouts-v2/ruby-sleep.png",
+    sleep: "/ruby-gamja/custom/ruby-sleep.png",
     sit: "/ruby-gamja/cutouts-v2/ruby-sit.png",
     walk: "/ruby-gamja/cutouts-v2/ruby-walk.png",
     alert: "/ruby-gamja/cutouts-v2/ruby-alert.png",
@@ -46,7 +46,7 @@ const dog = {
     call: "/ruby-gamja/cutouts-v3/gamja-call.png",
     hop: "/ruby-gamja/cutouts-v3/gamja-hop.png",
     stairs: "/ruby-gamja/cutouts-v3/gamja-stairs.png",
-    sleep: "/ruby-gamja/cutouts-v3/gamja-sleep.png",
+    sleep: "/ruby-gamja/custom/gamja-sleep.png",
     sit: "/ruby-gamja/cutouts-v3/gamja-sit.png",
     walk: "/ruby-gamja/cutouts-v3/gamja-walk.png",
     alert: "/ruby-gamja/cutouts-v3/gamja-alert.png",
@@ -55,7 +55,7 @@ const dog = {
     poop: "/ruby-gamja/cutouts-v3/gamja-poop.png",
     heart: "/ruby-gamja/cutouts-v3/gamja-heart.png",
   },
-  duo: "/ruby-gamja/cutouts-v2/duo-heart.png",
+  duo: "/ruby-gamja/custom/intro-ruby-gamja.jpg",
 };
 
 type SoundName = "bark" | "happy" | "leash" | "success" | "fall" | "car" | "poop" | "step";
@@ -825,6 +825,10 @@ function DogLayer({
         .dogs-sleep {
           bottom: 110px;
         }
+        .dogs-sleep :global(.sprite) {
+          width: clamp(250px, 40vw, 460px);
+          height: clamp(150px, 23vw, 240px);
+        }
         .dogs-hop {
           animation: hop 0.45s ease-in-out infinite alternate;
         }
@@ -1041,6 +1045,23 @@ function SceneFurniture({ phase }: { phase: Phase }) {
           background: linear-gradient(180deg, #f2eee8, #cdbda9);
           box-shadow: 0 20px 40px rgba(80, 58, 43, 0.2);
         }
+        .shoe-cabinet::after {
+          content: "";
+          position: absolute;
+          left: 30px;
+          top: 20px;
+          width: 58px;
+          height: 38px;
+          border: 7px solid #c46e7e;
+          border-radius: 50%;
+          box-shadow:
+            78px 2px 0 -2px #f7efe5,
+            78px 2px 0 4px #5d89c7,
+            170px 0 0 5px #78c766,
+            0 70px 0 -8px rgba(68, 47, 35, 0.36),
+            86px 70px 0 -8px rgba(68, 47, 35, 0.28),
+            178px 70px 0 -8px rgba(68, 47, 35, 0.22);
+        }
         .shoe-cabinet::before {
           content: "";
           position: absolute;
@@ -1137,11 +1158,18 @@ function SceneContent(props: {
     return <ActionDock><button onClick={() => p.setPhase("leashPrep")}>현관으로 가기</button></ActionDock>;
   }
   if (p.phase === "leashPrep") {
-    return <ActionDock><button onClick={p.sitDogs}>앉아</button><button onClick={p.startLeash}>목줄 채우기</button></ActionDock>;
+    return (
+      <ActionDock>
+        <GearShelf rubyLeashed={p.rubyLeashed} gamjaLeashed={p.gamjaLeashed} hasPoopBag={p.hasPoopBag} />
+        <button onClick={p.sitDogs}>앉아</button>
+        <button onClick={p.startLeash}>목줄 채우기</button>
+      </ActionDock>
+    );
   }
   if (p.phase === "leashMission") {
     return (
       <ActionDock>
+        <GearShelf rubyLeashed={p.rubyLeashed} gamjaLeashed={p.gamjaLeashed} hasPoopBag={p.hasPoopBag} />
         <button disabled={p.rubyLeashed} onClick={() => p.openLeashZoom("ruby")}>루비 목 클릭</button>
         <button disabled={p.gamjaLeashed} onClick={() => p.openLeashZoom("gamja")}>감자 목 클릭</button>
       </ActionDock>
@@ -1151,12 +1179,7 @@ function SceneContent(props: {
     return <LeashZoom dogKey={p.zoomDog} finish={p.finishLeash} />;
   }
   if (p.phase === "poopBag") {
-    return (
-      <ActionDock>
-        <button onClick={() => { p.setHasPoopBag(true); p.setMessage("똥봉투를 챙겼어요."); }}>똥봉투 챙기기</button>
-        <button onClick={p.goOut}>{p.poopBagWarning ? "그래도 나가기" : "나가기"}</button>
-      </ActionDock>
-    );
+    return <PoopBagDock hasPoopBag={p.hasPoopBag} setHasPoopBag={p.setHasPoopBag} setMessage={p.setMessage} goOut={p.goOut} warning={p.poopBagWarning} />;
   }
   if (p.phase === "garden") {
     return <ActionDock><button onClick={() => p.setPhase("gate")}>대문 앞으로</button></ActionDock>;
@@ -1233,22 +1256,31 @@ function LeashZoom({ dogKey, finish }: { dogKey: Dog; finish: (dog: Dog) => void
           onDragOver={(event) => event.preventDefault()}
           onDrop={(event) => {
             event.preventDefault();
+            const dragged = event.dataTransfer.getData("text/plain");
+            if (dragged && dragged !== `${dogKey}-leash`) return;
             finish(dogKey);
           }}
         >
           고리
         </div>
       </div>
-      <div
-        draggable
-        className="leash"
-        onDragStart={(event) => {
-          event.dataTransfer.setData("text/plain", `${dogKey}-leash`);
-          event.dataTransfer.effectAllowed = "move";
-        }}
-      >
-        <span />
-        목줄 드래그
+      <div className="zoom-shelf">
+        {(["ruby", "gamja"] as Dog[]).map((target) => (
+          <div
+            key={target}
+            draggable
+            className={`leash ${target} ${target === dogKey ? "active" : ""}`}
+            onDragStart={(event) => {
+              event.dataTransfer.setData("text/plain", `${target}-leash`);
+              event.dataTransfer.effectAllowed = "move";
+              playSound("leash");
+            }}
+          >
+            <span />
+            {target === "ruby" ? "루비 목줄" : "감자 목줄"}
+          </div>
+        ))}
+        <div className="bag-mini"><span />똥봉투</div>
       </div>
       <style jsx>{`
         .zoom {
@@ -1256,7 +1288,7 @@ function LeashZoom({ dogKey, finish }: { dogKey: Dog; finish: (dog: Dog) => void
           z-index: 30;
           inset: 70px 6% 92px;
           display: grid;
-          grid-template-columns: minmax(260px, 520px) 180px;
+          grid-template-columns: minmax(260px, 520px) minmax(190px, 230px);
           gap: 24px;
           align-items: center;
           justify-content: center;
@@ -1284,6 +1316,23 @@ function LeashZoom({ dogKey, finish }: { dogKey: Dog; finish: (dog: Dog) => void
           font-weight: 950;
           transform: translate(-50%, -50%);
         }
+        .collar::after {
+          content: "";
+          position: absolute;
+          inset: -18px;
+          border-radius: inherit;
+        }
+        .zoom-shelf {
+          display: grid;
+          gap: 12px;
+          padding: 16px;
+          border-radius: 22px;
+          background:
+            linear-gradient(180deg, rgba(255,255,255,0.9), rgba(242,226,205,0.94)),
+            repeating-linear-gradient(90deg, rgba(110,75,52,0.09) 0 1px, transparent 1px 38px);
+          border: 1px solid rgba(116, 84, 60, 0.22);
+          box-shadow: 0 22px 45px rgba(0,0,0,0.22), inset 0 -8px 0 rgba(118, 78, 48, 0.12);
+        }
         .leash {
           display: grid;
           place-items: center;
@@ -1297,6 +1346,9 @@ function LeashZoom({ dogKey, finish }: { dogKey: Dog; finish: (dog: Dog) => void
           box-shadow: 0 18px 42px rgba(0,0,0,0.25);
           user-select: none;
         }
+        .leash.active {
+          outline: 3px solid rgba(89, 142, 217, 0.35);
+        }
         .leash span {
           width: 62px;
           height: 42px;
@@ -1305,6 +1357,26 @@ function LeashZoom({ dogKey, finish }: { dogKey: Dog; finish: (dog: Dog) => void
           box-shadow:
             0 0 0 4px rgba(255,255,255,0.7) inset,
             18px 10px 0 -8px #6d4938;
+        }
+        .leash.gamja span {
+          border-color: #5d89c7;
+        }
+        .bag-mini {
+          display: grid;
+          place-items: center;
+          gap: 6px;
+          min-height: 74px;
+          border-radius: 18px;
+          background: rgba(255, 250, 242, 0.7);
+          font-weight: 950;
+          color: #4b3024;
+        }
+        .bag-mini span {
+          width: 36px;
+          height: 42px;
+          border-radius: 8px 8px 14px 14px;
+          background: linear-gradient(180deg, #9bdc72, #55a848);
+          box-shadow: inset 0 8px 0 rgba(255,255,255,0.26), 0 8px 14px rgba(69, 116, 54, 0.25);
         }
       `}</style>
     </div>
@@ -1369,7 +1441,161 @@ function PoopTools({ hasPoopBag, tool, choose, drop }: { hasPoopBag: boolean; to
   );
 }
 
-function ActionDock({ children }: { children: React.ReactNode }) {
+function GearShelf({ rubyLeashed, gamjaLeashed, hasPoopBag }: { rubyLeashed: boolean; gamjaLeashed: boolean; hasPoopBag: boolean }) {
+  const startLeashDrag = (event: ReactDragEvent<HTMLDivElement>, target: Dog) => {
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/plain", `${target}-leash`);
+    playSound("leash");
+  };
+
+  return (
+    <div className="gear-shelf" aria-label="현관 선반">
+      <div className="shelf-title">현관 선반</div>
+      <div
+        draggable={!rubyLeashed}
+        className={`gear-leash ruby ${rubyLeashed ? "used" : ""}`}
+        onDragStart={(event) => startLeashDrag(event, "ruby")}
+      >
+        <span className="loop" />
+        <span className="strap" />
+        <small>루비 목줄</small>
+      </div>
+      <div
+        draggable={!gamjaLeashed}
+        className={`gear-leash gamja ${gamjaLeashed ? "used" : ""}`}
+        onDragStart={(event) => startLeashDrag(event, "gamja")}
+      >
+        <span className="loop" />
+        <span className="strap" />
+        <small>감자 목줄</small>
+      </div>
+      <div className={`poop-bag-icon ${hasPoopBag ? "used" : ""}`}>
+        <span />
+        <small>똥봉투</small>
+      </div>
+      <style jsx>{`
+        .gear-shelf {
+          display: grid;
+          grid-template-columns: 1fr 1fr 1fr;
+          gap: 10px;
+          width: min(520px, 100%);
+          padding: 14px;
+          border-radius: 18px;
+          background:
+            linear-gradient(180deg, rgba(255,255,255,0.86), rgba(244,232,215,0.92)),
+            repeating-linear-gradient(90deg, rgba(120,82,52,0.08) 0 1px, transparent 1px 38px);
+          border: 1px solid rgba(111, 78, 55, 0.24);
+          box-shadow: inset 0 -8px 0 rgba(109, 73, 48, 0.12), 0 16px 30px rgba(84, 58, 42, 0.16);
+        }
+        .shelf-title {
+          grid-column: 1 / -1;
+          font-size: 0.9rem;
+          font-weight: 950;
+          color: #5f4535;
+        }
+        .gear-leash,
+        .poop-bag-icon {
+          position: relative;
+          display: grid;
+          place-items: center;
+          min-height: 78px;
+          border-radius: 16px;
+          background: rgba(255, 250, 242, 0.72);
+          border: 1px solid rgba(107, 74, 52, 0.15);
+          box-shadow: 0 10px 18px rgba(82, 57, 40, 0.12);
+          color: #4c3828;
+          font-weight: 950;
+          cursor: grab;
+          user-select: none;
+        }
+        .gear-leash.used,
+        .poop-bag-icon.used {
+          opacity: 0.45;
+          cursor: default;
+        }
+        .loop {
+          width: 52px;
+          height: 34px;
+          border: 6px solid #d16b82;
+          border-radius: 50%;
+          box-shadow: 0 0 0 4px rgba(255,255,255,0.7) inset;
+        }
+        .gamja .loop {
+          border-color: #5d89c7;
+        }
+        .strap {
+          position: absolute;
+          top: 33px;
+          width: 72px;
+          height: 10px;
+          border-radius: 999px;
+          background: linear-gradient(90deg, #7c4f37, #f2bfd0, #7c4f37);
+          transform: rotate(-17deg);
+        }
+        .gamja .strap {
+          background: linear-gradient(90deg, #2c4d74, #9bc7ff, #2c4d74);
+        }
+        .poop-bag-icon span {
+          width: 42px;
+          height: 46px;
+          border-radius: 8px 8px 14px 14px;
+          background: linear-gradient(180deg, #9bdc72, #55a848);
+          box-shadow: inset 0 8px 0 rgba(255,255,255,0.26), 0 8px 14px rgba(69, 116, 54, 0.25);
+        }
+        small {
+          font-size: 0.78rem;
+        }
+      `}</style>
+    </div>
+  );
+}
+
+function PoopBagDock({
+  hasPoopBag,
+  setHasPoopBag,
+  setMessage,
+  goOut,
+  warning,
+}: {
+  hasPoopBag: boolean;
+  setHasPoopBag: (value: boolean) => void;
+  setMessage: (message: string) => void;
+  goOut: () => void;
+  warning: boolean;
+}) {
+  const collectBag = () => {
+    setHasPoopBag(true);
+    playSound("success");
+    setMessage("똥봉투를 챙겼어요.");
+  };
+
+  return (
+    <ActionDock>
+      <GearShelf rubyLeashed gamjaLeashed hasPoopBag={hasPoopBag} />
+      <div
+        className={hasPoopBag ? "drop-zone done" : "drop-zone"}
+        onDragOver={(event) => event.preventDefault()}
+        onDrop={collectBag}
+      >
+        산책 가방
+      </div>
+      <div
+        draggable={!hasPoopBag}
+        className={`drag-chip poop-bag-drag ${hasPoopBag ? "done" : ""}`}
+        onDragStart={(event) => {
+          event.dataTransfer.effectAllowed = "move";
+          event.dataTransfer.setData("text/plain", "poop-bag");
+        }}
+      >
+        똥봉투 드래그
+      </div>
+      <button onClick={collectBag}>똥봉투 챙기기</button>
+      <button onClick={goOut}>{warning ? "그래도 나가기" : "나가기"}</button>
+    </ActionDock>
+  );
+}
+
+function ActionDock({ children }: { children: ReactNode }) {
   return (
     <div className="dock">
       {children}
