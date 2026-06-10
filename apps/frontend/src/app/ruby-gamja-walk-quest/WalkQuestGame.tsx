@@ -556,13 +556,20 @@ export default function WalkQuestGame() {
         </footer>
       </section>
 
+      <style jsx global>{`
+        @import url("https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Jua&family=Poor+Story&display=swap");
+      `}</style>
       <style jsx>{`
         .walk-page {
           min-height: 100vh;
           padding: 24px;
-          background: linear-gradient(135deg, #ebe1d6, #d8e2df);
+          background:
+            radial-gradient(circle at 20% 5%, rgba(255, 236, 205, 0.75), transparent 18rem),
+            radial-gradient(circle at 80% 16%, rgba(206, 226, 220, 0.68), transparent 22rem),
+            linear-gradient(135deg, #e3d5c5, #cbd7d2);
           color: #231a15;
-          font-family: "Jua", "NanumSquareRound", "Pretendard", "Segoe UI", sans-serif;
+          font-family: "Gaegu", "Jua", "Poor Story", "NanumSquareRound", "Pretendard", "Segoe UI", sans-serif;
+          font-size: 1.12rem;
         }
 
         .back-link {
@@ -574,11 +581,11 @@ export default function WalkQuestGame() {
         .game {
           max-width: 1180px;
           margin: 18px auto 0;
-          border: 1px solid rgba(74, 52, 38, 0.16);
-          border-radius: 22px;
-          background: rgba(255, 250, 244, 0.94);
+          border: 2px solid rgba(72, 50, 35, 0.28);
+          border-radius: 24px;
+          background: #241b15;
           overflow: hidden;
-          box-shadow: 0 24px 70px rgba(37, 28, 22, 0.16);
+          box-shadow: 0 28px 80px rgba(37, 28, 22, 0.28);
         }
 
         .topbar {
@@ -587,21 +594,26 @@ export default function WalkQuestGame() {
           align-items: end;
           gap: 18px;
           padding: 20px 22px 16px;
-          border-bottom: 1px solid rgba(74, 52, 38, 0.12);
+          border-bottom: 1px solid rgba(255, 240, 219, 0.18);
+          background: linear-gradient(180deg, #4d392b, #2f231c);
+          color: #fff8ec;
         }
 
         .topbar p {
           margin: 0 0 6px;
-          color: #896046;
-          font-size: 0.86rem;
+          color: #efd9bd;
+          font-size: 1rem;
           font-weight: 900;
         }
 
         h1 {
           margin: 0;
-          font-size: clamp(1.75rem, 4vw, 2.8rem);
+          font-size: clamp(2.1rem, 4.8vw, 3.6rem);
           letter-spacing: 0;
-          text-shadow: 0 2px 0 rgba(255, 255, 255, 0.8);
+          color: #fff7e8;
+          text-shadow:
+            0 4px 0 rgba(70, 47, 32, 0.95),
+            0 9px 18px rgba(0,0,0,0.38);
         }
 
         .hud-pills {
@@ -616,13 +628,17 @@ export default function WalkQuestGame() {
           min-height: 650px;
           overflow: hidden;
           background: #f2eee8;
+          border-top: 1px solid rgba(255,255,255,0.12);
+          border-bottom: 1px solid rgba(255,255,255,0.12);
         }
 
         .scene::before {
           content: "";
           position: absolute;
           inset: 0;
-          background: linear-gradient(90deg, rgba(24, 18, 15, 0.33), transparent 35%, rgba(24, 18, 15, 0.12));
+          background:
+            radial-gradient(circle at 50% 36%, transparent 0 34%, rgba(22, 16, 12, 0.22) 72%),
+            linear-gradient(90deg, rgba(24, 18, 15, 0.36), transparent 35%, rgba(24, 18, 15, 0.18));
           pointer-events: none;
         }
 
@@ -687,7 +703,8 @@ export default function WalkQuestGame() {
           width: min(560px, calc(100% - 32px));
           padding: 10px;
           border-radius: 18px;
-          background: rgba(255, 250, 242, 0.92);
+          background: rgba(255, 244, 226, 0.96);
+          border: 2px solid rgba(83, 60, 43, 0.2);
           box-shadow: 0 18px 48px rgba(0,0,0,0.24);
           transform: translateX(-50%);
         }
@@ -700,17 +717,42 @@ export default function WalkQuestGame() {
           padding: 13px;
           font: inherit;
           font-weight: 850;
+          background: #fffaf1;
+          color: #3f2d20;
         }
 
         button {
-          border: 0;
-          border-radius: 13px;
-          padding: 12px 16px;
-          background: #2f6f2d;
-          color: white;
+          border: 2px solid rgba(91, 64, 42, 0.24);
+          border-radius: 16px;
+          padding: 11px 17px;
+          background: linear-gradient(180deg, #fff3d7, #dfbf8c);
+          color: #4b3322;
           font: inherit;
           font-weight: 950;
           cursor: pointer;
+          box-shadow: 0 6px 0 rgba(91, 64, 42, 0.22), 0 12px 24px rgba(0,0,0,0.16);
+          transition: transform 0.14s ease, box-shadow 0.14s ease;
+        }
+
+        button::before {
+          content: "🐾 ";
+          font-size: 0.86em;
+        }
+
+        button:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 0 rgba(91, 64, 42, 0.2), 0 16px 28px rgba(0,0,0,0.18);
+        }
+
+        button:active {
+          transform: translateY(3px);
+          box-shadow: 0 3px 0 rgba(91, 64, 42, 0.24), 0 8px 16px rgba(0,0,0,0.14);
+        }
+
+        button:disabled {
+          opacity: 0.54;
+          cursor: default;
+          transform: none;
         }
 
         .mission {
@@ -718,7 +760,9 @@ export default function WalkQuestGame() {
           grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
           gap: 18px;
           padding: 16px 22px 20px;
-          background: rgba(255, 249, 240, 0.78);
+          background:
+            linear-gradient(180deg, rgba(255, 247, 234, 0.98), rgba(233, 214, 184, 0.96));
+          color: #4b3322;
         }
 
         .mission b {
@@ -733,7 +777,13 @@ export default function WalkQuestGame() {
         }
 
         .mission strong {
+          justify-self: end;
+          max-width: 560px;
+          padding: 12px 16px;
+          border-radius: 18px;
+          background: #fff7e8;
           color: #60442f;
+          box-shadow: 0 10px 28px rgba(76, 53, 37, 0.14);
         }
 
         @media (max-width: 820px) {
@@ -768,18 +818,26 @@ function Pill({ label, value, alert = false }: { label: string; value: string; a
           align-items: center;
           gap: 7px;
           min-height: 34px;
-          padding: 7px 11px;
+          padding: 8px 12px;
           border-radius: 999px;
-          border: 1px solid rgba(74, 52, 38, 0.16);
-          background: #fffaf3;
-          font-weight: 900;
+          border: 1px solid rgba(255, 238, 210, 0.34);
+          background: rgba(255, 244, 226, 0.96);
+          color: #4c3425;
+          font-weight: 950;
+          box-shadow: 0 7px 16px rgba(0,0,0,0.16);
+        }
+        .pill::before {
+          content: "•";
+          color: #d79d71;
+          font-size: 1.25rem;
+          line-height: 0;
         }
         small {
-          color: #8c7564;
-          font-size: 0.72rem;
+          color: #8c5d3d;
+          font-size: 0.78rem;
         }
         .alert {
-          background: #fff0ea;
+          background: #ffe5dc;
           color: #a7392d;
         }
       `}</style>
@@ -1653,29 +1711,61 @@ function CenterCard({ title, body, button, onClick, image }: { title: string; bo
           left: 50%;
           top: 50%;
           width: min(560px, calc(100% - 32px));
-          padding: 28px;
+          min-height: 430px;
+          padding: 250px 28px 28px;
           border-radius: 30px;
-          background: rgba(255,250,242,0.9);
+          background:
+            linear-gradient(180deg, rgba(18, 13, 10, 0.16), rgba(18, 13, 10, 0.52)),
+            rgba(255,250,242,0.9);
           text-align: center;
           box-shadow: 0 28px 72px rgba(0,0,0,0.3);
           transform: translate(-50%, -50%);
+          overflow: hidden;
+          color: #fff9ef;
         }
         .hero-dogs {
-          position: relative;
-          height: 220px;
-          margin-bottom: 8px;
-          filter: drop-shadow(0 18px 22px rgba(0,0,0,0.24));
+          position: absolute;
+          inset: 0 0 auto;
+          height: 100%;
+          margin: 0;
+          filter: none;
+          z-index: -1;
         }
-        .hero-dogs :global(img) { object-fit: contain; }
+        .hero-dogs::after {
+          content: "";
+          position: absolute;
+          inset: 0;
+          background:
+            radial-gradient(circle at 18% 18%, rgba(255, 213, 220, 0.28), transparent 8rem),
+            linear-gradient(90deg, rgba(18, 13, 10, 0.66), rgba(18, 13, 10, 0.1) 50%, rgba(18, 13, 10, 0.38));
+        }
+        .hero-dogs :global(img) { object-fit: cover; }
         h2 {
           margin: 0 0 10px;
-          font-size: clamp(2rem, 6vw, 4rem);
+          font-size: clamp(2.6rem, 8vw, 5.5rem);
+          line-height: 0.92;
+          color: #fff6e8;
+          text-shadow:
+            0 5px 0 rgba(62, 42, 28, 0.92),
+            0 13px 24px rgba(0,0,0,0.45);
+        }
+        h2::after {
+          content: " ♥";
+          color: #f3a3ae;
+          font-size: 0.46em;
+          vertical-align: top;
         }
         p {
           margin: 0 0 18px;
-          color: #675346;
+          color: #fff3df;
           font-weight: 850;
           line-height: 1.6;
+          text-shadow: 0 2px 6px rgba(0,0,0,0.4);
+        }
+        button {
+          background: linear-gradient(180deg, #fff3d7, #dfbf8c);
+          color: #4b3322;
+          border: 2px solid rgba(255, 255, 255, 0.35);
         }
       `}</style>
     </div>
