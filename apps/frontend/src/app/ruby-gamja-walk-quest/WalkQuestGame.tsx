@@ -967,8 +967,8 @@ function DogSprite({
           filter: drop-shadow(0 22px 25px rgba(0,0,0,0.34));
         }
         .sprite.right {
-          width: clamp(112px, 16.1vw, 175px);
-          height: clamp(133px, 21vw, 224px);
+          width: clamp(272px, 39.1vw, 425px);
+          height: clamp(323px, 51vw, 544px);
         }
         .sprite :global(img) {
           object-fit: contain;
@@ -1532,8 +1532,8 @@ function LeashTargets({ rubyLeashed, gamjaLeashed, finish }: { rubyLeashed: bool
         .dog-target.ruby { left: 22%; }
         .dog-target.gamja {
           left: 45%;
-          width: 147px;
-          height: 140px;
+          width: 357px;
+          height: 340px;
         }
         .dog-target.done {
           border-style: solid;
