@@ -2,7 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { type DragEvent as ReactDragEvent, FormEvent, type ReactNode, useEffect, useMemo, useState } from "react";
+import { type DragEvent as ReactDragEvent, FormEvent, type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import * as THREE from "three";
 
 type Phase =
   | "intro"
@@ -493,6 +494,7 @@ export default function WalkQuestGame() {
         </header>
 
         <section className={`scene bg-${info.bg} ${useEmptyHome ? "called-dogs" : ""} ${needsInput ? "input-open" : ""}`}>
+          {phase !== "intro" && phase !== "clear" && phase !== "fail" && <ThreeWalkWorld phase={phase} calledDogs={calledDogs} />}
           <div className="first-person" />
           <SceneFurniture phase={phase} />
           {showDogs && <DogLayer pose={dogPose} phase={phase} rubyCalm={rubyCalm} gamjaQuiet={gamjaQuiet} hearts={hearts || phase === "clear"} peePulse={peePulse} />}
@@ -839,6 +841,259 @@ function Pill({ label, value, alert = false }: { label: string; value: string; a
       `}</style>
     </span>
   );
+}
+
+function ThreeWalkWorld({ phase, calledDogs }: { phase: Phase; calledDogs: boolean }) {
+  const mountRef = useRef<HTMLDivElement | null>(null);
+  const positionRef = useRef({ x: 0, z: 5.5, yaw: 0 });
+  const keysRef = useRef(new Set<string>());
+
+  useEffect(() => {
+    const mount = mountRef.current;
+    if (!mount) return;
+
+    const width = Math.max(1, mount.clientWidth);
+    const height = Math.max(1, mount.clientHeight);
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(phase === "garden" || phase === "gate" || phase === "walk" ? "#cfe6c4" : "#f4eadc");
+    scene.fog = new THREE.Fog(scene.background, 9, 26);
+
+    const camera = new THREE.PerspectiveCamera(64, width / height, 0.1, 80);
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(width, height);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    mount.appendChild(renderer.domElement);
+
+    const hemi = new THREE.HemisphereLight("#fff6e8", "#59624c", 1.8);
+    scene.add(hemi);
+    const sun = new THREE.DirectionalLight("#fff1d2", 2.4);
+    sun.position.set(-4, 7, 5);
+    sun.castShadow = true;
+    scene.add(sun);
+
+    const floorMat = new THREE.MeshStandardMaterial({
+      color: phase === "garden" || phase === "gate" || phase === "walk" ? "#7faf5f" : "#eee5d8",
+      roughness: 0.62,
+      metalness: 0.02,
+    });
+    const floor = new THREE.Mesh(new THREE.PlaneGeometry(34, 42), floorMat);
+    floor.rotation.x = -Math.PI / 2;
+    floor.receiveShadow = true;
+    scene.add(floor);
+
+    const grid = new THREE.GridHelper(34, 18, phase === "garden" || phase === "gate" ? "#8eb170" : "#c8b9a7", "#e2d7ca");
+    grid.position.y = 0.012;
+    scene.add(grid);
+
+    if (phase === "garden" || phase === "gate" || phase === "walk") {
+      addOutdoor(scene);
+    } else {
+      addInterior(scene);
+    }
+
+    const textureLoader = new THREE.TextureLoader();
+    const rubyMap = textureLoader.load(dog.ruby.call);
+    const gamjaMap = textureLoader.load(dog.gamja.call);
+    const ruby = makeDogBillboard(rubyMap, 1.65, 2.25);
+    ruby.position.set(-1.1, 1.1, -1.6);
+    const gamja = makeDogBillboard(gamjaMap, 1.25, 1.75);
+    gamja.position.set(1.15, 0.88, -1.25);
+    const dogGroup = new THREE.Group();
+    dogGroup.add(ruby, gamja);
+    dogGroup.visible = calledDogs || !["living", "upstairs"].includes(phase);
+    scene.add(dogGroup);
+
+    const shelf = makeShelf();
+    shelf.position.set(4.6, 1.05, -2.6);
+    shelf.visible = ["leashPrep", "leashMission", "poopBag"].includes(phase);
+    scene.add(shelf);
+
+    const clock = new THREE.Clock();
+    let frame = 0;
+    const animate = () => {
+      const delta = Math.min(clock.getDelta(), 0.04);
+      const pos = positionRef.current;
+      const speed = 3.4 * delta;
+      if (keysRef.current.has("ArrowLeft")) pos.yaw += 1.8 * delta;
+      if (keysRef.current.has("ArrowRight")) pos.yaw -= 1.8 * delta;
+      const forward = new THREE.Vector3(Math.sin(pos.yaw), 0, -Math.cos(pos.yaw));
+      if (keysRef.current.has("ArrowUp")) {
+        pos.x += forward.x * speed;
+        pos.z += forward.z * speed;
+      }
+      if (keysRef.current.has("ArrowDown")) {
+        pos.x -= forward.x * speed;
+        pos.z -= forward.z * speed;
+      }
+      pos.x = THREE.MathUtils.clamp(pos.x, -6.2, 6.2);
+      pos.z = THREE.MathUtils.clamp(pos.z, -10.5, 8.5);
+
+      camera.position.set(pos.x, 1.55, pos.z);
+      camera.rotation.set(0, pos.yaw, 0);
+      dogGroup.children.forEach((child) => child.lookAt(camera.position));
+      dogGroup.position.y = ["excited", "leashPrep"].includes(phase) ? Math.sin(clock.elapsedTime * 8) * 0.06 : 0;
+      renderer.render(scene, camera);
+      frame = window.requestAnimationFrame(animate);
+    };
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(event.code)) {
+        event.preventDefault();
+        keysRef.current.add(event.code);
+      }
+    };
+    const onKeyUp = (event: KeyboardEvent) => {
+      keysRef.current.delete(event.code);
+    };
+    const onResize = () => {
+      const nextWidth = Math.max(1, mount.clientWidth);
+      const nextHeight = Math.max(1, mount.clientHeight);
+      camera.aspect = nextWidth / nextHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(nextWidth, nextHeight);
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    window.addEventListener("keyup", onKeyUp);
+    window.addEventListener("resize", onResize);
+    animate();
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("keyup", onKeyUp);
+      window.removeEventListener("resize", onResize);
+      renderer.dispose();
+      scene.traverse((object) => {
+        if (object instanceof THREE.Mesh) {
+          object.geometry.dispose();
+          const materials = Array.isArray(object.material) ? object.material : [object.material];
+          materials.forEach((material) => material.dispose());
+        }
+      });
+      rubyMap.dispose();
+      gamjaMap.dispose();
+      mount.removeChild(renderer.domElement);
+    };
+  }, [calledDogs, phase]);
+
+  return (
+    <div className="three-world" ref={mountRef} aria-label="3D 산책 공간">
+      <div className="move-help">방향키 ↑ 앞으로 · ↓ 뒤로 · ←/→ 방향 전환</div>
+      <style jsx>{`
+        .three-world {
+          position: absolute;
+          z-index: 1;
+          inset: 0;
+          overflow: hidden;
+          background: #f4eadc;
+        }
+        .three-world :global(canvas) {
+          display: block;
+          width: 100%;
+          height: 100%;
+        }
+        .move-help {
+          position: absolute;
+          right: 18px;
+          bottom: 18px;
+          z-index: 2;
+          padding: 9px 13px;
+          border-radius: 999px;
+          background: rgba(255, 250, 242, 0.78);
+          color: #4c3828;
+          font-size: 0.92rem;
+          font-weight: 950;
+          box-shadow: 0 12px 28px rgba(35, 25, 18, 0.16);
+          pointer-events: none;
+        }
+      `}</style>
+    </div>
+  );
+}
+
+function makeDogBillboard(map: THREE.Texture, width: number, height: number) {
+  map.colorSpace = THREE.SRGBColorSpace;
+  const material = new THREE.MeshBasicMaterial({ map, transparent: true, depthWrite: false });
+  const mesh = new THREE.Mesh(new THREE.PlaneGeometry(width, height), material);
+  mesh.position.y = height / 2;
+  return mesh;
+}
+
+function addInterior(scene: THREE.Scene) {
+  const wallMat = new THREE.MeshStandardMaterial({ color: "#f2e5d5", roughness: 0.75 });
+  const woodMat = new THREE.MeshStandardMaterial({ color: "#7a4a2f", roughness: 0.58 });
+  const backWall = new THREE.Mesh(new THREE.BoxGeometry(14, 4, 0.18), wallMat);
+  backWall.position.set(0, 2, -8);
+  scene.add(backWall);
+  const sideWall = new THREE.Mesh(new THREE.BoxGeometry(0.18, 4, 16), wallMat);
+  sideWall.position.set(-7, 2, 0);
+  scene.add(sideWall);
+  for (let i = 0; i < 7; i += 1) {
+    const stair = new THREE.Mesh(new THREE.BoxGeometry(3.8, 0.18, 0.65), woodMat);
+    stair.position.set(-3.6, 0.12 + i * 0.15, -5.6 - i * 0.48);
+    stair.castShadow = true;
+    stair.receiveShadow = true;
+    scene.add(stair);
+  }
+  const door = new THREE.Mesh(new THREE.BoxGeometry(1.5, 2.8, 0.16), new THREE.MeshStandardMaterial({ color: "#dfd5c8", roughness: 0.45 }));
+  door.position.set(5.6, 1.4, -7.88);
+  scene.add(door);
+  const plant = new THREE.Mesh(new THREE.ConeGeometry(0.55, 1.2, 8), new THREE.MeshStandardMaterial({ color: "#5f8c52", roughness: 0.9 }));
+  plant.position.set(5.7, 0.7, -4.1);
+  scene.add(plant);
+}
+
+function addOutdoor(scene: THREE.Scene) {
+  const pathMat = new THREE.MeshStandardMaterial({ color: "#cfc6b5", roughness: 0.82 });
+  for (let i = 0; i < 8; i += 1) {
+    const stone = new THREE.Mesh(new THREE.CylinderGeometry(0.75, 0.75, 0.06, 18), pathMat);
+    stone.rotation.y = i * 0.34;
+    stone.position.set(Math.sin(i * 0.6) * 0.8, 0.04, 3.8 - i * 1.45);
+    stone.receiveShadow = true;
+    scene.add(stone);
+  }
+  const gateMat = new THREE.MeshStandardMaterial({ color: "#1f2321", roughness: 0.45, metalness: 0.15 });
+  for (let i = -3; i <= 3; i += 1) {
+    const bar = new THREE.Mesh(new THREE.BoxGeometry(0.08, 2.3, 0.08), gateMat);
+    bar.position.set(i * 0.38, 1.15, -7.2);
+    scene.add(bar);
+  }
+  const rail = new THREE.Mesh(new THREE.BoxGeometry(3.1, 0.08, 0.08), gateMat);
+  rail.position.set(0, 1.55, -7.2);
+  scene.add(rail);
+  const bushMat = new THREE.MeshStandardMaterial({ color: "#4f7c3e", roughness: 0.9 });
+  [-4.6, 4.6].forEach((x) => {
+    const bush = new THREE.Mesh(new THREE.SphereGeometry(1.2, 16, 10), bushMat);
+    bush.position.set(x, 0.8, -4.5);
+    scene.add(bush);
+  });
+}
+
+function makeShelf() {
+  const group = new THREE.Group();
+  const wood = new THREE.MeshStandardMaterial({ color: "#8a5b39", roughness: 0.55 });
+  const body = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.18, 0.75), wood);
+  body.castShadow = true;
+  body.receiveShadow = true;
+  group.add(body);
+  [0.48, -0.48].forEach((x) => {
+    const leg = new THREE.Mesh(new THREE.BoxGeometry(0.12, 1.1, 0.12), wood);
+    leg.position.set(x, -0.62, 0.24);
+    group.add(leg);
+  });
+  const rubyLeash = new THREE.Mesh(new THREE.TorusGeometry(0.18, 0.035, 8, 28), new THREE.MeshStandardMaterial({ color: "#d16b82", roughness: 0.38 }));
+  rubyLeash.position.set(-0.44, 0.18, 0.08);
+  group.add(rubyLeash);
+  const gamjaLeash = new THREE.Mesh(new THREE.TorusGeometry(0.18, 0.035, 8, 28), new THREE.MeshStandardMaterial({ color: "#5d89c7", roughness: 0.38 }));
+  gamjaLeash.position.set(0.1, 0.18, 0.08);
+  group.add(gamjaLeash);
+  const bag = new THREE.Mesh(new THREE.CapsuleGeometry(0.14, 0.28, 8, 16), new THREE.MeshStandardMaterial({ color: "#5d7d55", roughness: 0.35 }));
+  bag.position.set(0.62, 0.18, 0.08);
+  group.add(bag);
+  return group;
 }
 
 function DogLayer({
