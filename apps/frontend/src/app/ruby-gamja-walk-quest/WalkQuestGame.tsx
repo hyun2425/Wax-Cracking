@@ -32,8 +32,8 @@ type PoopTool = "bag" | "leaf" | "sock" | null;
 // Replace only these paths when swapping Ruby/Gamja cutout assets later.
 const dog = {
   ruby: {
-    call: "/ruby-gamja/cutouts-v2/ruby-call.png",
-    hop: "/ruby-gamja/cutouts-v2/ruby-hop.png",
+    call: "/ruby-gamja/custom/ruby-close-hop.png",
+    hop: "/ruby-gamja/custom/ruby-close-hop.png",
     stairs: "/ruby-gamja/cutouts-v2/ruby-stairs.png",
     sleep: "/ruby-gamja/custom/ruby-sleep.png",
     sit: "/ruby-gamja/cutouts-v2/ruby-sit.png",
@@ -43,8 +43,8 @@ const dog = {
     heart: "/ruby-gamja/cutouts-v2/ruby-heart.png",
   },
   gamja: {
-    call: "/ruby-gamja/cutouts-v3/gamja-call.png",
-    hop: "/ruby-gamja/cutouts-v3/gamja-hop.png",
+    call: "/ruby-gamja/custom/gamja-close-hop.png",
+    hop: "/ruby-gamja/custom/gamja-close-hop.png",
     stairs: "/ruby-gamja/cutouts-v3/gamja-stairs.png",
     sleep: "/ruby-gamja/custom/gamja-sleep.png",
     sit: "/ruby-gamja/cutouts-v3/gamja-sit.png",
@@ -55,7 +55,7 @@ const dog = {
     poop: "/ruby-gamja/cutouts-v3/gamja-poop.png",
     heart: "/ruby-gamja/cutouts-v3/gamja-heart.png",
   },
-  intro: "/ruby-gamja/cutouts-v2/duo-heart.png",
+  intro: "/ruby-gamja/custom/intro-ruby-gamja.jpg",
   duo: "/ruby-gamja/custom/intro-ruby-gamja.jpg",
 };
 
@@ -106,8 +106,8 @@ function playSound(name: SoundName) {
   window.setTimeout(() => void ctx.close(), 520);
 }
 
-const callWords = ["루비", "감자"];
-const walkWords = ["산책가자", "나가자", "나갈까"];
+const callWords = ["루비", "감자", "루감"];
+const walkWords = ["산책", "나가자", "나갈까"];
 
 const phaseInfo: Record<Phase, { scene: string; mission: string; bg: string }> = {
   intro: { scene: "우리집", mission: "Start 버튼을 눌러 산책을 시작하세요.", bg: "home" },
@@ -117,7 +117,7 @@ const phaseInfo: Record<Phase, { scene: string; mission: string; bg: string }> =
   leashPrep: { scene: "현관", mission: "먼저 앉아를 입력/클릭한 뒤 목줄 미션을 시작하세요.", bg: "entry" },
   leashMission: { scene: "현관", mission: "10초 안에 선반의 목줄을 루비와 감자에게 채워주세요.", bg: "entry" },
   leashZoom: { scene: "목줄 확대", mission: "목줄을 목 고리까지 옮겨 채우세요.", bg: "entry" },
-  poopBag: { scene: "현관문", mission: "똥봉투를 챙기세요. 안 챙겨도 두 번 누르면 나갈 수 있어요.", bg: "entry" },
+  poopBag: { scene: "현관문", mission: "똥봉투를 챙기거나 바로 정원으로 나가세요.", bg: "entry" },
   garden: { scene: "정원", mission: "정원을 지나 대문 앞으로 가세요.", bg: "garden" },
   gate: { scene: "대문 앞", mission: "루비는 앉아, 감자는 조용히 해. 진정 후 대문을 여세요.", bg: "gate" },
   walk: { scene: "늘 가던 산책길", mission: "루비와 감자를 따라 안전하게 걸으세요.", bg: "street" },
@@ -158,6 +158,7 @@ export default function WalkQuestGame() {
   const info = phaseInfo[phase];
   const needsInput = ["living", "leashPrep"].includes(phase);
   const showDogs = !(phase === "upstairs" || (phase === "living" && !calledDogs));
+  const useEmptyHome = (phase === "living" && calledDogs) || phase === "excited";
 
   function showHearts(text: string) {
     setMessage(text);
@@ -321,11 +322,11 @@ export default function WalkQuestGame() {
 
   function runCommand(command: string) {
     if (phase === "living") {
-      if (callWords.includes(command)) {
+      if (callWords.some((word) => command.includes(word))) {
         setCalledDogs(true);
         playSound("happy");
         showHearts("루비와 감자가 고개를 들고 나에게 다가와요.");
-      } else if (walkWords.includes(command)) {
+      } else if (walkWords.some((word) => command.includes(word))) {
         setPhase("excited");
         showHearts("산책이라는 말에 루비와 감자가 콩콩 뛰기 시작했어요!");
       } else {
@@ -385,14 +386,9 @@ export default function WalkQuestGame() {
   }
 
   function goOut() {
-    if (!hasPoopBag && !poopBagWarning) {
-      setPoopBagWarning(true);
-      setMessage("뭐 잊은 게 있지 않니?");
-      return;
-    }
-      setPhase("garden");
+    setPhase("garden");
     playSound("step");
-    setMessage(hasPoopBag ? "똥봉투까지 챙겼어요. 정원으로 나갑니다." : "똥봉투 없이 나왔어요. 나중에 선택지가 생길 수 있어요.");
+    setMessage(hasPoopBag ? "똥봉투까지 챙겼어요. 정원으로 나갑니다." : "똥봉투 없이도 정원으로 나왔어요.");
   }
 
   function openGate() {
@@ -495,7 +491,7 @@ export default function WalkQuestGame() {
           </div>
         </header>
 
-        <section className={`scene bg-${info.bg}`}>
+        <section className={`scene bg-${info.bg} ${useEmptyHome ? "called-dogs" : ""} ${needsInput ? "input-open" : ""}`}>
           <div className="first-person" />
           <SceneFurniture phase={phase} />
           {showDogs && <DogLayer pose={dogPose} phase={phase} rubyCalm={rubyCalm} gamjaQuiet={gamjaQuiet} hearts={hearts || phase === "clear"} peePulse={peePulse} />}
@@ -536,8 +532,12 @@ export default function WalkQuestGame() {
             ignoreDog={ignoreDog}
             blockBoss={blockBoss}
           />
+          <div className="scene-caption">
+            <b>{info.scene}</b>
+            <span>{message}</span>
+          </div>
           {needsInput && (
-            <form className={`command ${phase === "leashPrep" ? "command-side" : ""}`} onSubmit={submitCommand}>
+            <form className="command" onSubmit={submitCommand}>
               <input
                 value={input}
                 onChange={(event) => setInput(event.target.value)}
@@ -548,14 +548,6 @@ export default function WalkQuestGame() {
             </form>
           )}
         </section>
-
-        <footer className="mission">
-          <div>
-            <b>{info.scene}</b>
-            <p>{info.mission}</p>
-          </div>
-          <strong>{message}</strong>
-        </footer>
       </section>
 
       <style jsx global>{`
@@ -646,31 +638,41 @@ export default function WalkQuestGame() {
 
         .bg-home {
           background:
-            radial-gradient(circle at 72% 18%, rgba(255,255,255,0.8), transparent 18rem),
-            linear-gradient(180deg, #f4f1ed 0 48%, transparent 48%),
-            repeating-linear-gradient(42deg, rgba(180,171,160,0.18) 0 2px, transparent 2px 72px),
-            linear-gradient(180deg, #fbfaf7 0 50%, #e9e4dc 50% 100%);
+            linear-gradient(90deg, rgba(42,31,22,0.34), rgba(42,31,22,0.04) 48%, rgba(42,31,22,0.18)),
+            url("/ruby-gamja/custom/intro-ruby-gamja.jpg") center / cover no-repeat;
         }
 
         .bg-stairs {
           background:
             linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,248,236,0.2)),
-            url("/ruby-gamja/custom/stairs-sleep-scene.png") center / cover no-repeat;
+            url("/ruby-gamja/custom/home-sleep-dogs.png") center / cover no-repeat;
         }
 
-        .bg-living,
-        .bg-entry {
+        .bg-living {
           background:
             radial-gradient(circle at 78% 18%, rgba(255,255,255,0.72), transparent 18rem),
             linear-gradient(180deg, rgba(255,255,255,0.34), rgba(255,248,236,0.12)),
-            url("/ruby-gamja/custom/stairs-sleep-scene.png") center / cover no-repeat;
+            url("/ruby-gamja/custom/home-sleep-dogs.png") center / cover no-repeat;
         }
 
-        .bg-garden,
+        .bg-living.called-dogs,
+        .bg-entry {
+          background:
+            radial-gradient(circle at 78% 18%, rgba(255,255,255,0.54), transparent 18rem),
+            linear-gradient(180deg, rgba(255,255,255,0.22), rgba(255,248,236,0.08)),
+            url("/ruby-gamja/custom/home-empty.png") center / cover no-repeat;
+        }
+
+        .bg-garden {
+          background:
+            linear-gradient(180deg, rgba(255,255,255,0.08), rgba(31,45,24,0.08)),
+            url("/ruby-gamja/custom/garden-real.png") center / cover no-repeat;
+        }
+
         .bg-gate {
           background:
-            radial-gradient(circle at 22% 14%, rgba(255,255,255,0.72), transparent 16rem),
-            linear-gradient(180deg, #b9daf1 0 34%, #d8eebf 34% 56%, #78a96a 56% 100%);
+            linear-gradient(180deg, rgba(255,255,255,0.08), rgba(31,45,24,0.08)),
+            url("/ruby-gamja/custom/gate-real.png") center / cover no-repeat;
         }
 
         .bg-street,
@@ -706,14 +708,6 @@ export default function WalkQuestGame() {
           border: 2px solid rgba(83, 60, 43, 0.2);
           box-shadow: 0 18px 48px rgba(0,0,0,0.24);
           transform: translateX(-50%);
-        }
-
-        .command-side {
-          left: 24px;
-          top: 24px;
-          bottom: auto;
-          width: min(360px, calc(100% - 48px));
-          transform: none;
         }
 
         input {
@@ -762,35 +756,30 @@ export default function WalkQuestGame() {
           transform: none;
         }
 
-        .mission {
+        .scene-caption {
+          position: absolute;
+          z-index: 21;
+          left: 24px;
+          top: 22px;
+          max-width: min(430px, calc(100% - 48px));
           display: grid;
-          grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
-          gap: 18px;
-          padding: 16px 22px 20px;
-          background:
-            linear-gradient(180deg, rgba(255, 247, 234, 0.98), rgba(233, 214, 184, 0.96));
-          color: #4b3322;
-        }
-
-        .mission b {
-          display: block;
-          margin-bottom: 6px;
-        }
-
-        .mission p,
-        .mission strong {
-          margin: 0;
-          line-height: 1.55;
-        }
-
-        .mission strong {
-          justify-self: end;
-          max-width: 560px;
-          padding: 12px 16px;
+          gap: 6px;
+          padding: 13px 16px;
           border-radius: 18px;
-          background: #fff7e8;
-          color: #60442f;
-          box-shadow: 0 10px 28px rgba(76, 53, 37, 0.14);
+          background: rgba(255, 250, 241, 0.86);
+          border: 1px solid rgba(92, 66, 46, 0.18);
+          color: #4b3322;
+          box-shadow: 0 14px 36px rgba(42, 28, 18, 0.16);
+          backdrop-filter: blur(8px);
+        }
+
+        .scene.input-open .scene-caption {
+          top: 22px;
+        }
+
+        .scene-caption b,
+        .scene-caption span {
+          line-height: 1.45;
         }
 
         @media (max-width: 820px) {
@@ -798,8 +787,7 @@ export default function WalkQuestGame() {
             padding: 12px;
           }
 
-          .topbar,
-          .mission {
+          .topbar {
             grid-template-columns: 1fr;
             flex-direction: column;
             align-items: stretch;
@@ -1031,13 +1019,6 @@ function SceneFurniture({ phase }: { phase: Phase }) {
         </>
       )}
       {["poopBag", "leashPrep", "leashMission"].includes(phase) && <div className="entry-table" />}
-      {["garden", "gate", "home"].includes(phase) && (
-        <>
-          <div className="garden-path" />
-          <div className="flower-bed" />
-          <div className="gate-shape" />
-        </>
-      )}
       {["walk", "pull", "poop", "run", "car", "barkingDog", "boss"].includes(phase) && <div className="road-perspective" />}
       <style jsx>{`
         .furniture {
@@ -1279,26 +1260,28 @@ function SceneContent(props: {
   }
   if (p.phase === "leashPrep") {
     return (
-      <ActionDock>
-        <GearShelf rubyLeashed={p.rubyLeashed} gamjaLeashed={p.gamjaLeashed} hasPoopBag={p.hasPoopBag} />
+      <>
+        <GearShelf rubyLeashed={p.rubyLeashed} gamjaLeashed={p.gamjaLeashed} hasPoopBag={p.hasPoopBag} side />
+        <ActionDock>
         <button onClick={p.sitDogs}>앉아</button>
         <button onClick={p.startLeash}>목줄 채우기</button>
-      </ActionDock>
+        </ActionDock>
+      </>
     );
   }
   if (p.phase === "leashMission") {
     return (
-      <ActionDock>
-        <GearShelf rubyLeashed={p.rubyLeashed} gamjaLeashed={p.gamjaLeashed} hasPoopBag={p.hasPoopBag} />
+      <>
+        <GearShelf rubyLeashed={p.rubyLeashed} gamjaLeashed={p.gamjaLeashed} hasPoopBag={p.hasPoopBag} side />
         <LeashTargets rubyLeashed={p.rubyLeashed} gamjaLeashed={p.gamjaLeashed} finish={p.finishLeash} />
-      </ActionDock>
+      </>
     );
   }
   if (p.phase === "leashZoom" && p.zoomDog) {
     return <LeashZoom dogKey={p.zoomDog} finish={p.finishLeash} />;
   }
   if (p.phase === "poopBag") {
-    return <PoopBagDock hasPoopBag={p.hasPoopBag} setHasPoopBag={p.setHasPoopBag} setMessage={p.setMessage} goOut={p.goOut} warning={p.poopBagWarning} />;
+    return <PoopBagDock hasPoopBag={p.hasPoopBag} setHasPoopBag={p.setHasPoopBag} setMessage={p.setMessage} goOut={p.goOut} />;
   }
   if (p.phase === "garden") {
     return <ActionDock><button onClick={() => p.setPhase("gate")}>대문 앞으로</button></ActionDock>;
@@ -1530,24 +1513,29 @@ function LeashTargets({ rubyLeashed, gamjaLeashed, finish }: { rubyLeashed: bool
       </div>
       <style jsx>{`
         .leash-targets {
-          display: flex;
-          gap: 10px;
-          flex-wrap: wrap;
-          justify-content: center;
+          position: absolute;
+          z-index: 24;
+          inset: 0;
+          pointer-events: none;
         }
         .dog-target {
           position: relative;
-          width: 150px;
-          height: 120px;
-          border-radius: 22px;
-          background: rgba(255, 250, 242, 0.78);
-          border: 2px dashed rgba(96, 68, 47, 0.28);
-          box-shadow: inset 0 0 0 999px rgba(255,255,255,0.02), 0 12px 24px rgba(66, 45, 30, 0.14);
+          position: absolute;
+          bottom: 92px;
+          width: 210px;
+          height: 200px;
+          border-radius: 42px;
+          background: rgba(255, 250, 242, 0.04);
+          border: 2px dashed rgba(255, 230, 175, 0.7);
+          box-shadow: inset 0 0 0 999px rgba(255,255,255,0.01), 0 12px 24px rgba(66, 45, 30, 0.08);
           overflow: hidden;
+          pointer-events: auto;
         }
+        .dog-target.ruby { left: 22%; }
+        .dog-target.gamja { left: 43%; }
         .dog-target.done {
           border-style: solid;
-          background: #e9f5dc;
+          background: rgba(225, 245, 210, 0.22);
         }
         .dog-target :global(img) {
           object-fit: contain;
@@ -1645,15 +1633,30 @@ function PoopTools({ hasPoopBag, tool, choose, drop }: { hasPoopBag: boolean; to
   );
 }
 
-function GearShelf({ rubyLeashed, gamjaLeashed, hasPoopBag }: { rubyLeashed: boolean; gamjaLeashed: boolean; hasPoopBag: boolean }) {
+function GearShelf({
+  rubyLeashed,
+  gamjaLeashed,
+  hasPoopBag,
+  side = false,
+}: {
+  rubyLeashed: boolean;
+  gamjaLeashed: boolean;
+  hasPoopBag: boolean;
+  side?: boolean;
+}) {
   const startLeashDrag = (event: ReactDragEvent<HTMLDivElement>, target: Dog) => {
     event.dataTransfer.effectAllowed = "move";
     event.dataTransfer.setData("text/plain", `${target}-leash`);
     playSound("leash");
   };
 
+  const startPoopBagDrag = (event: ReactDragEvent<HTMLDivElement>) => {
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/plain", "poop-bag");
+  };
+
   return (
-    <div className="gear-shelf" aria-label="현관 선반">
+    <div className={`gear-shelf ${side ? "side" : ""}`} aria-label="현관 선반">
       <div className="shelf-title">현관 선반</div>
       <div
         draggable={!rubyLeashed}
@@ -1673,8 +1676,12 @@ function GearShelf({ rubyLeashed, gamjaLeashed, hasPoopBag }: { rubyLeashed: boo
         <span className="strap" />
         <small>감자 목줄</small>
       </div>
-      <div className={`poop-bag-icon ${hasPoopBag ? "used" : ""}`}>
-        <span />
+      <div
+        draggable={!hasPoopBag}
+        className={`poop-bag-icon ${hasPoopBag ? "used" : ""}`}
+        onDragStart={startPoopBagDrag}
+      >
+        <Image src="/ruby-gamja/custom/poop-bag-real.png" alt="똥봉투" fill sizes="90px" />
         <small>똥봉투</small>
       </div>
       <style jsx>{`
@@ -1690,6 +1697,14 @@ function GearShelf({ rubyLeashed, gamjaLeashed, hasPoopBag }: { rubyLeashed: boo
             repeating-linear-gradient(90deg, rgba(120,82,52,0.08) 0 1px, transparent 1px 38px);
           border: 1px solid rgba(111, 78, 55, 0.24);
           box-shadow: inset 0 -8px 0 rgba(109, 73, 48, 0.12), 0 16px 30px rgba(84, 58, 42, 0.16);
+        }
+        .gear-shelf.side {
+          position: absolute;
+          z-index: 25;
+          top: 86px;
+          right: 24px;
+          width: min(260px, calc(100% - 48px));
+          grid-template-columns: 1fr;
         }
         .shelf-title {
           grid-column: 1 / -1;
@@ -1711,6 +1726,7 @@ function GearShelf({ rubyLeashed, gamjaLeashed, hasPoopBag }: { rubyLeashed: boo
           font-weight: 950;
           cursor: grab;
           user-select: none;
+          overflow: hidden;
         }
         .gear-leash.used,
         .poop-bag-icon.used {
@@ -1739,12 +1755,19 @@ function GearShelf({ rubyLeashed, gamjaLeashed, hasPoopBag }: { rubyLeashed: boo
         .gamja .strap {
           background: linear-gradient(90deg, #2c4d74, #9bc7ff, #2c4d74);
         }
-        .poop-bag-icon span {
-          width: 42px;
-          height: 46px;
-          border-radius: 8px 8px 14px 14px;
-          background: linear-gradient(180deg, #9bdc72, #55a848);
-          box-shadow: inset 0 8px 0 rgba(255,255,255,0.26), 0 8px 14px rgba(69, 116, 54, 0.25);
+        .poop-bag-icon :global(img) {
+          object-fit: contain;
+          padding: 6px 18px 20px;
+          filter: drop-shadow(0 10px 14px rgba(42, 66, 42, 0.2));
+        }
+        .poop-bag-icon small {
+          position: absolute;
+          left: 50%;
+          bottom: 7px;
+          transform: translateX(-50%);
+          padding: 2px 8px;
+          border-radius: 999px;
+          background: rgba(255,255,255,0.8);
         }
         small {
           font-size: 0.78rem;
@@ -1759,13 +1782,11 @@ function PoopBagDock({
   setHasPoopBag,
   setMessage,
   goOut,
-  warning,
 }: {
   hasPoopBag: boolean;
   setHasPoopBag: (value: boolean) => void;
   setMessage: (message: string) => void;
   goOut: () => void;
-  warning: boolean;
 }) {
   const collectBag = () => {
     setHasPoopBag(true);
@@ -1774,8 +1795,9 @@ function PoopBagDock({
   };
 
   return (
-    <ActionDock>
-      <GearShelf rubyLeashed gamjaLeashed hasPoopBag={hasPoopBag} />
+    <>
+      <GearShelf rubyLeashed gamjaLeashed hasPoopBag={hasPoopBag} side />
+      <ActionDock>
       <div
         className={hasPoopBag ? "drop-zone bag-drop done" : "drop-zone bag-drop"}
         onDragOver={(event) => event.preventDefault()}
@@ -1792,10 +1814,11 @@ function PoopBagDock({
           event.dataTransfer.setData("text/plain", "poop-bag");
         }}
       >
-        똥봉투
+        <Image src="/ruby-gamja/custom/poop-bag-real.png" alt="똥봉투" fill sizes="96px" />
       </div>
       <button onClick={collectBag}>똥봉투 챙기기</button>
-      <button onClick={goOut}>{warning ? "그래도 나가기" : "나가기"}</button>
+      <button onClick={goOut}>나가기</button>
+      </ActionDock>
       <style jsx>{`
         .bag-drop {
           display: grid;
@@ -1822,8 +1845,24 @@ function PoopBagDock({
           border-bottom: 0;
           border-radius: 18px 18px 0 0;
         }
+        .poop-bag-drag {
+          position: relative;
+          width: 92px;
+          height: 82px;
+          overflow: hidden;
+          background: linear-gradient(180deg, #e7f9d5, #a6df83);
+          color: #326129;
+        }
+        .poop-bag-drag :global(img) {
+          object-fit: contain;
+          padding: 4px;
+          filter: drop-shadow(0 8px 12px rgba(45,75,45,0.24));
+        }
+        .poop-bag-drag.done {
+          opacity: 0.45;
+        }
       `}</style>
-    </ActionDock>
+    </>
   );
 }
 
@@ -1913,9 +1952,9 @@ function CenterCard({
         }
         .center-card.intro {
           background:
-            radial-gradient(circle at 80% 18%, rgba(255,255,255,0.72), transparent 13rem),
-            linear-gradient(180deg, #bfe2ff 0 45%, #dff2bd 45% 66%, #8fc06d 66% 100%);
-          color: #3d2b20;
+            linear-gradient(90deg, rgba(26, 18, 13, 0.5), rgba(26, 18, 13, 0.08) 58%, rgba(26, 18, 13, 0.38));
+          color: #fff8ec;
+          padding-top: 280px;
         }
         .hero-dogs {
           position: absolute;
@@ -1935,16 +1974,16 @@ function CenterCard({
         }
         .hero-dogs :global(img) { object-fit: cover; }
         .intro .hero-dogs {
-          inset: 54px 16px auto;
-          height: 230px;
-          z-index: 0;
-          filter: drop-shadow(0 22px 24px rgba(54, 68, 42, 0.28));
+          inset: 0;
+          height: 100%;
+          z-index: -1;
+          filter: none;
         }
         .intro .hero-dogs::after {
-          display: none;
+          display: block;
         }
         .intro .hero-dogs :global(img) {
-          object-fit: contain;
+          object-fit: cover;
         }
         h2 {
           position: relative;
