@@ -209,6 +209,11 @@ export default function WalkQuestGame() {
     setMessage("1층 거실입니다. 루비와 감자를 불러보세요.");
   }, []);
 
+  const reachGate = useCallback(() => {
+    setPhase("gate");
+    setMessage("대문 앞이에요. 루비는 빙글빙글 돌고, 감자는 신나서 짖고 있어요.");
+  }, []);
+
   function fall(reason: string) {
     playSound("fall");
     const next = falls + 1;
@@ -487,6 +492,12 @@ export default function WalkQuestGame() {
     if (phase === "run") playSound("happy");
   }, [phase]);
 
+  useEffect(() => {
+    if (phase !== "gate" || gamjaQuiet) return;
+    const barkTimer = window.setInterval(() => playSound("bark"), 1300);
+    return () => window.clearInterval(barkTimer);
+  }, [gamjaQuiet, phase]);
+
   const dogPose = useMemo(() => {
     if (phase === "intro" || phase === "clear") return "heart";
     if (phase === "living" && !calledDogs) return "sleep";
@@ -526,6 +537,7 @@ export default function WalkQuestGame() {
               canReachEntry={dogsSitting}
               onReachLiving={reachLiving}
               onReachEntry={reachEntry}
+              onReachGate={reachGate}
             />
           )}
           <div className="first-person" />
@@ -882,12 +894,14 @@ function ThreeWalkWorld({
   canReachEntry = true,
   onReachLiving,
   onReachEntry,
+  onReachGate,
 }: {
   phase: Phase;
   calledDogs: boolean;
   canReachEntry?: boolean;
   onReachLiving?: () => void;
   onReachEntry?: () => void;
+  onReachGate?: () => void;
 }) {
   const mountRef = useRef<HTMLDivElement | null>(null);
   const positionRef = useRef({ x: 0, z: 5.5, yaw: 0 });
@@ -898,7 +912,8 @@ function ThreeWalkWorld({
     const mount = mountRef.current;
     if (!mount) return;
     reachedEntryRef.current = false;
-    if (phase === "upstairs") positionRef.current = { x: -3.6, z: 6.2, yaw: 0 };
+    if (phase === "upstairs") positionRef.current = { x: -3.6, z: 8.2, yaw: 0 };
+    if (phase === "garden") positionRef.current = { x: 0, z: 6.8, yaw: 0 };
 
     const width = Math.max(1, mount.clientWidth);
     const height = Math.max(1, mount.clientHeight);
@@ -942,17 +957,18 @@ function ThreeWalkWorld({
     }
 
     const textureLoader = new THREE.TextureLoader();
-    const rubySrc = phase === "upstairs" ? dog.ruby.sleep : phase === "excited" ? dog.ruby.hop : dog.ruby.call;
-    const gamjaSrc = phase === "upstairs" ? dog.gamja.sleep : phase === "excited" ? dog.gamja.hop : dog.gamja.call;
+    const isSleepingScene = phase === "upstairs" || (phase === "living" && !calledDogs);
+    const rubySrc = isSleepingScene ? dog.ruby.sleep : phase === "excited" ? dog.ruby.hop : dog.ruby.call;
+    const gamjaSrc = isSleepingScene ? dog.gamja.sleep : phase === "excited" ? dog.gamja.hop : dog.gamja.call;
     const rubyMap = textureLoader.load(rubySrc);
     const gamjaMap = textureLoader.load(gamjaSrc);
-    const ruby = makeDogBillboard(rubyMap, phase === "upstairs" ? 2.6 : 1.55, phase === "upstairs" ? 1.25 : 2.15);
-    ruby.position.set(phase === "upstairs" ? -1.2 : -1.0, phase === "upstairs" ? 0.55 : 1.08, phase === "upstairs" ? -4.2 : -1.6);
-    const gamja = makeDogBillboard(gamjaMap, phase === "upstairs" ? 2.08 : 1.24, phase === "upstairs" ? 1.0 : 1.72);
-    gamja.position.set(phase === "upstairs" ? 1.05 : 1.0, phase === "upstairs" ? 0.48 : 0.86, phase === "upstairs" ? -3.95 : -1.25);
+    const ruby = makeDogBillboard(rubyMap, isSleepingScene ? 2.6 : 1.55, isSleepingScene ? 1.25 : 2.15);
+    ruby.position.set(isSleepingScene ? -1.2 : -1.0, isSleepingScene ? 0.55 : 1.08, isSleepingScene ? -4.2 : -1.6);
+    const gamja = makeDogBillboard(gamjaMap, isSleepingScene ? 2.08 : 1.24, isSleepingScene ? 1.0 : 1.72);
+    gamja.position.set(isSleepingScene ? 1.05 : 1.0, isSleepingScene ? 0.48 : 0.86, isSleepingScene ? -3.95 : -1.25);
     const dogGroup = new THREE.Group();
     dogGroup.add(ruby, gamja);
-    dogGroup.visible = phase !== "leashMission" && (phase === "upstairs" || calledDogs || !["living"].includes(phase));
+    dogGroup.visible = phase !== "leashMission";
     scene.add(dogGroup);
 
     const shelf = makeShelf();
@@ -966,17 +982,10 @@ function ThreeWalkWorld({
       const delta = Math.min(clock.getDelta(), 0.04);
       const pos = positionRef.current;
       const speed = 3.4 * delta;
-      if (keysRef.current.has("ArrowLeft")) pos.yaw += 1.8 * delta;
-      if (keysRef.current.has("ArrowRight")) pos.yaw -= 1.8 * delta;
-      const forward = new THREE.Vector3(Math.sin(pos.yaw), 0, -Math.cos(pos.yaw));
-      if (keysRef.current.has("ArrowUp")) {
-        pos.x += forward.x * speed;
-        pos.z += forward.z * speed;
-      }
-      if (keysRef.current.has("ArrowDown")) {
-        pos.x -= forward.x * speed;
-        pos.z -= forward.z * speed;
-      }
+      if (keysRef.current.has("ArrowLeft")) pos.x -= speed;
+      if (keysRef.current.has("ArrowRight")) pos.x += speed;
+      if (keysRef.current.has("ArrowUp")) pos.z -= speed;
+      if (keysRef.current.has("ArrowDown")) pos.z += speed;
       pos.x = THREE.MathUtils.clamp(pos.x, -6.2, 6.2);
       pos.z = THREE.MathUtils.clamp(pos.z, -10.5, 8.5);
 
@@ -990,9 +999,24 @@ function ThreeWalkWorld({
         onReachEntry?.();
       }
 
-      camera.position.set(pos.x, phase === "upstairs" ? 1.95 : 1.55, pos.z);
-      camera.rotation.set(phase === "upstairs" ? -0.24 : 0, pos.yaw, 0);
+      if (phase === "garden" && !reachedEntryRef.current && pos.z < -6.8) {
+        reachedEntryRef.current = true;
+        onReachGate?.();
+      }
+
+      const stairCameraY = THREE.MathUtils.clamp(THREE.MathUtils.mapLinear(pos.z, 8.2, -2.8, 2.35, 1.52), 1.52, 2.35);
+      camera.position.set(pos.x, phase === "upstairs" ? stairCameraY : 1.55, pos.z);
+      camera.rotation.set(phase === "upstairs" ? -0.18 : 0, pos.yaw, 0);
       dogGroup.children.forEach((child) => child.lookAt(camera.position));
+      if (phase === "gate") {
+        ruby.position.x = -1.0 + Math.sin(clock.elapsedTime * 7) * 0.18;
+        ruby.rotation.z = Math.sin(clock.elapsedTime * 7) * 0.18;
+        gamja.position.y = 0.86 + Math.abs(Math.sin(clock.elapsedTime * 9)) * 0.22;
+      }
+      if (phase === "garden" || phase === "walk") {
+        dogGroup.position.x = pos.x;
+        dogGroup.position.z = pos.z - 3.4;
+      }
       dogGroup.position.y = ["excited", "leashPrep"].includes(phase) ? Math.sin(clock.elapsedTime * 8) * 0.06 : 0;
       renderer.render(scene, camera);
       frame = window.requestAnimationFrame(animate);
@@ -1037,7 +1061,7 @@ function ThreeWalkWorld({
       gamjaMap.dispose();
       mount.removeChild(renderer.domElement);
     };
-  }, [calledDogs, canReachEntry, onReachEntry, onReachLiving, phase]);
+  }, [calledDogs, canReachEntry, onReachEntry, onReachGate, onReachLiving, phase]);
 
   return (
     <div className="three-world" ref={mountRef} aria-label="3D 산책 공간">
@@ -1093,7 +1117,7 @@ function addInterior(scene: THREE.Scene) {
   scene.add(sideWall);
   for (let i = 0; i < 7; i += 1) {
     const stair = new THREE.Mesh(new THREE.BoxGeometry(3.8, 0.18, 0.65), woodMat);
-    stair.position.set(-3.6, 0.12 + i * 0.15, -5.6 - i * 0.48);
+    stair.position.set(-3.6, 0.12 + (6 - i) * 0.18, 4.8 - i * 1.05);
     stair.castShadow = true;
     stair.receiveShadow = true;
     scene.add(stair);
@@ -1597,7 +1621,7 @@ function SceneContent(props: {
     return <PoopBagDock hasPoopBag={p.hasPoopBag} setHasPoopBag={p.setHasPoopBag} setMessage={p.setMessage} goOut={p.goOut} />;
   }
   if (p.phase === "garden") {
-    return <ActionDock><button onClick={() => p.setPhase("gate")}>대문 앞으로</button></ActionDock>;
+    return null;
   }
   if (p.phase === "gate") {
     return (
