@@ -157,7 +157,7 @@ export default function WalkQuestGame() {
 
   const info = phaseInfo[phase];
   const needsInput = ["living", "leashPrep"].includes(phase);
-  const showDogs = !(phase === "upstairs" || (phase === "living" && !calledDogs));
+  const showDogs = !["intro", "upstairs", "clear", "fail"].includes(phase) && !(phase === "living" && !calledDogs);
   const useEmptyHome = (phase === "living" && calledDogs) || phase === "excited";
 
   function showHearts(text: string) {
@@ -860,7 +860,7 @@ function DogLayer({
   const gamjaSrc = dog.gamja[pose as keyof typeof dog.gamja] || dog.gamja.walk;
   const rubySpinning = phase === "gate" && !rubyCalm;
   return (
-    <div className={`dogs dogs-${pose} ${rubySpinning ? "dogs-spin" : ""}`}>
+    <div className={`dogs dogs-${pose} phase-${phase} ${rubySpinning ? "dogs-spin" : ""}`}>
       <DogSprite src={rubySrc} name="루비" side="left" hearts={hearts} spinning={rubySpinning} />
       <DogSprite src={peePulse ? dog.gamja.pee : gamjaSrc} name="감자" side="right" hearts={hearts} />
       {phase === "gate" && !gamjaQuiet && <div className="bark-bubble">멍! 멍!</div>}
@@ -969,6 +969,10 @@ function DogSprite({
         .sprite.right {
           width: clamp(272px, 39.1vw, 425px);
           height: clamp(323px, 51vw, 544px);
+        }
+        .phase-living .sprite.right {
+          width: clamp(160px, 23vw, 250px);
+          height: clamp(190px, 30vw, 320px);
         }
         .sprite :global(img) {
           object-fit: contain;
@@ -1484,6 +1488,13 @@ function LeashZoom({ dogKey, finish }: { dogKey: Dog; finish: (dog: Dog) => void
 }
 
 function LeashTargets({ rubyLeashed, gamjaLeashed, finish }: { rubyLeashed: boolean; gamjaLeashed: boolean; finish: (dog: Dog) => void }) {
+  const finishDraggedLeash = (event: ReactDragEvent<HTMLElement>) => {
+    event.preventDefault();
+    const dragged = event.dataTransfer.getData("text/plain");
+    if (dragged === "ruby-leash" && !rubyLeashed) finish("ruby");
+    if (dragged === "gamja-leash" && !gamjaLeashed) finish("gamja");
+  };
+
   const makeDrop = (target: Dog) => (event: ReactDragEvent<HTMLDivElement>) => {
     event.preventDefault();
     const dragged = event.dataTransfer.getData("text/plain");
@@ -1492,7 +1503,7 @@ function LeashTargets({ rubyLeashed, gamjaLeashed, finish }: { rubyLeashed: bool
   };
 
   return (
-    <div className="leash-targets">
+    <div className="leash-targets" onDragOver={(event) => event.preventDefault()} onDrop={finishDraggedLeash}>
       <div
         className={`dog-target ruby ${rubyLeashed ? "done" : ""}`}
         onDragOver={(event) => event.preventDefault()}
@@ -1514,7 +1525,7 @@ function LeashTargets({ rubyLeashed, gamjaLeashed, finish }: { rubyLeashed: bool
           position: absolute;
           z-index: 24;
           inset: 0;
-          pointer-events: none;
+          pointer-events: auto;
         }
         .dog-target {
           position: relative;
@@ -1527,7 +1538,6 @@ function LeashTargets({ rubyLeashed, gamjaLeashed, finish }: { rubyLeashed: bool
           border: 2px dashed rgba(255, 230, 175, 0.7);
           box-shadow: inset 0 0 0 999px rgba(255,255,255,0.01), 0 12px 24px rgba(66, 45, 30, 0.08);
           overflow: hidden;
-          pointer-events: auto;
         }
         .dog-target.ruby { left: 22%; }
         .dog-target.gamja {
