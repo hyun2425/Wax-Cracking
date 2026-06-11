@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { type DragEvent as ReactDragEvent, FormEvent, type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { type DragEvent as ReactDragEvent, FormEvent, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 
 type Phase =
@@ -33,10 +33,10 @@ type PoopTool = "bag" | "leaf" | "sock" | null;
 // Replace only these paths when swapping Ruby/Gamja cutout assets later.
 const dog = {
   ruby: {
-    call: "/ruby-gamja/custom/ruby-approach.png",
-    hop: "/ruby-gamja/custom/ruby-approach.png",
+    call: "/ruby-gamja/custom/ruby-come.png",
+    hop: "/ruby-gamja/custom/ruby-hop-new.png",
     stairs: "/ruby-gamja/cutouts-v2/ruby-stairs.png",
-    sleep: "/ruby-gamja/custom/ruby-sleep.png",
+    sleep: "/ruby-gamja/custom/ruby-lie-stairs.png",
     sit: "/ruby-gamja/cutouts-v2/ruby-sit.png",
     walk: "/ruby-gamja/cutouts-v2/ruby-walk.png",
     alert: "/ruby-gamja/cutouts-v2/ruby-alert.png",
@@ -44,10 +44,10 @@ const dog = {
     heart: "/ruby-gamja/cutouts-v2/ruby-heart.png",
   },
   gamja: {
-    call: "/ruby-gamja/custom/gamja-approach.png",
-    hop: "/ruby-gamja/custom/gamja-approach.png",
+    call: "/ruby-gamja/custom/gamja-come.png",
+    hop: "/ruby-gamja/custom/gamja-hop-new.png",
     stairs: "/ruby-gamja/cutouts-v3/gamja-stairs.png",
-    sleep: "/ruby-gamja/custom/gamja-sleep.png",
+    sleep: "/ruby-gamja/custom/gamja-lie-stairs.png",
     sit: "/ruby-gamja/cutouts-v3/gamja-sit.png",
     walk: "/ruby-gamja/cutouts-v3/gamja-walk.png",
     alert: "/ruby-gamja/cutouts-v3/gamja-alert.png",
@@ -158,7 +158,7 @@ export default function WalkQuestGame() {
 
   const info = phaseInfo[phase];
   const needsInput = ["living", "leashPrep"].includes(phase);
-  const showDogs = !["intro", "upstairs", "clear", "fail"].includes(phase) && !(phase === "living" && !calledDogs);
+  const showDogs = !["intro", "upstairs", "leashMission", "clear", "fail"].includes(phase) && !(phase === "living" && !calledDogs);
   const useEmptyHome = (phase === "living" && calledDogs) || phase === "excited";
 
   function showHearts(text: string) {
@@ -198,6 +198,11 @@ export default function WalkQuestGame() {
     setPhase("upstairs");
     setMessage("2층입니다. 아래층에서 조용한 강아지 기척이 느껴져요.");
   }
+
+  const reachEntry = useCallback(() => {
+    setPhase("leashPrep");
+    setMessage("현관에 도착했어요. 먼저 앉아를 입력한 뒤 선반의 목줄을 강아지에게 직접 놓아주세요.");
+  }, []);
 
   function fall(reason: string) {
     playSound("fall");
@@ -336,8 +341,13 @@ export default function WalkQuestGame() {
       return;
     }
     if (phase === "leashPrep") {
-      if (command === "앉아") sitDogs();
-      else setMessage("목줄을 채우려면 먼저 앉아가 필요해요.");
+      if (command.includes("앉아")) {
+        setDogsSitting(true);
+        setPhase("leashMission");
+        setTimeLeft(10);
+        playSound("leash");
+        setMessage("좋아요. 선반의 루비 목줄은 루비에게, 감자 목줄은 감자에게 직접 드래그해서 놓아주세요.");
+      } else setMessage("목줄을 채우기 전에는 먼저 앉아를 말해야 해요.");
     }
   }
 
@@ -466,6 +476,7 @@ export default function WalkQuestGame() {
   const dogPose = useMemo(() => {
     if (phase === "intro" || phase === "clear") return "heart";
     if (phase === "living" && !calledDogs) return "sleep";
+    if (phase === "living" && calledDogs) return "call";
     if (phase === "excited" || phase === "leashPrep") return dogsSitting ? "call" : "hop";
     if (phase === "leashMission") return "call";
     if (phase === "leashZoom" || phase === "gate") return "sit";
@@ -494,7 +505,13 @@ export default function WalkQuestGame() {
         </header>
 
         <section className={`scene bg-${info.bg} ${useEmptyHome ? "called-dogs" : ""} ${needsInput ? "input-open" : ""}`}>
-          {phase !== "intro" && phase !== "clear" && phase !== "fail" && <ThreeWalkWorld phase={phase} calledDogs={calledDogs} />}
+          {phase !== "intro" && phase !== "clear" && phase !== "fail" && (
+            <ThreeWalkWorld
+              phase={phase}
+              calledDogs={calledDogs}
+              onReachEntry={reachEntry}
+            />
+          )}
           <div className="first-person" />
           <SceneFurniture phase={phase} />
           {showDogs && <DogLayer pose={dogPose} phase={phase} rubyCalm={rubyCalm} gamjaQuiet={gamjaQuiet} hearts={hearts || phase === "clear"} peePulse={peePulse} />}
@@ -843,14 +860,17 @@ function Pill({ label, value, alert = false }: { label: string; value: string; a
   );
 }
 
-function ThreeWalkWorld({ phase, calledDogs }: { phase: Phase; calledDogs: boolean }) {
+function ThreeWalkWorld({ phase, calledDogs, onReachEntry }: { phase: Phase; calledDogs: boolean; onReachEntry?: () => void }) {
   const mountRef = useRef<HTMLDivElement | null>(null);
   const positionRef = useRef({ x: 0, z: 5.5, yaw: 0 });
   const keysRef = useRef(new Set<string>());
+  const reachedEntryRef = useRef(false);
 
   useEffect(() => {
     const mount = mountRef.current;
     if (!mount) return;
+    reachedEntryRef.current = false;
+    if (phase === "upstairs") positionRef.current = { x: -3.2, z: 2.8, yaw: -0.08 };
 
     const width = Math.max(1, mount.clientWidth);
     const height = Math.max(1, mount.clientHeight);
@@ -894,15 +914,17 @@ function ThreeWalkWorld({ phase, calledDogs }: { phase: Phase; calledDogs: boole
     }
 
     const textureLoader = new THREE.TextureLoader();
-    const rubyMap = textureLoader.load(dog.ruby.call);
-    const gamjaMap = textureLoader.load(dog.gamja.call);
-    const ruby = makeDogBillboard(rubyMap, 1.65, 2.25);
-    ruby.position.set(-1.1, 1.1, -1.6);
-    const gamja = makeDogBillboard(gamjaMap, 1.25, 1.75);
-    gamja.position.set(1.15, 0.88, -1.25);
+    const rubySrc = phase === "upstairs" ? dog.ruby.sleep : phase === "excited" ? dog.ruby.hop : dog.ruby.call;
+    const gamjaSrc = phase === "upstairs" ? dog.gamja.sleep : phase === "excited" ? dog.gamja.hop : dog.gamja.call;
+    const rubyMap = textureLoader.load(rubySrc);
+    const gamjaMap = textureLoader.load(gamjaSrc);
+    const ruby = makeDogBillboard(rubyMap, phase === "upstairs" ? 2.6 : 1.55, phase === "upstairs" ? 1.25 : 2.15);
+    ruby.position.set(phase === "upstairs" ? -1.0 : -1.0, phase === "upstairs" ? 0.55 : 1.08, phase === "upstairs" ? -3.6 : -1.6);
+    const gamja = makeDogBillboard(gamjaMap, phase === "upstairs" ? 1.82 : 1.09, phase === "upstairs" ? 0.88 : 1.51);
+    gamja.position.set(phase === "upstairs" ? 1.15 : 1.0, phase === "upstairs" ? 0.42 : 0.76, phase === "upstairs" ? -3.35 : -1.25);
     const dogGroup = new THREE.Group();
     dogGroup.add(ruby, gamja);
-    dogGroup.visible = calledDogs || !["living", "upstairs"].includes(phase);
+    dogGroup.visible = phase === "upstairs" || calledDogs || !["living"].includes(phase);
     scene.add(dogGroup);
 
     const shelf = makeShelf();
@@ -930,8 +952,13 @@ function ThreeWalkWorld({ phase, calledDogs }: { phase: Phase; calledDogs: boole
       pos.x = THREE.MathUtils.clamp(pos.x, -6.2, 6.2);
       pos.z = THREE.MathUtils.clamp(pos.z, -10.5, 8.5);
 
-      camera.position.set(pos.x, 1.55, pos.z);
-      camera.rotation.set(0, pos.yaw, 0);
+      if (phase === "excited" && !reachedEntryRef.current && (pos.z < -6.6 || pos.x > 4.8)) {
+        reachedEntryRef.current = true;
+        onReachEntry?.();
+      }
+
+      camera.position.set(pos.x, phase === "upstairs" ? 1.95 : 1.55, pos.z);
+      camera.rotation.set(phase === "upstairs" ? -0.24 : 0, pos.yaw, 0);
       dogGroup.children.forEach((child) => child.lookAt(camera.position));
       dogGroup.position.y = ["excited", "leashPrep"].includes(phase) ? Math.sin(clock.elapsedTime * 8) * 0.06 : 0;
       renderer.render(scene, camera);
@@ -977,7 +1004,7 @@ function ThreeWalkWorld({ phase, calledDogs }: { phase: Phase; calledDogs: boole
       gamjaMap.dispose();
       mount.removeChild(renderer.domElement);
     };
-  }, [calledDogs, phase]);
+  }, [calledDogs, onReachEntry, phase]);
 
   return (
     <div className="three-world" ref={mountRef} aria-label="3D 산책 공간">
@@ -1222,12 +1249,12 @@ function DogSprite({
           filter: drop-shadow(0 22px 25px rgba(0,0,0,0.34));
         }
         .sprite.right {
-          width: clamp(272px, 39.1vw, 425px);
-          height: clamp(323px, 51vw, 544px);
+          width: clamp(112px, 16.1vw, 175px);
+          height: clamp(133px, 21vw, 224px);
         }
         .phase-living .sprite.right {
-          width: clamp(160px, 23vw, 250px);
-          height: clamp(190px, 30vw, 320px);
+          width: clamp(112px, 16.1vw, 175px);
+          height: clamp(133px, 21vw, 224px);
         }
         .sprite :global(img) {
           object-fit: contain;
@@ -1510,19 +1537,15 @@ function SceneContent(props: {
     return <ActionDock><button onClick={() => { p.setPhase("living"); p.setMessage("1층 거실입니다. 루비와 감자를 불러보세요."); }}>계단 내려가기</button></ActionDock>;
   }
   if (p.phase === "living") {
-    return <ActionDock><button onClick={() => p.setMessage("화면 아래 입력창에 루비, 감자, 산책가자, 나가자, 나갈까를 입력해보세요.")}>불러보기</button></ActionDock>;
+    return null;
   }
   if (p.phase === "excited") {
-    return <ActionDock><button onClick={() => p.setPhase("leashPrep")}>현관으로 가기</button></ActionDock>;
+    return null;
   }
   if (p.phase === "leashPrep") {
     return (
       <>
         <GearShelf rubyLeashed={p.rubyLeashed} gamjaLeashed={p.gamjaLeashed} hasPoopBag={p.hasPoopBag} side />
-        <ActionDock>
-        <button onClick={p.sitDogs}>앉아</button>
-        <button onClick={p.startLeash}>목줄 채우기</button>
-        </ActionDock>
       </>
     );
   }
@@ -1746,6 +1769,7 @@ function LeashTargets({ rubyLeashed, gamjaLeashed, finish }: { rubyLeashed: bool
   const makeDrop = (target: Dog) => (event: ReactDragEvent<HTMLDivElement>) => {
     event.preventDefault();
     event.stopPropagation();
+    event.currentTarget.classList.remove("over");
     const dragged = event.dataTransfer.getData("text/plain");
     if (dragged !== `${target}-leash`) return;
     finish(target);
@@ -1788,22 +1812,22 @@ function LeashTargets({ rubyLeashed, gamjaLeashed, finish }: { rubyLeashed: bool
         }
         .dog-target {
           position: absolute;
-          bottom: 66px;
+          bottom: 54px;
           width: 260px;
           height: 330px;
-          border-radius: 42px;
-          background: rgba(255, 250, 242, 0.12);
-          border: 3px dashed rgba(255, 230, 175, 0.84);
-          box-shadow: 0 18px 38px rgba(66, 45, 30, 0.16);
+          border-radius: 28px;
+          background: rgba(255, 250, 242, 0.02);
+          border: 2px dashed rgba(255, 230, 175, 0.2);
+          box-shadow: none;
           overflow: hidden;
           pointer-events: auto;
           transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease;
         }
         .dog-target.ruby { left: 18%; }
         .dog-target.gamja {
-          left: 43%;
-          width: 260px;
-          height: 330px;
+          left: 45%;
+          width: 182px;
+          height: 231px;
         }
         .dog-target.over {
           transform: translateY(-6px) scale(1.03);
@@ -1817,7 +1841,7 @@ function LeashTargets({ rubyLeashed, gamjaLeashed, finish }: { rubyLeashed: bool
         }
         .dog-target :global(img) {
           object-fit: contain;
-          padding: 10px 12px 22px;
+          padding: 0 0 22px;
           filter: drop-shadow(0 8px 10px rgba(0,0,0,0.22));
         }
         span {
