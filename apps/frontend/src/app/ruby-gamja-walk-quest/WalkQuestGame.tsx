@@ -32,8 +32,8 @@ type PoopTool = "bag" | "leaf" | "sock" | null;
 // Replace only these paths when swapping Ruby/Gamja cutout assets later.
 const dog = {
   ruby: {
-    call: "/ruby-gamja/custom/ruby-close-hop.png",
-    hop: "/ruby-gamja/custom/ruby-close-hop.png",
+    call: "/ruby-gamja/custom/ruby-approach.png",
+    hop: "/ruby-gamja/custom/ruby-approach.png",
     stairs: "/ruby-gamja/cutouts-v2/ruby-stairs.png",
     sleep: "/ruby-gamja/custom/ruby-sleep.png",
     sit: "/ruby-gamja/cutouts-v2/ruby-sit.png",
@@ -43,8 +43,8 @@ const dog = {
     heart: "/ruby-gamja/cutouts-v2/ruby-heart.png",
   },
   gamja: {
-    call: "/ruby-gamja/custom/gamja-close-hop.png",
-    hop: "/ruby-gamja/custom/gamja-close-hop.png",
+    call: "/ruby-gamja/custom/gamja-approach.png",
+    hop: "/ruby-gamja/custom/gamja-approach.png",
     stairs: "/ruby-gamja/cutouts-v3/gamja-stairs.png",
     sleep: "/ruby-gamja/custom/gamja-sleep.png",
     sit: "/ruby-gamja/cutouts-v3/gamja-sit.png",
@@ -1488,25 +1488,24 @@ function LeashZoom({ dogKey, finish }: { dogKey: Dog; finish: (dog: Dog) => void
 }
 
 function LeashTargets({ rubyLeashed, gamjaLeashed, finish }: { rubyLeashed: boolean; gamjaLeashed: boolean; finish: (dog: Dog) => void }) {
-  const finishDraggedLeash = (event: ReactDragEvent<HTMLElement>) => {
-    event.preventDefault();
-    const dragged = event.dataTransfer.getData("text/plain");
-    if (dragged === "ruby-leash" && !rubyLeashed) finish("ruby");
-    if (dragged === "gamja-leash" && !gamjaLeashed) finish("gamja");
-  };
-
   const makeDrop = (target: Dog) => (event: ReactDragEvent<HTMLDivElement>) => {
     event.preventDefault();
+    event.stopPropagation();
     const dragged = event.dataTransfer.getData("text/plain");
     if (dragged !== `${target}-leash`) return;
     finish(target);
   };
 
   return (
-    <div className="leash-targets" onDragOver={(event) => event.preventDefault()} onDrop={finishDraggedLeash}>
+    <div className="leash-targets">
       <div
         className={`dog-target ruby ${rubyLeashed ? "done" : ""}`}
-        onDragOver={(event) => event.preventDefault()}
+        onDragEnter={(event) => event.currentTarget.classList.add("over")}
+        onDragLeave={(event) => event.currentTarget.classList.remove("over")}
+        onDragOver={(event) => {
+          event.preventDefault();
+          event.dataTransfer.dropEffect = "move";
+        }}
         onDrop={makeDrop("ruby")}
       >
         <Image src={dog.ruby.call} alt="루비" fill sizes="210px" />
@@ -1514,7 +1513,12 @@ function LeashTargets({ rubyLeashed, gamjaLeashed, finish }: { rubyLeashed: bool
       </div>
       <div
         className={`dog-target gamja ${gamjaLeashed ? "done" : ""}`}
-        onDragOver={(event) => event.preventDefault()}
+        onDragEnter={(event) => event.currentTarget.classList.add("over")}
+        onDragLeave={(event) => event.currentTarget.classList.remove("over")}
+        onDragOver={(event) => {
+          event.preventDefault();
+          event.dataTransfer.dropEffect = "move";
+        }}
         onDrop={makeDrop("gamja")}
       >
         <Image src={dog.gamja.call} alt="감자" fill sizes="150px" />
@@ -1525,29 +1529,36 @@ function LeashTargets({ rubyLeashed, gamjaLeashed, finish }: { rubyLeashed: bool
           position: absolute;
           z-index: 24;
           inset: 0;
-          pointer-events: auto;
+          pointer-events: none;
         }
         .dog-target {
-          position: relative;
           position: absolute;
-          bottom: 92px;
-          width: 210px;
-          height: 200px;
+          bottom: 66px;
+          width: 260px;
+          height: 330px;
           border-radius: 42px;
-          background: rgba(255, 250, 242, 0.04);
-          border: 2px dashed rgba(255, 230, 175, 0.7);
-          box-shadow: inset 0 0 0 999px rgba(255,255,255,0.01), 0 12px 24px rgba(66, 45, 30, 0.08);
+          background: rgba(255, 250, 242, 0.12);
+          border: 3px dashed rgba(255, 230, 175, 0.84);
+          box-shadow: 0 18px 38px rgba(66, 45, 30, 0.16);
           overflow: hidden;
+          pointer-events: auto;
+          transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease;
         }
-        .dog-target.ruby { left: 22%; }
+        .dog-target.ruby { left: 18%; }
         .dog-target.gamja {
-          left: 45%;
-          width: 357px;
-          height: 340px;
+          left: 43%;
+          width: 260px;
+          height: 330px;
+        }
+        .dog-target.over {
+          transform: translateY(-6px) scale(1.03);
+          border-color: #8bd36c;
+          background: rgba(240, 255, 230, 0.36);
         }
         .dog-target.done {
           border-style: solid;
-          background: rgba(225, 245, 210, 0.22);
+          border-color: #6abd50;
+          background: rgba(225, 245, 210, 0.34);
         }
         .dog-target :global(img) {
           object-fit: contain;
