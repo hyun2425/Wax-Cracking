@@ -157,8 +157,8 @@ export default function WalkQuestGame() {
   const [hearts, setHearts] = useState(false);
 
   const info = phaseInfo[phase];
-  const needsInput = ["living", "leashPrep"].includes(phase);
-  const showDogs = !["intro", "upstairs", "leashMission", "clear", "fail"].includes(phase) && !(phase === "living" && !calledDogs);
+  const needsInput = ["living", "excited", "leashPrep"].includes(phase);
+  const showDogs = false;
   const useEmptyHome = (phase === "living" && calledDogs) || phase === "excited";
 
   function showHearts(text: string) {
@@ -202,6 +202,11 @@ export default function WalkQuestGame() {
   const reachEntry = useCallback(() => {
     setPhase("leashPrep");
     setMessage("현관에 도착했어요. 먼저 앉아를 입력한 뒤 선반의 목줄을 강아지에게 직접 놓아주세요.");
+  }, []);
+
+  const reachLiving = useCallback(() => {
+    setPhase("living");
+    setMessage("1층 거실입니다. 루비와 감자를 불러보세요.");
   }, []);
 
   function fall(reason: string) {
@@ -337,6 +342,15 @@ export default function WalkQuestGame() {
         showHearts("산책이라는 말에 루비와 감자가 콩콩 뛰기 시작했어요!");
       } else {
         setMessage("아직 반응이 약해요. 이름을 부르거나 산책 말을 해보세요.");
+      }
+      return;
+    }
+    if (phase === "excited") {
+      if (command.includes("앉아")) {
+        setDogsSitting(true);
+        showHearts("루비와 감자가 콩콩 뛰다가 잠깐 앉았어요. 이제 방향키로 현관 문 쪽으로 걸어가세요.");
+      } else {
+        setMessage("너무 신나서 콩콩 뛰고 있어요. 먼저 앉아라고 말해 진정시켜 주세요.");
       }
       return;
     }
@@ -509,6 +523,8 @@ export default function WalkQuestGame() {
             <ThreeWalkWorld
               phase={phase}
               calledDogs={calledDogs}
+              canReachEntry={dogsSitting}
+              onReachLiving={reachLiving}
               onReachEntry={reachEntry}
             />
           )}
@@ -860,7 +876,19 @@ function Pill({ label, value, alert = false }: { label: string; value: string; a
   );
 }
 
-function ThreeWalkWorld({ phase, calledDogs, onReachEntry }: { phase: Phase; calledDogs: boolean; onReachEntry?: () => void }) {
+function ThreeWalkWorld({
+  phase,
+  calledDogs,
+  canReachEntry = true,
+  onReachLiving,
+  onReachEntry,
+}: {
+  phase: Phase;
+  calledDogs: boolean;
+  canReachEntry?: boolean;
+  onReachLiving?: () => void;
+  onReachEntry?: () => void;
+}) {
   const mountRef = useRef<HTMLDivElement | null>(null);
   const positionRef = useRef({ x: 0, z: 5.5, yaw: 0 });
   const keysRef = useRef(new Set<string>());
@@ -870,7 +898,7 @@ function ThreeWalkWorld({ phase, calledDogs, onReachEntry }: { phase: Phase; cal
     const mount = mountRef.current;
     if (!mount) return;
     reachedEntryRef.current = false;
-    if (phase === "upstairs") positionRef.current = { x: -3.2, z: 2.8, yaw: -0.08 };
+    if (phase === "upstairs") positionRef.current = { x: -3.6, z: 6.2, yaw: 0 };
 
     const width = Math.max(1, mount.clientWidth);
     const height = Math.max(1, mount.clientHeight);
@@ -919,12 +947,12 @@ function ThreeWalkWorld({ phase, calledDogs, onReachEntry }: { phase: Phase; cal
     const rubyMap = textureLoader.load(rubySrc);
     const gamjaMap = textureLoader.load(gamjaSrc);
     const ruby = makeDogBillboard(rubyMap, phase === "upstairs" ? 2.6 : 1.55, phase === "upstairs" ? 1.25 : 2.15);
-    ruby.position.set(phase === "upstairs" ? -1.0 : -1.0, phase === "upstairs" ? 0.55 : 1.08, phase === "upstairs" ? -3.6 : -1.6);
-    const gamja = makeDogBillboard(gamjaMap, phase === "upstairs" ? 1.82 : 1.09, phase === "upstairs" ? 0.88 : 1.51);
-    gamja.position.set(phase === "upstairs" ? 1.15 : 1.0, phase === "upstairs" ? 0.42 : 0.76, phase === "upstairs" ? -3.35 : -1.25);
+    ruby.position.set(phase === "upstairs" ? -1.2 : -1.0, phase === "upstairs" ? 0.55 : 1.08, phase === "upstairs" ? -4.2 : -1.6);
+    const gamja = makeDogBillboard(gamjaMap, phase === "upstairs" ? 2.08 : 1.24, phase === "upstairs" ? 1.0 : 1.72);
+    gamja.position.set(phase === "upstairs" ? 1.05 : 1.0, phase === "upstairs" ? 0.48 : 0.86, phase === "upstairs" ? -3.95 : -1.25);
     const dogGroup = new THREE.Group();
     dogGroup.add(ruby, gamja);
-    dogGroup.visible = phase === "upstairs" || calledDogs || !["living"].includes(phase);
+    dogGroup.visible = phase !== "leashMission" && (phase === "upstairs" || calledDogs || !["living"].includes(phase));
     scene.add(dogGroup);
 
     const shelf = makeShelf();
@@ -952,7 +980,12 @@ function ThreeWalkWorld({ phase, calledDogs, onReachEntry }: { phase: Phase; cal
       pos.x = THREE.MathUtils.clamp(pos.x, -6.2, 6.2);
       pos.z = THREE.MathUtils.clamp(pos.z, -10.5, 8.5);
 
-      if (phase === "excited" && !reachedEntryRef.current && (pos.z < -6.6 || pos.x > 4.8)) {
+      if (phase === "upstairs" && !reachedEntryRef.current && pos.z < -2.8) {
+        reachedEntryRef.current = true;
+        onReachLiving?.();
+      }
+
+      if (phase === "excited" && canReachEntry && !reachedEntryRef.current && (pos.z < -6.6 || pos.x > 4.8)) {
         reachedEntryRef.current = true;
         onReachEntry?.();
       }
@@ -1004,7 +1037,7 @@ function ThreeWalkWorld({ phase, calledDogs, onReachEntry }: { phase: Phase; cal
       gamjaMap.dispose();
       mount.removeChild(renderer.domElement);
     };
-  }, [calledDogs, onReachEntry, phase]);
+  }, [calledDogs, canReachEntry, onReachEntry, onReachLiving, phase]);
 
   return (
     <div className="three-world" ref={mountRef} aria-label="3D 산책 공간">
@@ -1249,12 +1282,12 @@ function DogSprite({
           filter: drop-shadow(0 22px 25px rgba(0,0,0,0.34));
         }
         .sprite.right {
-          width: clamp(112px, 16.1vw, 175px);
-          height: clamp(133px, 21vw, 224px);
+          width: clamp(128px, 18.4vw, 200px);
+          height: clamp(152px, 24vw, 256px);
         }
         .phase-living .sprite.right {
-          width: clamp(112px, 16.1vw, 175px);
-          height: clamp(133px, 21vw, 224px);
+          width: clamp(128px, 18.4vw, 200px);
+          height: clamp(152px, 24vw, 256px);
         }
         .sprite :global(img) {
           object-fit: contain;
@@ -1534,7 +1567,7 @@ function SceneContent(props: {
     return <CenterCard title={"루비&감자\n산책시키기"} button="산책 START" onClick={p.start} image={dog.intro} variant="intro" />;
   }
   if (p.phase === "upstairs") {
-    return <ActionDock><button onClick={() => { p.setPhase("living"); p.setMessage("1층 거실입니다. 루비와 감자를 불러보세요."); }}>계단 내려가기</button></ActionDock>;
+    return null;
   }
   if (p.phase === "living") {
     return null;
@@ -1826,8 +1859,8 @@ function LeashTargets({ rubyLeashed, gamjaLeashed, finish }: { rubyLeashed: bool
         .dog-target.ruby { left: 18%; }
         .dog-target.gamja {
           left: 45%;
-          width: 182px;
-          height: 231px;
+          width: 208px;
+          height: 264px;
         }
         .dog-target.over {
           transform: translateY(-6px) scale(1.03);
