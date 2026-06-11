@@ -465,8 +465,9 @@ export default function WalkQuestGame() {
   const dogPose = useMemo(() => {
     if (phase === "intro" || phase === "clear") return "heart";
     if (phase === "living" && !calledDogs) return "sleep";
-    if (phase === "excited" || phase === "leashPrep") return dogsSitting ? "sit" : "hop";
-    if (phase === "leashMission" || phase === "leashZoom" || phase === "gate") return "sit";
+    if (phase === "excited" || phase === "leashPrep") return dogsSitting ? "call" : "hop";
+    if (phase === "leashMission") return "call";
+    if (phase === "leashZoom" || phase === "gate") return "sit";
     if (phase === "pull" || phase === "run") return "run";
     if (phase === "poop") return "poop";
     if (phase === "barkingDog" || phase === "boss" || phase === "car") return "alert";
@@ -645,7 +646,7 @@ export default function WalkQuestGame() {
         .bg-stairs {
           background:
             linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,248,236,0.2)),
-            url("/ruby-gamja/custom/home-sleep-dogs.png") center / cover no-repeat;
+            url("/ruby-gamja/custom/stairs-before.png") center / cover no-repeat;
         }
 
         .bg-living {
@@ -965,6 +966,10 @@ function DogSprite({
           margin: 0;
           filter: drop-shadow(0 22px 25px rgba(0,0,0,0.34));
         }
+        .sprite.right {
+          width: clamp(112px, 16.1vw, 175px);
+          height: clamp(133px, 21vw, 224px);
+        }
         .sprite :global(img) {
           object-fit: contain;
         }
@@ -1012,13 +1017,6 @@ function DogSprite({
 function SceneFurniture({ phase }: { phase: Phase }) {
   return (
     <div className="furniture">
-      {["poopBag", "leashPrep", "leashMission", "leashZoom"].includes(phase) && (
-        <>
-          <div className="shoe-cabinet" />
-          <div className="mirror" />
-        </>
-      )}
-      {["poopBag", "leashPrep", "leashMission"].includes(phase) && <div className="entry-table" />}
       {["walk", "pull", "poop", "run", "car", "barkingDog", "boss"].includes(phase) && <div className="road-perspective" />}
       <style jsx>{`
         .furniture {
@@ -1247,7 +1245,7 @@ function SceneContent(props: {
 }) {
   const p = props;
   if (p.phase === "intro") {
-    return <CenterCard title="루비 감자와 산책하기" button="산책 START" onClick={p.start} image={dog.intro} variant="intro" />;
+    return <CenterCard title={"루비&감자\n산책시키기"} button="산책 START" onClick={p.start} image={dog.intro} variant="intro" />;
   }
   if (p.phase === "upstairs") {
     return <ActionDock><button onClick={() => { p.setPhase("living"); p.setMessage("1층 거실입니다. 루비와 감자를 불러보세요."); }}>계단 내려가기</button></ActionDock>;
@@ -1500,16 +1498,16 @@ function LeashTargets({ rubyLeashed, gamjaLeashed, finish }: { rubyLeashed: bool
         onDragOver={(event) => event.preventDefault()}
         onDrop={makeDrop("ruby")}
       >
-        <Image src={dog.ruby.sit} alt="루비" fill sizes="160px" />
-        <span>루비</span>
+        <Image src={dog.ruby.call} alt="루비" fill sizes="210px" />
+        <span>{rubyLeashed ? "루비 목줄 착용!" : "루비"}</span>
       </div>
       <div
         className={`dog-target gamja ${gamjaLeashed ? "done" : ""}`}
         onDragOver={(event) => event.preventDefault()}
         onDrop={makeDrop("gamja")}
       >
-        <Image src={dog.gamja.sit} alt="감자" fill sizes="160px" />
-        <span>감자</span>
+        <Image src={dog.gamja.call} alt="감자" fill sizes="150px" />
+        <span>{gamjaLeashed ? "감자 목줄 착용!" : "감자"}</span>
       </div>
       <style jsx>{`
         .leash-targets {
@@ -1532,7 +1530,11 @@ function LeashTargets({ rubyLeashed, gamjaLeashed, finish }: { rubyLeashed: bool
           pointer-events: auto;
         }
         .dog-target.ruby { left: 22%; }
-        .dog-target.gamja { left: 43%; }
+        .dog-target.gamja {
+          left: 45%;
+          width: 147px;
+          height: 140px;
+        }
         .dog-target.done {
           border-style: solid;
           background: rgba(225, 245, 210, 0.22);
@@ -1991,6 +1993,7 @@ function CenterCard({
           margin: 0 0 10px;
           font-size: clamp(2.4rem, 7vw, 5rem);
           line-height: 0.92;
+          white-space: pre-line;
           color: #fff6e8;
           text-shadow:
             0 5px 0 rgba(62, 42, 28, 0.92),
