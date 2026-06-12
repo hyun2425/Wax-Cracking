@@ -116,7 +116,7 @@ const phaseInfo: Record<Phase, { scene: string; mission: string; bg: string }> =
   living: { scene: "1층 거실", mission: "루비 또는 감자를 부르고, 산책 말을 해보세요.", bg: "living" },
   excited: { scene: "거실", mission: "강아지들이 신났어요. 이제 목줄을 준비하세요.", bg: "living" },
   leashPrep: { scene: "현관", mission: "먼저 앉아를 입력/클릭한 뒤 목줄 미션을 시작하세요.", bg: "entry" },
-  leashMission: { scene: "현관", mission: "10초 안에 선반의 목줄을 루비와 감자에게 채워주세요.", bg: "entry" },
+  leashMission: { scene: "현관", mission: "5초 안에 선반의 목줄을 루비와 감자에게 채워주세요.", bg: "entry" },
   leashZoom: { scene: "목줄 확대", mission: "목줄을 목 고리까지 옮겨 채우세요.", bg: "entry" },
   poopBag: { scene: "현관문", mission: "필요하면 봉투를 가방에 넣고 정원으로 나가세요.", bg: "entry" },
   garden: { scene: "정원", mission: "정원을 지나 대문 앞으로 가세요.", bg: "garden" },
@@ -201,7 +201,7 @@ export default function WalkQuestGame() {
 
   const reachEntry = useCallback(() => {
     setPhase("leashPrep");
-    setMessage("현관에 도착했어요. 먼저 앉아를 입력한 뒤 선반의 목줄을 강아지에게 직접 놓아주세요.");
+    setMessage("현관에 도착했어요. 산책이라는 말에 흥분한 강아지들을 앉혀볼까요?");
   }, []);
 
   const reachLiving = useCallback(() => {
@@ -244,9 +244,17 @@ export default function WalkQuestGame() {
           setRubyLeashed(false);
           setGamjaLeashed(false);
           setZoomDog(null);
-        setPhase("leashPrep");
-        playSound("bark");
-        setMessage("10초 안에 못 채웠어요. 루비와 감자가 다시 일어나서 콩콩 뛰어요. 다시 앉아부터!");
+          setTimeLeft(null);
+          const nextFalls = falls + 1;
+          setFalls(nextFalls);
+          playSound("fall");
+          if (nextFalls >= 3) {
+            setPhase("fail");
+            setMessage("5초 안에 목줄을 못 채워 루비와 감자가 벌떡 일어났어요. 3번 넘어져서 오늘 산책은 실패예요.");
+          } else {
+            setPhase("leashPrep");
+            setMessage(`5초 안에 목줄을 못 채워 루비와 감자가 벌떡 일어났어요. 당황해서 넘어졌어요. 넘어짐 ${nextFalls}/3. 다시 앉아부터 해볼까요?`);
+          }
         } else if (phase === "pull") {
           fall("루비가 앞으로 확 당겼어요.");
         } else if (phase === "barkingDog") {
@@ -263,7 +271,7 @@ export default function WalkQuestGame() {
     return () => window.clearTimeout(timer);
     // Timeout handlers intentionally use the current phase snapshot.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, timeLeft]);
+  }, [falls, phase, timeLeft]);
 
   useEffect(() => {
     if (phase !== "walk") return;
@@ -363,9 +371,9 @@ export default function WalkQuestGame() {
       if (command.includes("앉아")) {
         setDogsSitting(true);
         setPhase("leashMission");
-        setTimeLeft(10);
+        setTimeLeft(5);
         playSound("leash");
-        setMessage("좋아요. 선반의 루비 목줄은 루비에게, 감자 목줄은 감자에게 직접 드래그해서 놓아주세요.");
+        setMessage("강아지들이 차분히 앉았어요. 다시 일어나기 전에 빨리 목줄을 채워봐요. 목줄을 강아지에게 드래그 하면 목줄을 채울 수 있어요!");
       } else setMessage("목줄을 채우기 전에는 먼저 앉아를 말해야 해요.");
     }
   }
@@ -382,9 +390,9 @@ export default function WalkQuestGame() {
       return;
     }
     setPhase("leashMission");
-    setTimeLeft(10);
+    setTimeLeft(5);
     playSound("leash");
-    setMessage("선반의 목줄을 루비와 감자에게 각각 채워주세요.");
+    setMessage("강아지들이 차분히 앉았어요. 다시 일어나기 전에 빨리 목줄을 채워봐요. 목줄을 강아지에게 드래그 하면 목줄을 채울 수 있어요!");
   }
 
   function openLeashZoom(target: Dog) {
@@ -408,7 +416,7 @@ export default function WalkQuestGame() {
     if (nextRuby && nextGamja) {
       setTimeLeft(null);
       setPhase("poopBag");
-      showHearts("목줄 착용 완료! 이제 똥봉투를 확인하세요.");
+      showHearts("목줄 착용 완료! 잊은 물건이 있지 않은지 확인하고 나가세요.");
     } else {
       setPhase("leashMission");
       setMessage("좋아요. 선반의 다른 목줄도 강아지 사진 위로 드래그해서 채워주세요.");
@@ -988,7 +996,7 @@ function ThreeWalkWorld({
     gamja.position.set(isSleepingScene ? 1.05 : 1.0, isSleepingScene ? 0.48 : 0.86, isSleepingScene ? -3.95 : -1.25);
     const dogGroup = new THREE.Group();
     dogGroup.add(ruby, gamja);
-    dogGroup.visible = phase !== "leashMission";
+    dogGroup.visible = phase !== "leashMission" && phase !== "poop";
     scene.add(dogGroup);
 
     const shelf = makeShelf();
@@ -1056,7 +1064,7 @@ function ThreeWalkWorld({
       }
       if (phase === "gate") {
         dogGroup.position.x = pos.x;
-        dogGroup.position.z = pos.z - 0.35;
+        dogGroup.position.z = Math.max(pos.z - 0.35, -5.05);
         ruby.position.x = -0.78 + (rubyCalmRef.current ? 0 : Math.sin(clock.elapsedTime * 7) * 0.18);
         ruby.rotation.z = rubyCalmRef.current ? 0 : Math.sin(clock.elapsedTime * 7) * 0.18;
         gamja.position.x = 0.72;
