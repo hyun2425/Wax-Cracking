@@ -118,14 +118,14 @@ const phaseInfo: Record<Phase, { scene: string; mission: string; bg: string }> =
   leashPrep: { scene: "현관", mission: "먼저 앉아를 입력/클릭한 뒤 목줄 미션을 시작하세요.", bg: "entry" },
   leashMission: { scene: "현관", mission: "10초 안에 선반의 목줄을 루비와 감자에게 채워주세요.", bg: "entry" },
   leashZoom: { scene: "목줄 확대", mission: "목줄을 목 고리까지 옮겨 채우세요.", bg: "entry" },
-  poopBag: { scene: "현관문", mission: "똥봉투를 챙기거나 바로 정원으로 나가세요.", bg: "entry" },
+  poopBag: { scene: "현관문", mission: "필요하면 봉투를 가방에 넣고 정원으로 나가세요.", bg: "entry" },
   garden: { scene: "정원", mission: "정원을 지나 대문 앞으로 가세요.", bg: "garden" },
   gate: { scene: "대문 앞", mission: "루비는 앉아, 감자는 조용히 해. 진정 후 대문을 여세요.", bg: "gate" },
   walk: { scene: "늘 가던 산책길", mission: "루비와 감자를 따라 안전하게 걸으세요.", bg: "street" },
   pull: { scene: "산책길", mission: "루비가 당겨요. 5초 안에 천천히를 클릭하세요.", bg: "street" },
   poop: { scene: "산책길", mission: "감자 똥을 처리하세요.", bg: "street" },
   run: { scene: "산책길", mission: "스페이스바를 빠르게 눌러 속도를 따라가세요.", bg: "street" },
-  car: { scene: "차 오는 골목", mission: "멈춰 → 길 옆으로 이동 → 기다려 순서로 처리하세요.", bg: "road" },
+  car: { scene: "공원 산책길", mission: "멈춰 → 풀밭으로 이동 → 기다려 순서로 처리하세요.", bg: "road" },
   barkingDog: { scene: "담장 옆", mission: "다른 집 강아지가 짖어요. 5초 안에 무시해를 클릭하세요.", bg: "fence" },
   boss: { scene: "마지막 보스", mission: "풀려 있는 강아지가 달려와요. 5초 안에 블로킹!", bg: "fence" },
   home: { scene: "집 앞", mission: "집에 도착했어요. 마지막으로 문을 열고 들어가세요.", bg: "gate" },
@@ -480,7 +480,7 @@ export default function WalkQuestGame() {
       return;
     }
     if (!dogsRoadside) {
-      setMessage("강아지들을 길 옆 안전 구역으로 옮겨야 해요.");
+      setMessage("루감이를 옆 풀밭으로 옮겨야 해요.");
       return;
     }
     resumeWalk("루감이를 안전하게 지켜냈어요!");
@@ -1056,7 +1056,7 @@ function ThreeWalkWorld({
       }
       if (phase === "gate") {
         dogGroup.position.x = pos.x;
-        dogGroup.position.z = pos.z + 0.05;
+        dogGroup.position.z = pos.z - 0.35;
         ruby.position.x = -0.78 + (rubyCalmRef.current ? 0 : Math.sin(clock.elapsedTime * 7) * 0.18);
         ruby.rotation.z = rubyCalmRef.current ? 0 : Math.sin(clock.elapsedTime * 7) * 0.18;
         gamja.position.x = 0.72;
@@ -1064,7 +1064,7 @@ function ThreeWalkWorld({
       }
       if ((phase === "living" && calledDogs) || phase === "excited" || phase === "leashPrep") {
         dogGroup.position.x = pos.x;
-        dogGroup.position.z = pos.z + 0.3;
+        dogGroup.position.z = pos.z - 1.2;
       }
       if (isOutdoor && phase !== "gate") {
         dogGroup.position.x = pos.x;
@@ -1187,9 +1187,35 @@ function addInterior(scene: THREE.Scene) {
     stair.receiveShadow = true;
     scene.add(stair);
   }
-  const door = new THREE.Mesh(new THREE.BoxGeometry(1.5, 2.8, 0.16), new THREE.MeshStandardMaterial({ color: "#dfd5c8", roughness: 0.45 }));
+  const doorMat = new THREE.MeshStandardMaterial({ color: "#f1e6d8", roughness: 0.42 });
+  const trimMat = new THREE.MeshStandardMaterial({ color: "#b08a62", roughness: 0.48 });
+  const knobMat = new THREE.MeshStandardMaterial({ color: "#b89246", roughness: 0.28, metalness: 0.35 });
+  const door = new THREE.Mesh(new THREE.BoxGeometry(1.72, 2.95, 0.18), doorMat);
   door.position.set(5.6, 1.4, -7.88);
   scene.add(door);
+  const doorFrame = new THREE.Group();
+  [
+    { x: 4.66, y: 1.5, sx: 0.12, sy: 3.16 },
+    { x: 6.54, y: 1.5, sx: 0.12, sy: 3.16 },
+    { x: 5.6, y: 3.08, sx: 2.0, sy: 0.12 },
+  ].forEach((part) => {
+    const trim = new THREE.Mesh(new THREE.BoxGeometry(part.sx, part.sy, 0.24), trimMat);
+    trim.position.set(part.x, part.y, -7.74);
+    doorFrame.add(trim);
+  });
+  scene.add(doorFrame);
+  [0.72, 1.62, 2.35].forEach((y, index) => {
+    const panel = new THREE.Mesh(new THREE.BoxGeometry(1.16, index === 1 ? 0.78 : 0.48, 0.045), new THREE.MeshStandardMaterial({ color: "#ead8c5", roughness: 0.5 }));
+    panel.position.set(5.6, y, -7.66);
+    scene.add(panel);
+  });
+  const knob = new THREE.Mesh(new THREE.SphereGeometry(0.09, 20, 12), knobMat);
+  knob.position.set(5.02, 1.38, -7.58);
+  scene.add(knob);
+  const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.36, 12), knobMat);
+  handle.rotation.z = Math.PI / 2;
+  handle.position.set(4.88, 1.38, -7.58);
+  scene.add(handle);
   const plant = new THREE.Mesh(new THREE.ConeGeometry(0.55, 1.2, 8), new THREE.MeshStandardMaterial({ color: "#5f8c52", roughness: 0.9 }));
   plant.position.set(5.7, 0.7, -4.1);
   scene.add(plant);
@@ -1198,35 +1224,31 @@ function addInterior(scene: THREE.Scene) {
 function addOutdoor(scene: THREE.Scene, phase: Phase) {
   const isBeforeGate = phase === "garden" || phase === "gate";
   const pathMat = new THREE.MeshStandardMaterial({ color: "#cfc6b5", roughness: 0.82 });
-  const roadMat = new THREE.MeshStandardMaterial({ color: "#6c6f68", roughness: 0.72 });
-  const lineMat = new THREE.MeshStandardMaterial({ color: "#f6e9b9", roughness: 0.55 });
+  const parkPathMat = new THREE.MeshStandardMaterial({ color: "#d3c7b0", roughness: 0.86 });
   const bushMat = new THREE.MeshStandardMaterial({ color: "#4f7c3e", roughness: 0.9 });
   const trunkMat = new THREE.MeshStandardMaterial({ color: "#7a5437", roughness: 0.82 });
 
-  const path = new THREE.Mesh(new THREE.PlaneGeometry(3.6, 36), pathMat);
+  const path = new THREE.Mesh(new THREE.PlaneGeometry(isBeforeGate ? 3.6 : 4.4, 36), isBeforeGate ? pathMat : parkPathMat);
   path.rotation.x = -Math.PI / 2;
   path.position.set(0, 0.025, -4);
   path.receiveShadow = true;
   scene.add(path);
 
   if (!isBeforeGate) {
-    const road = new THREE.Mesh(new THREE.PlaneGeometry(6.8, 36), roadMat);
-    road.rotation.x = -Math.PI / 2;
-    road.position.set(0, 0.018, -4);
-    road.receiveShadow = true;
-    scene.add(road);
-    for (let i = 0; i < 10; i += 1) {
-      const lane = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.012, 1.2), lineMat);
-      lane.position.set(0, 0.04, 6 - i * 3.2);
-      scene.add(lane);
-    }
-    const sidewalkMat = new THREE.MeshStandardMaterial({ color: "#d7cfbf", roughness: 0.82 });
-    [-4.6, 4.6].forEach((x) => {
-      const walk = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 36), sidewalkMat);
-      walk.rotation.x = -Math.PI / 2;
-      walk.position.set(x, 0.026, -4);
-      scene.add(walk);
+    const edgeMat = new THREE.MeshStandardMaterial({ color: "#a8c987", roughness: 0.92 });
+    [-3.45, 3.45].forEach((x) => {
+      const grassEdge = new THREE.Mesh(new THREE.PlaneGeometry(1.7, 36), edgeMat);
+      grassEdge.rotation.x = -Math.PI / 2;
+      grassEdge.position.set(x, 0.03, -4);
+      grassEdge.receiveShadow = true;
+      scene.add(grassEdge);
     });
+    for (let i = 0; i < 18; i += 1) {
+      const pebble = new THREE.Mesh(new THREE.CylinderGeometry(0.08 + (i % 3) * 0.025, 0.08, 0.018, 10), new THREE.MeshStandardMaterial({ color: i % 2 ? "#b9ad98" : "#e5dcc8", roughness: 0.9 }));
+      pebble.rotation.x = -Math.PI / 2;
+      pebble.position.set(Math.sin(i * 1.7) * 1.55, 0.055, 7.2 - i * 1.7);
+      scene.add(pebble);
+    }
   } else {
     for (let i = 0; i < 10; i += 1) {
       const stone = new THREE.Mesh(new THREE.CylinderGeometry(0.75, 0.75, 0.06, 18), pathMat);
@@ -1237,32 +1259,32 @@ function addOutdoor(scene: THREE.Scene, phase: Phase) {
     }
   }
 
-  const gateMat = new THREE.MeshStandardMaterial({ color: "#1f2321", roughness: 0.45, metalness: 0.15 });
-  const fenceMat = new THREE.MeshStandardMaterial({ color: "#202520", roughness: 0.5, metalness: 0.12 });
-  const addFenceRail = (x: number, z: number, width: number) => {
-    const rail = new THREE.Mesh(new THREE.BoxGeometry(width, 0.08, 0.08), fenceMat);
-    rail.position.set(x, 1.45, z);
+  if (isBeforeGate) {
+    const gateMat = new THREE.MeshStandardMaterial({ color: "#1f2321", roughness: 0.45, metalness: 0.15 });
+    const fenceMat = new THREE.MeshStandardMaterial({ color: "#202520", roughness: 0.5, metalness: 0.12 });
+    const addFenceRail = (x: number, z: number, width: number) => {
+      const rail = new THREE.Mesh(new THREE.BoxGeometry(width, 0.08, 0.08), fenceMat);
+      rail.position.set(x, 1.45, z);
+      scene.add(rail);
+    };
+    addFenceRail(-4.9, -6.8, 4.8);
+    addFenceRail(4.9, -6.8, 4.8);
+    for (let i = -14; i <= 14; i += 1) {
+      const x = i * 0.35;
+      if (Math.abs(x) < 1.65) continue;
+      const bar = new THREE.Mesh(new THREE.BoxGeometry(0.07, 2.2, 0.07), fenceMat);
+      bar.position.set(x, 1.1, -6.8);
+      scene.add(bar);
+    }
+    for (let i = -3; i <= 3; i += 1) {
+      const bar = new THREE.Mesh(new THREE.BoxGeometry(0.08, 2.3, 0.08), gateMat);
+      bar.position.set(i * 0.38, 1.15, -6.8);
+      scene.add(bar);
+    }
+    const rail = new THREE.Mesh(new THREE.BoxGeometry(3.1, 0.08, 0.08), gateMat);
+    rail.position.set(0, 1.55, -6.8);
     scene.add(rail);
-  };
-  addFenceRail(-4.9, -6.8, 4.8);
-  addFenceRail(4.9, -6.8, 4.8);
-  for (let i = -14; i <= 14; i += 1) {
-    const x = i * 0.35;
-    if (Math.abs(x) < 1.65) continue;
-    const bar = new THREE.Mesh(new THREE.BoxGeometry(0.07, 2.2, 0.07), fenceMat);
-    bar.position.set(x, 1.1, -6.8);
-    scene.add(bar);
   }
-  for (let i = -3; i <= 3; i += 1) {
-    const bar = new THREE.Mesh(new THREE.BoxGeometry(0.08, 2.3, 0.08), gateMat);
-    bar.position.set(i * 0.38 + (isBeforeGate ? 0 : i * 0.16), 1.15, -6.8 + (isBeforeGate ? 0 : Math.abs(i) * 0.22));
-    bar.rotation.y = isBeforeGate ? 0 : i * 0.08;
-    scene.add(bar);
-  }
-  const rail = new THREE.Mesh(new THREE.BoxGeometry(3.1, 0.08, 0.08), gateMat);
-  rail.position.set(0, 1.55, -6.8);
-  rail.rotation.y = isBeforeGate ? 0 : 0.28;
-  scene.add(rail);
 
   [-5.8, 5.8].forEach((x) => {
     for (let i = 0; i < 6; i += 1) {
@@ -1704,12 +1726,17 @@ function SceneFurniture({ phase }: { phase: Phase }) {
         }
         .road-perspective {
           position: absolute;
-          left: -10%;
-          right: -10%;
-          bottom: -20%;
-          height: 52%;
-          background: linear-gradient(#777, #252525);
-          transform: perspective(430px) rotateX(62deg);
+          left: 50%;
+          bottom: -18%;
+          width: min(620px, 88vw);
+          height: 58%;
+          border-radius: 44% 44% 0 0;
+          background:
+            radial-gradient(circle at 30% 22%, rgba(255,255,255,0.22) 0 8px, transparent 9px),
+            radial-gradient(circle at 66% 36%, rgba(255,255,255,0.18) 0 7px, transparent 8px),
+            linear-gradient(180deg, rgba(224, 213, 190, 0.9), rgba(169, 146, 111, 0.9));
+          box-shadow: 0 -18px 45px rgba(45, 80, 38, 0.16);
+          transform: translateX(-50%) perspective(430px) rotateX(62deg);
           transform-origin: bottom;
         }
       `}</style>
@@ -2424,7 +2451,6 @@ function PoopBagDock({
       >
         <Image src="/ruby-gamja/custom/poop-bag-real.png" alt="똥봉투" fill sizes="96px" />
       </div>
-      <button onClick={collectBag}>똥봉투 챙기기</button>
       <button onClick={goOut}>나가기</button>
       </ActionDock>
       <style jsx>{`
