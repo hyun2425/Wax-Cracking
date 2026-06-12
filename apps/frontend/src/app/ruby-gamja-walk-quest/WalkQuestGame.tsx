@@ -112,7 +112,7 @@ const walkWords = ["산책", "나가자", "나갈까"];
 
 const phaseInfo: Record<Phase, { scene: string; mission: string; bg: string }> = {
   intro: { scene: "우리집", mission: "Start 버튼을 눌러 산책을 시작하세요.", bg: "home" },
-  upstairs: { scene: "2층 계단", mission: "계단을 내려가 1층으로 이동하세요.", bg: "stairs" },
+  upstairs: { scene: "2층 계단", mission: "계단을 내려가 1층으로 이동하세요. 1층으로 내려가 볼까요?", bg: "stairs" },
   living: { scene: "1층 거실", mission: "루비 또는 감자를 부르고, 산책 말을 해보세요.", bg: "living" },
   excited: { scene: "거실", mission: "강아지들이 신났어요. 이제 목줄을 준비하세요.", bg: "living" },
   leashPrep: { scene: "현관", mission: "먼저 앉아를 입력/클릭한 뒤 목줄 미션을 시작하세요.", bg: "entry" },
@@ -196,7 +196,7 @@ export default function WalkQuestGame() {
     playSound("happy");
     reset();
     setPhase("upstairs");
-    setMessage("2층입니다. 아래층에서 조용한 강아지 기척이 느껴져요.");
+    setMessage("2층입니다. 아래층에서 조용한 강아지 기척이 느껴져요. 1층으로 내려가 볼까요?");
   }
 
   const reachEntry = useCallback(() => {
