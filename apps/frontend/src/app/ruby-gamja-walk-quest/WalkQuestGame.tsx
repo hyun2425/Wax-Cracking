@@ -341,10 +341,10 @@ export default function WalkQuestGame() {
       if (callWords.some((word) => command.includes(word))) {
         setCalledDogs(true);
         playSound("happy");
-        showHearts("루비와 감자가 고개를 들고 나에게 다가와요.");
+        showHearts("루비와 감자가 내 앞에 왔어요. 산책가자고 말해볼까요?");
       } else if (walkWords.some((word) => command.includes(word))) {
         setPhase("excited");
-        showHearts("산책이라는 말에 루비와 감자가 콩콩 뛰기 시작했어요!");
+        showHearts("루비와 감자가 콩콩 뛰기 시작했어요! 목줄과 똥봉투가 있는 현관쪽으로 가볼까요?");
       } else {
         setMessage("아직 반응이 약해요. 이름을 부르거나 산책 말을 해보세요.");
       }
@@ -446,13 +446,14 @@ export default function WalkQuestGame() {
     if (tool === "bag") setMessage("똥봉투를 똥 위로 옮겨주세요.");
   }
 
-  function dropPoopTool() {
-    if (poopTool === "bag") {
+  function dropPoopTool(toolOverride?: PoopTool) {
+    const selectedTool = toolOverride ?? poopTool;
+    if (selectedTool === "bag") {
       resumeWalk("펫티켓 완료!");
-    } else if (poopTool === "leaf") {
+    } else if (selectedTool === "leaf") {
       setPoopTool(null);
       setMessage("나뭇잎이 너무 작네요. 손에 묻었습니다. 양말을 벗으시겠습니까?");
-    } else if (poopTool === "sock") {
+    } else if (selectedTool === "sock") {
       resumeWalk("양말은 잃었지만 펫티켓은 지켰습니다!");
     } else {
       setMessage("먼저 처리할 도구를 선택하세요.");
@@ -913,8 +914,15 @@ function ThreeWalkWorld({
   const positionRef = useRef({ x: 0, z: 5.5, yaw: 0 });
   const keysRef = useRef(new Set<string>());
   const reachedEntryRef = useRef(false);
+  const rubyCalmRef = useRef(rubyCalm);
+  const gamjaQuietRef = useRef(gamjaQuiet);
   const outdoorPhases: Phase[] = ["garden", "gate", "walk", "pull", "poop", "run", "car", "barkingDog", "boss", "home"];
   const isOutdoor = outdoorPhases.includes(phase);
+
+  useEffect(() => {
+    rubyCalmRef.current = rubyCalm;
+    gamjaQuietRef.current = gamjaQuiet;
+  }, [rubyCalm, gamjaQuiet]);
 
   useEffect(() => {
     const mount = mountRef.current;
@@ -968,10 +976,12 @@ function ThreeWalkWorld({
 
     const textureLoader = new THREE.TextureLoader();
     const isSleepingScene = phase === "upstairs" || (phase === "living" && !calledDogs);
-    const rubySrc = isSleepingScene ? dog.ruby.sleep : phase === "gate" && rubyCalm ? dog.ruby.sit : phase === "excited" ? dog.ruby.hop : dog.ruby.call;
-    const gamjaSrc = isSleepingScene ? dog.gamja.sleep : phase === "gate" && gamjaQuiet ? dog.gamja.sit : phase === "excited" || phase === "gate" ? dog.gamja.hop : dog.gamja.call;
+    const rubySrc = isSleepingScene ? dog.ruby.sleep : phase === "excited" ? dog.ruby.hop : dog.ruby.call;
+    const gamjaSrc = isSleepingScene ? dog.gamja.sleep : phase === "excited" || phase === "gate" ? dog.gamja.hop : dog.gamja.call;
     const rubyMap = textureLoader.load(rubySrc);
     const gamjaMap = textureLoader.load(gamjaSrc);
+    const rubySitMap = textureLoader.load(dog.ruby.sit);
+    const gamjaSitMap = textureLoader.load(dog.gamja.sit);
     const ruby = makeDogBillboard(rubyMap, isSleepingScene ? 2.6 : 1.55, isSleepingScene ? 1.25 : 2.15);
     ruby.position.set(isSleepingScene ? -1.2 : -1.0, isSleepingScene ? 0.55 : 1.08, isSleepingScene ? -4.2 : -1.6);
     const gamja = makeDogBillboard(gamjaMap, isSleepingScene ? 2.08 : 1.24, isSleepingScene ? 1.0 : 1.72);
@@ -988,7 +998,7 @@ function ThreeWalkWorld({
 
     const car = makeParkCar();
     car.visible = phase === "car";
-    car.position.set(-6.5, 0.42, -3.6);
+    car.position.set(0.7, 0.42, -10.5);
     scene.add(car);
 
     const otherDog = makeOtherDog();
@@ -1034,10 +1044,27 @@ function ThreeWalkWorld({
       camera.fov = phase === "pull" || phase === "run" ? 72 + Math.sin(clock.elapsedTime * 13) * 1.8 : 64;
       camera.updateProjectionMatrix();
       dogGroup.children.forEach((child) => child.lookAt(camera.position));
+      const rubyMaterial = ruby.material as THREE.MeshBasicMaterial;
+      const gamjaMaterial = gamja.material as THREE.MeshBasicMaterial;
+      if (phase === "gate" && rubyCalmRef.current && rubyMaterial.map !== rubySitMap) {
+        rubyMaterial.map = rubySitMap;
+        rubyMaterial.needsUpdate = true;
+      }
+      if (phase === "gate" && gamjaQuietRef.current && gamjaMaterial.map !== gamjaSitMap) {
+        gamjaMaterial.map = gamjaSitMap;
+        gamjaMaterial.needsUpdate = true;
+      }
       if (phase === "gate") {
-        ruby.position.x = -1.0 + (rubyCalm ? 0 : Math.sin(clock.elapsedTime * 7) * 0.18);
-        ruby.rotation.z = rubyCalm ? 0 : Math.sin(clock.elapsedTime * 7) * 0.18;
-        gamja.position.y = gamjaQuiet ? 0.86 : 0.86 + Math.abs(Math.sin(clock.elapsedTime * 9)) * 0.22;
+        dogGroup.position.x = pos.x;
+        dogGroup.position.z = pos.z + 0.05;
+        ruby.position.x = -0.78 + (rubyCalmRef.current ? 0 : Math.sin(clock.elapsedTime * 7) * 0.18);
+        ruby.rotation.z = rubyCalmRef.current ? 0 : Math.sin(clock.elapsedTime * 7) * 0.18;
+        gamja.position.x = 0.72;
+        gamja.position.y = gamjaQuietRef.current ? 0.86 : 0.86 + Math.abs(Math.sin(clock.elapsedTime * 9)) * 0.22;
+      }
+      if ((phase === "living" && calledDogs) || phase === "excited" || phase === "leashPrep") {
+        dogGroup.position.x = pos.x;
+        dogGroup.position.z = pos.z + 0.3;
       }
       if (isOutdoor && phase !== "gate") {
         dogGroup.position.x = pos.x;
@@ -1047,7 +1074,8 @@ function ThreeWalkWorld({
         dogGroup.position.z = pos.z - 4.1 - Math.abs(Math.sin(clock.elapsedTime * 8)) * 0.35;
       }
       if (phase === "car") {
-        car.position.x = 5.8 - ((clock.elapsedTime * 3.4) % 12.5);
+        car.position.x = 0.7;
+        car.position.z = -10.5 + ((clock.elapsedTime * 4.2) % 16);
       }
       if (phase === "boss") {
         otherDog.position.z = -4.5 + Math.sin(clock.elapsedTime * 5) * 0.35;
@@ -1094,9 +1122,11 @@ function ThreeWalkWorld({
       });
       rubyMap.dispose();
       gamjaMap.dispose();
+      rubySitMap.dispose();
+      gamjaSitMap.dispose();
       mount.removeChild(renderer.domElement);
     };
-  }, [calledDogs, canReachEntry, gamjaQuiet, isOutdoor, onReachEntry, onReachGate, onReachLiving, phase, rubyCalm]);
+  }, [calledDogs, canReachEntry, isOutdoor, onReachEntry, onReachGate, onReachLiving, phase]);
 
   return (
     <div className="three-world" ref={mountRef} aria-label="3D 산책 공간">
@@ -1717,7 +1747,7 @@ function SceneContent(props: {
   resumeWalk: (message: string) => void;
   fall: (reason: string) => void;
   choosePoopTool: (tool: PoopTool) => void;
-  dropPoopTool: () => void;
+  dropPoopTool: (tool?: PoopTool) => void;
   setCarStopped: (value: boolean) => void;
   setDogsRoadside: (value: boolean) => void;
   finishCar: () => void;
@@ -1784,23 +1814,64 @@ function SceneContent(props: {
       <ActionDock>
         <button className={p.carStopped ? "done" : ""} onClick={() => { playSound("car"); p.setCarStopped(true); p.setMessage("멈췄어요. 이제 길 옆으로 이동!"); }}>멈춰</button>
         <div
-          className={p.dogsRoadside ? "drop-zone done" : "drop-zone"}
+          className={p.dogsRoadside ? "grass-drop done" : "grass-drop"}
           onDragOver={(event) => event.preventDefault()}
-          onDrop={() => p.setDogsRoadside(true)}
+          onDrop={() => {
+            p.setDogsRoadside(true);
+            p.setMessage("루감이가 풀 쪽으로 안전하게 비켜섰어요. 기다려를 말해 주세요.");
+          }}
         >
-          길 옆 안전 구역
+          <span>길 옆 풀밭</span>
         </div>
         <div
           draggable
-          className="drag-chip"
+          className="dog-drag-card"
           onDragStart={(event) => {
             event.dataTransfer.effectAllowed = "move";
             event.dataTransfer.setData("text/plain", "dogs-roadside");
           }}
         >
-          루감이
+          <Image src={dog.ruby.walk} alt="루비" width={58} height={58} />
+          <Image src={dog.gamja.walk} alt="감자" width={46} height={46} />
         </div>
         <button onClick={p.finishCar}>기다려</button>
+        <style jsx>{`
+          .grass-drop {
+            min-width: 128px;
+            min-height: 70px;
+            border-radius: 18px;
+            border: 2px dashed rgba(67, 122, 52, 0.55);
+            background:
+              linear-gradient(135deg, rgba(135, 190, 97, 0.78), rgba(68, 139, 70, 0.78)),
+              repeating-linear-gradient(90deg, transparent 0 9px, rgba(255,255,255,0.18) 10px 12px);
+            color: #fffdf3;
+            display: grid;
+            place-items: center;
+            font-weight: 950;
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.45);
+          }
+          .grass-drop.done {
+            border-style: solid;
+            background: linear-gradient(135deg, #5da342, #8bc96d);
+          }
+          .dog-drag-card {
+            cursor: grab;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            min-width: 118px;
+            min-height: 76px;
+            padding: 6px 12px;
+            border-radius: 18px;
+            background: rgba(255, 252, 244, 0.94);
+            border: 1px solid rgba(123, 93, 63, 0.22);
+            box-shadow: 0 12px 28px rgba(62, 45, 28, 0.18);
+          }
+          .dog-drag-card :global(img) {
+            object-fit: contain;
+            filter: drop-shadow(0 8px 8px rgba(0,0,0,0.18));
+          }
+        `}</style>
       </ActionDock>
     );
   }
@@ -2055,25 +2126,39 @@ function LeashTargets({ rubyLeashed, gamjaLeashed, finish }: { rubyLeashed: bool
   );
 }
 
-function PoopTools({ hasPoopBag, tool, choose, drop }: { hasPoopBag: boolean; tool: PoopTool; choose: (tool: PoopTool) => void; drop: () => void }) {
+function PoopTools({ hasPoopBag, tool, choose, drop }: { hasPoopBag: boolean; tool: PoopTool; choose: (tool: PoopTool) => void; drop: (tool?: PoopTool) => void }) {
   return (
     <div className="poop-ui">
       <div
-        className="poop-target"
+        className="poop-scene"
         onDragOver={(event) => event.preventDefault()}
-        onDrop={drop}
+        onDrop={() => drop(hasPoopBag ? "bag" : undefined)}
       >
+        <div className="poop-gamja">
+          <Image src={dog.gamja.poop} alt="감자가 똥 싸는 자세" fill sizes="220px" />
+        </div>
         <span className="poop-pile" />
-        감자 똥
       </div>
       <div className="choices">
-        {hasPoopBag ? <button onClick={() => choose("bag")}>똥봉투 사용</button> : (
+        {hasPoopBag ? (
+          <div
+            draggable
+            className="bag-chip"
+            onDragStart={(event) => {
+              choose("bag");
+              event.dataTransfer.effectAllowed = "move";
+              event.dataTransfer.setData("text/plain", "bag");
+            }}
+          >
+            <Image src="/ruby-gamja/custom/poop-bag-real.png" alt="배변봉투" width={58} height={58} />
+          </div>
+        ) : (
           <>
             <button onClick={() => choose("leaf")}>나뭇잎 줍기</button>
             <button onClick={() => choose("sock")}>양말을 벗으시겠습니까?</button>
           </>
         )}
-        {tool && (
+        {tool && tool !== "bag" && (
           <div
             draggable
             className="drag-chip"
@@ -2082,7 +2167,7 @@ function PoopTools({ hasPoopBag, tool, choose, drop }: { hasPoopBag: boolean; to
               event.dataTransfer.setData("text/plain", tool);
             }}
           >
-            {tool === "bag" ? "똥봉투" : tool === "leaf" ? "나뭇잎" : "양말"}
+            {tool === "leaf" ? "나뭇잎" : "양말"}
           </div>
         )}
       </div>
@@ -2096,7 +2181,7 @@ function PoopTools({ hasPoopBag, tool, choose, drop }: { hasPoopBag: boolean; to
           justify-content: center;
           gap: 14px;
         }
-        .poop-target,
+        .poop-scene,
         .choices {
           padding: 14px;
           border-radius: 18px;
@@ -2104,13 +2189,30 @@ function PoopTools({ hasPoopBag, tool, choose, drop }: { hasPoopBag: boolean; to
           box-shadow: 0 16px 38px rgba(0,0,0,0.22);
           font-weight: 950;
         }
-        .poop-target {
-          display: grid;
-          place-items: center;
-          gap: 4px;
-          min-width: 104px;
+        .poop-scene {
+          position: relative;
+          width: 220px;
+          height: 164px;
+          overflow: hidden;
+          background:
+            linear-gradient(rgba(255,250,242,0.68), rgba(255,250,242,0.68)),
+            linear-gradient(135deg, #8ab56d, #547f45);
+        }
+        .poop-gamja {
+          position: absolute;
+          left: 38px;
+          bottom: 22px;
+          width: 138px;
+          height: 112px;
+          filter: drop-shadow(0 13px 10px rgba(0,0,0,0.24));
+        }
+        .poop-gamja :global(img) {
+          object-fit: contain;
         }
         .poop-pile {
+          position: absolute;
+          left: 78px;
+          bottom: 16px;
           width: 42px;
           height: 34px;
           border-radius: 50% 50% 46% 46%;
@@ -2122,8 +2224,24 @@ function PoopTools({ hasPoopBag, tool, choose, drop }: { hasPoopBag: boolean; to
         }
         .choices {
           display: flex;
+          align-items: center;
           gap: 8px;
           flex-wrap: wrap;
+        }
+        .bag-chip {
+          cursor: grab;
+          width: 82px;
+          height: 82px;
+          border-radius: 20px;
+          display: grid;
+          place-items: center;
+          background: rgba(255, 252, 244, 0.94);
+          border: 1px solid rgba(122, 89, 58, 0.2);
+          box-shadow: 0 12px 28px rgba(59, 45, 30, 0.18);
+        }
+        .bag-chip :global(img) {
+          object-fit: contain;
+          border-radius: 12px;
         }
       `}</style>
     </div>
