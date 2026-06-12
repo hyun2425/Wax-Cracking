@@ -29,6 +29,7 @@ type Phase =
 
 type Dog = "ruby" | "gamja";
 type PoopTool = "bag" | "leaf" | "sock" | null;
+type PoopStep = "ask" | "bagCheck" | "leafAsk" | "leafReady" | "sockAsk" | "sockReady";
 
 // Replace only these paths when swapping Ruby/Gamja cutout assets later.
 const dog = {
@@ -151,6 +152,7 @@ export default function WalkQuestGame() {
   const [walkStep, setWalkStep] = useState(0);
   const [peePulse, setPeePulse] = useState(false);
   const [poopTool, setPoopTool] = useState<PoopTool>(null);
+  const [poopStep, setPoopStep] = useState<PoopStep>("ask");
   const [runTaps, setRunTaps] = useState(0);
   const [carStopped, setCarStopped] = useState(false);
   const [dogsRoadside, setDogsRoadside] = useState(false);
@@ -186,6 +188,7 @@ export default function WalkQuestGame() {
     setWalkStep(0);
     setPeePulse(false);
     setPoopTool(null);
+    setPoopStep("ask");
     setRunTaps(0);
     setCarStopped(false);
     setDogsRoadside(false);
@@ -288,8 +291,9 @@ export default function WalkQuestGame() {
         setMessage("루비가 신나서 앞으로 당겨요. 천천히!");
       } else if (walkStep === 1) {
         setPhase("poop");
-        setPoopTool(hasPoopBag ? "bag" : null);
-        setMessage("감자가 똥을 쌌어요. 펫티켓 시간입니다.");
+        setPoopStep("ask");
+        setPoopTool(null);
+        setMessage("주의! 감자가 똥을 쌌어요. 펫티켓을 지키겠습니까?");
       } else if (walkStep === 2) {
         setPhase("run");
         setRunTaps(0);
@@ -442,6 +446,8 @@ export default function WalkQuestGame() {
 
   function resumeWalk(text: string) {
     setWalkStep((current) => current + 1);
+    setPoopTool(null);
+    setPoopStep("ask");
     setPhase("walk");
     showHearts(text);
   }
@@ -449,20 +455,32 @@ export default function WalkQuestGame() {
   function choosePoopTool(tool: PoopTool) {
     setPoopTool(tool);
     playSound("poop");
-    if (tool === "leaf") setMessage("나뭇잎을 똥 위로 옮겨보세요.");
-    if (tool === "sock") setMessage("양말을 벗었습니다. 양말을 똥 위로 옮겨주세요.");
-    if (tool === "bag") setMessage("똥봉투를 똥 위로 옮겨주세요.");
+    if (tool === "leaf") {
+      setPoopStep("leafReady");
+      setMessage("바닥에 있는 나뭇잎을 똥으로 옮겨보세요.");
+    }
+    if (tool === "sock") {
+      setPoopStep("sockReady");
+      setMessage("양말을 벗었어요. 손에 든 양말을 똥으로 옮겨주세요.");
+    }
+    if (tool === "bag") {
+      setPoopStep("bagCheck");
+      setMessage("똥봉투를 똥 위로 옮겨주세요.");
+    }
   }
 
   function dropPoopTool(toolOverride?: PoopTool) {
     const selectedTool = toolOverride ?? poopTool;
     if (selectedTool === "bag") {
+      setPoopTool(null);
       resumeWalk("펫티켓 완료!");
     } else if (selectedTool === "leaf") {
       setPoopTool(null);
-      setMessage("나뭇잎이 너무 작네요. 손에 묻었습니다. 양말을 벗으시겠습니까?");
+      setPoopStep("sockAsk");
+      setMessage("나뭇잎이 너무 작아요! 손에 묻어버렸어요... 어쩔 수 없다... 양말뿐인건가..?");
     } else if (selectedTool === "sock") {
-      resumeWalk("양말은 잃었지만 펫티켓은 지켰습니다!");
+      setPoopTool(null);
+      resumeWalk("양말은 잃었지만 환경은 지켰어요!");
     } else {
       setMessage("먼저 처리할 도구를 선택하세요.");
     }
@@ -566,6 +584,7 @@ export default function WalkQuestGame() {
             rubyCalm={rubyCalm}
             gamjaQuiet={gamjaQuiet}
             poopTool={poopTool}
+            poopStep={poopStep}
             carStopped={carStopped}
             dogsRoadside={dogsRoadside}
             start={start}
@@ -583,6 +602,7 @@ export default function WalkQuestGame() {
             openGate={openGate}
             resumeWalk={resumeWalk}
             fall={fall}
+            setPoopStep={setPoopStep}
             choosePoopTool={choosePoopTool}
             dropPoopTool={dropPoopTool}
             setCarStopped={setCarStopped}
@@ -985,7 +1005,7 @@ function ThreeWalkWorld({
     const textureLoader = new THREE.TextureLoader();
     const isSleepingScene = phase === "upstairs" || (phase === "living" && !calledDogs);
     const rubySrc = isSleepingScene ? dog.ruby.sleep : phase === "excited" ? dog.ruby.hop : dog.ruby.call;
-    const gamjaSrc = isSleepingScene ? dog.gamja.sleep : phase === "excited" || phase === "gate" ? dog.gamja.hop : dog.gamja.call;
+    const gamjaSrc = isSleepingScene ? dog.gamja.sleep : phase === "poop" ? dog.gamja.poop : phase === "excited" || phase === "gate" ? dog.gamja.hop : dog.gamja.call;
     const rubyMap = textureLoader.load(rubySrc);
     const gamjaMap = textureLoader.load(gamjaSrc);
     const rubySitMap = textureLoader.load(dog.ruby.sit);
@@ -996,7 +1016,11 @@ function ThreeWalkWorld({
     gamja.position.set(isSleepingScene ? 1.05 : 1.0, isSleepingScene ? 0.48 : 0.86, isSleepingScene ? -3.95 : -1.25);
     const dogGroup = new THREE.Group();
     dogGroup.add(ruby, gamja);
-    dogGroup.visible = phase !== "leashMission" && phase !== "poop";
+    const poopPile = makePoopPile();
+    poopPile.position.set(1.02, 0.08, -1.72);
+    poopPile.visible = phase === "poop";
+    dogGroup.add(poopPile);
+    dogGroup.visible = phase !== "leashMission";
     scene.add(dogGroup);
 
     const shelf = makeShelf();
@@ -1183,6 +1207,34 @@ function makeDogBillboard(map: THREE.Texture, width: number, height: number) {
   return mesh;
 }
 
+function makePoopPile() {
+  const group = new THREE.Group();
+  const poopMat = new THREE.MeshStandardMaterial({ color: "#6a3d1f", roughness: 0.72, metalness: 0.02 });
+  const highlightMat = new THREE.MeshStandardMaterial({ color: "#8c5a31", roughness: 0.68, metalness: 0.02 });
+  [
+    { x: -0.12, z: 0.02, r: 0.17, y: 0.13, mat: poopMat },
+    { x: 0.12, z: -0.02, r: 0.18, y: 0.14, mat: highlightMat },
+    { x: 0.0, z: -0.08, r: 0.15, y: 0.29, mat: poopMat },
+    { x: 0.03, z: -0.1, r: 0.09, y: 0.45, mat: highlightMat },
+  ].forEach((piece) => {
+    const mesh = new THREE.Mesh(new THREE.SphereGeometry(piece.r, 18, 12), piece.mat);
+    mesh.scale.y = 0.55;
+    mesh.position.set(piece.x, piece.y, piece.z);
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    group.add(mesh);
+  });
+  const shadow = new THREE.Mesh(
+    new THREE.CircleGeometry(0.34, 28),
+    new THREE.MeshBasicMaterial({ color: "#2d1d12", transparent: true, opacity: 0.2 })
+  );
+  shadow.rotation.x = -Math.PI / 2;
+  shadow.position.y = 0.015;
+  group.add(shadow);
+  group.scale.setScalar(0.72);
+  return group;
+}
+
 function addInterior(scene: THREE.Scene) {
   const wallMat = new THREE.MeshStandardMaterial({ color: "#f2e5d5", roughness: 0.75 });
   const woodMat = new THREE.MeshStandardMaterial({ color: "#7a4a2f", roughness: 0.58 });
@@ -1199,16 +1251,16 @@ function addInterior(scene: THREE.Scene) {
   upperLanding.castShadow = true;
   upperLanding.receiveShadow = true;
   scene.add(upperLanding);
-  const landingLip = new THREE.Mesh(new THREE.BoxGeometry(5.25, 0.24, 0.16), woodMat);
-  landingLip.position.set(-3.6, 1.42, 4.82);
+  const landingLip = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.24, 4.05), woodMat);
+  landingLip.position.set(-1.52, 1.42, 6.85);
   scene.add(landingLip);
   const upperRail = new THREE.Group();
-  const topRail = new THREE.Mesh(new THREE.BoxGeometry(4.8, 0.08, 0.08), railMat);
-  topRail.position.set(-3.6, 2.32, 4.62);
+  const topRail = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 3.9), railMat);
+  topRail.position.set(-1.52, 2.32, 6.82);
   upperRail.add(topRail);
   for (let i = 0; i < 9; i += 1) {
     const bar = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.82, 0.06), railMat);
-    bar.position.set(-5.75 + i * 0.54, 1.9, 4.62);
+    bar.position.set(-1.52, 1.9, 5.12 + i * 0.43);
     upperRail.add(bar);
   }
   scene.add(upperRail);
@@ -1792,6 +1844,7 @@ function SceneContent(props: {
   rubyCalm: boolean;
   gamjaQuiet: boolean;
   poopTool: PoopTool;
+  poopStep: PoopStep;
   carStopped: boolean;
   dogsRoadside: boolean;
   start: () => void;
@@ -1809,6 +1862,7 @@ function SceneContent(props: {
   openGate: () => void;
   resumeWalk: (message: string) => void;
   fall: (reason: string) => void;
+  setPoopStep: (step: PoopStep) => void;
   choosePoopTool: (tool: PoopTool) => void;
   dropPoopTool: (tool?: PoopTool) => void;
   setCarStopped: (value: boolean) => void;
@@ -1867,7 +1921,17 @@ function SceneContent(props: {
     return <ActionDock><button onClick={() => p.resumeWalk("루비가 속도를 줄였어요.")}>천천히</button></ActionDock>;
   }
   if (p.phase === "poop") {
-    return <PoopTools hasPoopBag={p.hasPoopBag} tool={p.poopTool} choose={p.choosePoopTool} drop={p.dropPoopTool} />;
+    return (
+      <PoopTools
+        hasPoopBag={p.hasPoopBag}
+        tool={p.poopTool}
+        step={p.poopStep}
+        setStep={p.setPoopStep}
+        setMessage={p.setMessage}
+        choose={p.choosePoopTool}
+        drop={p.dropPoopTool}
+      />
+    );
   }
   if (p.phase === "run") {
     return <ActionDock><span className="counter">Space {p.runTaps}/18</span></ActionDock>;
@@ -2189,48 +2253,136 @@ function LeashTargets({ rubyLeashed, gamjaLeashed, finish }: { rubyLeashed: bool
   );
 }
 
-function PoopTools({ hasPoopBag, tool, choose, drop }: { hasPoopBag: boolean; tool: PoopTool; choose: (tool: PoopTool) => void; drop: (tool?: PoopTool) => void }) {
+function PoopTools({
+  hasPoopBag,
+  tool,
+  step,
+  setStep,
+  setMessage,
+  choose,
+  drop,
+}: {
+  hasPoopBag: boolean;
+  tool: PoopTool;
+  step: PoopStep;
+  setStep: (step: PoopStep) => void;
+  setMessage: (message: string) => void;
+  choose: (tool: PoopTool) => void;
+  drop: (tool?: PoopTool) => void;
+}) {
+  const dragTool = (event: ReactDragEvent<HTMLDivElement>, selectedTool: Exclude<PoopTool, null>) => {
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/plain", selectedTool);
+  };
+
+  const dropOnPoop = (event: ReactDragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    const dragged = event.dataTransfer.getData("text/plain") as PoopTool;
+    drop(dragged || tool || undefined);
+  };
+
   return (
     <div className="poop-ui">
       <div
-        className="poop-scene"
+        className="poop-target"
         onDragOver={(event) => event.preventDefault()}
-        onDrop={() => drop(hasPoopBag ? "bag" : undefined)}
+        onDrop={dropOnPoop}
       >
-        <div className="poop-gamja">
-          <Image src={dog.gamja.poop} alt="감자가 똥 싸는 자세" fill sizes="220px" />
-        </div>
         <span className="poop-pile" />
+        <small>똥 위로 옮기기</small>
       </div>
-      <div className="choices">
-        {hasPoopBag ? (
-          <div
-            draggable
-            className="bag-chip"
-            onDragStart={(event) => {
-              choose("bag");
-              event.dataTransfer.effectAllowed = "move";
-              event.dataTransfer.setData("text/plain", "bag");
-            }}
-          >
-            <Image src="/ruby-gamja/custom/poop-bag-real.png" alt="배변봉투" width={58} height={58} />
-          </div>
-        ) : (
+      <div className="poop-dialog">
+        {step === "ask" && (
           <>
-            <button onClick={() => choose("leaf")}>나뭇잎 줍기</button>
-            <button onClick={() => choose("sock")}>양말을 벗으시겠습니까?</button>
+            <b>주의! 감자가 똥을 쌌어요.</b>
+            <span>펫티켓을 지키겠습니까?</span>
+            <div className="poop-actions">
+              <button
+                onClick={() => {
+                  setStep("bagCheck");
+                  setMessage("가방을 확인해 보세요.");
+                }}
+              >
+                네
+              </button>
+              <button
+                onClick={() => {
+                  setStep("bagCheck");
+                  setMessage("그냥 가려다 경비 아저씨한테 걸렸어요! 치워야겠네요..");
+                }}
+              >
+                아니요
+              </button>
+            </div>
           </>
         )}
-        {tool && tool !== "bag" && (
-          <div
-            draggable
-            className="drag-chip"
-            onDragStart={(event) => {
-              event.dataTransfer.effectAllowed = "move";
-              event.dataTransfer.setData("text/plain", tool);
-            }}
-          >
-            {tool === "leaf" ? "나뭇잎" : "양말"}
+        {step === "bagCheck" && (
+          <div className="bag-check">
+            <button
+              className="bag-button"
+              onClick={() => {
+                if (hasPoopBag) {
+                  choose("bag");
+                  setMessage("가방에 똥봉투가 있어요. 똥봉투를 똥 위로 옮겨주세요.");
+                } else {
+                  setStep("leafAsk");
+                  setMessage("이런! 똥봉투를 안가져왔네요... 나뭇잎으로 치워볼까요?");
+                }
+              }}
+            >
+              <span className="bag-emoji">🎒</span>
+              가방 확인
+            </button>
+            {tool === "bag" && (
+              <div draggable className="bag-chip" onDragStart={(event) => dragTool(event, "bag")}>
+                <Image src="/ruby-gamja/custom/poop-bag-real.png" alt="똥봉투" width={58} height={58} />
+                <small>똥봉투</small>
+              </div>
+            )}
+          </div>
+        )}
+        {step === "leafAsk" && (
+          <>
+            <b>이런! 똥봉투를 안가져왔네요...</b>
+            <span>나뭇잎으로 치워볼까요?</span>
+            <div className="poop-actions">
+              <button onClick={() => choose("leaf")}>네</button>
+              <button
+                onClick={() => {
+                  setStep("sockAsk");
+                  setMessage("경비 아저씨 눈빛이 매서워요... 양말뿐인건가..?");
+                }}
+              >
+                아니요
+              </button>
+            </div>
+          </>
+        )}
+        {step === "leafReady" && (
+          <div className="tool-row">
+            <b>나뭇잎을 똥 위로 옮겨보세요.</b>
+            <div draggable className="drag-chip leaf" onDragStart={(event) => dragTool(event, "leaf")}>
+              🍃
+              <small>나뭇잎</small>
+            </div>
+          </div>
+        )}
+        {step === "sockAsk" && (
+          <>
+            <b>어쩔 수 없다... 양말뿐인건가..?</b>
+            <div className="poop-actions">
+              <button onClick={() => choose("sock")}>양말 벗기</button>
+              <button onClick={() => setMessage("그냥 가려다 또 걸릴 것 같아요. 치워야겠네요..")}>그냥 가자</button>
+            </div>
+          </>
+        )}
+        {step === "sockReady" && (
+          <div className="tool-row">
+            <b>손에 양말을 들었어요.</b>
+            <div draggable className="drag-chip sock" onDragStart={(event) => dragTool(event, "sock")}>
+              🧦
+              <small>양말</small>
+            </div>
           </div>
         )}
       </div>
@@ -2244,38 +2396,25 @@ function PoopTools({ hasPoopBag, tool, choose, drop }: { hasPoopBag: boolean; to
           justify-content: center;
           gap: 14px;
         }
-        .poop-scene,
-        .choices {
+        .poop-target,
+        .poop-dialog {
           padding: 14px;
           border-radius: 18px;
           background: rgba(255,250,242,0.92);
           box-shadow: 0 16px 38px rgba(0,0,0,0.22);
           font-weight: 950;
         }
-        .poop-scene {
+        .poop-target {
           position: relative;
-          width: 220px;
-          height: 164px;
-          overflow: hidden;
-          background:
-            linear-gradient(rgba(255,250,242,0.68), rgba(255,250,242,0.68)),
-            linear-gradient(135deg, #8ab56d, #547f45);
-        }
-        .poop-gamja {
-          position: absolute;
-          left: 38px;
-          bottom: 22px;
-          width: 138px;
-          height: 112px;
-          filter: drop-shadow(0 13px 10px rgba(0,0,0,0.24));
-        }
-        .poop-gamja :global(img) {
-          object-fit: contain;
+          width: 118px;
+          height: 98px;
+          display: grid;
+          place-items: center;
+          border: 2px dashed rgba(102, 72, 44, 0.3);
+          background: rgba(255, 250, 242, 0.78);
         }
         .poop-pile {
-          position: absolute;
-          left: 78px;
-          bottom: 16px;
+          display: block;
           width: 42px;
           height: 34px;
           border-radius: 50% 50% 46% 46%;
@@ -2285,10 +2424,28 @@ function PoopTools({ hasPoopBag, tool, choose, drop }: { hasPoopBag: boolean; to
             radial-gradient(circle at 62% 60%, #8a562b 0 15px, transparent 16px);
           filter: drop-shadow(0 5px 5px rgba(0,0,0,0.18));
         }
-        .choices {
+        .poop-target small {
+          font-size: 0.72rem;
+          color: #73513b;
+        }
+        .poop-dialog {
+          display: flex;
+          flex-direction: column;
+          align-items: stretch;
+          gap: 8px;
+          min-width: min(360px, calc(100vw - 180px));
+          color: #4b3322;
+        }
+        .poop-dialog b,
+        .poop-dialog span {
+          line-height: 1.35;
+        }
+        .poop-actions,
+        .bag-check,
+        .tool-row {
           display: flex;
           align-items: center;
-          gap: 8px;
+          gap: 10px;
           flex-wrap: wrap;
         }
         .bag-chip {
@@ -2302,9 +2459,37 @@ function PoopTools({ hasPoopBag, tool, choose, drop }: { hasPoopBag: boolean; to
           border: 1px solid rgba(122, 89, 58, 0.2);
           box-shadow: 0 12px 28px rgba(59, 45, 30, 0.18);
         }
+        .bag-button {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+        }
+        .bag-emoji {
+          font-size: 1.4rem;
+        }
         .bag-chip :global(img) {
           object-fit: contain;
           border-radius: 12px;
+        }
+        .bag-chip small {
+          font-size: 0.72rem;
+          color: #4b3322;
+        }
+        .drag-chip {
+          cursor: grab;
+          display: grid;
+          place-items: center;
+          width: 88px;
+          height: 72px;
+          border-radius: 18px;
+          background: #fffaf1;
+          border: 1px solid rgba(122, 89, 58, 0.22);
+          box-shadow: 0 12px 28px rgba(59, 45, 30, 0.16);
+          font-size: 2rem;
+        }
+        .drag-chip small {
+          font-size: 0.76rem;
+          color: #4b3322;
         }
       `}</style>
     </div>
