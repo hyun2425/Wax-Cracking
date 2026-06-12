@@ -119,7 +119,7 @@ const phaseInfo: Record<Phase, { scene: string; mission: string; bg: string }> =
   leashMission: { scene: "현관", mission: "5초 안에 선반의 목줄을 루비와 감자에게 채워주세요.", bg: "entry" },
   leashZoom: { scene: "목줄 확대", mission: "목줄을 목 고리까지 옮겨 채우세요.", bg: "entry" },
   poopBag: { scene: "현관문", mission: "필요하면 봉투를 가방에 넣고 정원으로 나가세요.", bg: "entry" },
-  garden: { scene: "정원", mission: "정원을 지나 대문 앞으로 가세요.", bg: "garden" },
+  garden: { scene: "정원", mission: "정원을 지나 대문 앞으로 가세요. 대문 밖으로 나가 본격적인 산책 해볼까요?", bg: "garden" },
   gate: { scene: "대문 앞", mission: "루비는 앉아, 감자는 조용히 해. 진정 후 대문을 여세요.", bg: "gate" },
   walk: { scene: "늘 가던 산책길", mission: "루비와 감자를 따라 안전하게 걸으세요.", bg: "street" },
   pull: { scene: "산책길", mission: "루비가 당겨요. 5초 안에 천천히를 클릭하세요.", bg: "street" },
@@ -426,7 +426,7 @@ export default function WalkQuestGame() {
   function goOut() {
     setPhase("garden");
     playSound("step");
-    setMessage(hasPoopBag ? "똥봉투까지 챙겼어요. 정원으로 나갑니다." : "똥봉투 없이도 정원으로 나왔어요.");
+    setMessage(hasPoopBag ? "똥봉투까지 챙겼어요. 정원으로 나갑니다. 대문 밖으로 나가 본격적인 산책 해볼까요?" : "똥봉투 없이도 정원으로 나왔어요. 대문 밖으로 나가 본격적인 산책 해볼까요?");
   }
 
   function openGate() {
@@ -1026,9 +1026,13 @@ function ThreeWalkWorld({
       if (keysRef.current.has("ArrowDown")) pos.z += speed;
       pos.x = THREE.MathUtils.clamp(pos.x, -6.2, 6.2);
       pos.z = THREE.MathUtils.clamp(pos.z, -10.5, 8.5);
+      if (["leashPrep", "leashMission", "poopBag"].includes(phase)) {
+        pos.x = THREE.MathUtils.clamp(pos.x, -5.35, 5.35);
+        pos.z = THREE.MathUtils.clamp(pos.z, -6.35, 7.6);
+      }
       if (phase === "gate") {
         pos.x = THREE.MathUtils.clamp(pos.x, -2.4, 2.4);
-        pos.z = THREE.MathUtils.clamp(pos.z, -5.8, 6.2);
+        pos.z = THREE.MathUtils.clamp(pos.z, -5.65, 6.2);
       }
 
       if (phase === "upstairs" && !reachedEntryRef.current && pos.z < -2.8) {
@@ -1063,8 +1067,8 @@ function ThreeWalkWorld({
         gamjaMaterial.needsUpdate = true;
       }
       if (phase === "gate") {
-        dogGroup.position.x = pos.x;
-        dogGroup.position.z = Math.max(pos.z - 0.35, -5.05);
+        dogGroup.position.x = 0;
+        dogGroup.position.z = -5.05;
         ruby.position.x = -0.78 + (rubyCalmRef.current ? 0 : Math.sin(clock.elapsedTime * 7) * 0.18);
         ruby.rotation.z = rubyCalmRef.current ? 0 : Math.sin(clock.elapsedTime * 7) * 0.18;
         gamja.position.x = 0.72;
@@ -1182,12 +1186,36 @@ function makeDogBillboard(map: THREE.Texture, width: number, height: number) {
 function addInterior(scene: THREE.Scene) {
   const wallMat = new THREE.MeshStandardMaterial({ color: "#f2e5d5", roughness: 0.75 });
   const woodMat = new THREE.MeshStandardMaterial({ color: "#7a4a2f", roughness: 0.58 });
+  const railMat = new THREE.MeshStandardMaterial({ color: "#2d2520", roughness: 0.52, metalness: 0.08 });
+  const landingMat = new THREE.MeshStandardMaterial({ color: "#8a5737", roughness: 0.62 });
   const backWall = new THREE.Mesh(new THREE.BoxGeometry(14, 4, 0.18), wallMat);
   backWall.position.set(0, 2, -8);
   scene.add(backWall);
   const sideWall = new THREE.Mesh(new THREE.BoxGeometry(0.18, 4, 16), wallMat);
   sideWall.position.set(-7, 2, 0);
   scene.add(sideWall);
+  const upperLanding = new THREE.Mesh(new THREE.BoxGeometry(5.2, 0.18, 4.3), landingMat);
+  upperLanding.position.set(-3.6, 1.28, 7.05);
+  upperLanding.castShadow = true;
+  upperLanding.receiveShadow = true;
+  scene.add(upperLanding);
+  const landingLip = new THREE.Mesh(new THREE.BoxGeometry(5.25, 0.24, 0.16), woodMat);
+  landingLip.position.set(-3.6, 1.42, 4.82);
+  scene.add(landingLip);
+  const upperRail = new THREE.Group();
+  const topRail = new THREE.Mesh(new THREE.BoxGeometry(4.8, 0.08, 0.08), railMat);
+  topRail.position.set(-3.6, 2.32, 4.62);
+  upperRail.add(topRail);
+  for (let i = 0; i < 9; i += 1) {
+    const bar = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.82, 0.06), railMat);
+    bar.position.set(-5.75 + i * 0.54, 1.9, 4.62);
+    upperRail.add(bar);
+  }
+  scene.add(upperRail);
+  const lowerVoid = new THREE.Mesh(new THREE.PlaneGeometry(3.6, 2.3), new THREE.MeshBasicMaterial({ color: "#3f332a", transparent: true, opacity: 0.28 }));
+  lowerVoid.rotation.x = -Math.PI / 2;
+  lowerVoid.position.set(-3.6, 1.31, 4.0);
+  scene.add(lowerVoid);
   for (let i = 0; i < 7; i += 1) {
     const stair = new THREE.Mesh(new THREE.BoxGeometry(3.8, 0.18, 0.65), woodMat);
     stair.position.set(-3.6, 0.12 + (6 - i) * 0.18, 4.8 - i * 1.05);
@@ -1829,9 +1857,9 @@ function SceneContent(props: {
   if (p.phase === "gate") {
     return (
       <ActionDock>
-        <button className={p.rubyCalm ? "done" : ""} onClick={() => { playSound("success"); p.setRubyCalm(true); p.setMessage("루비가 빙글빙글 돌다가 앉았어요."); }}>앉아</button>
-        <button className={p.gamjaQuiet ? "done" : ""} onClick={() => { playSound("bark"); p.setGamjaQuiet(true); p.setMessage("감자가 짖음을 멈췄어요."); }}>조용히 해</button>
-        <button onClick={p.openGate}>대문 열기</button>
+        <button className={`gate-action sit ${p.rubyCalm ? "done" : ""}`} onClick={() => { playSound("success"); p.setRubyCalm(true); p.setMessage("루비가 빙글빙글 돌다가 앉았어요."); }}><span>🧘</span>앉아</button>
+        <button className={`gate-action hush ${p.gamjaQuiet ? "done" : ""}`} onClick={() => { playSound("bark"); p.setGamjaQuiet(true); p.setMessage("감자가 짖음을 멈췄어요."); }}><span>🤫</span>조용히 해</button>
+        <button className="gate-action open" onClick={p.openGate}><span>🚪</span>대문 열기</button>
       </ActionDock>
     );
   }
@@ -2533,6 +2561,35 @@ function ActionDock({ children }: { children: ReactNode }) {
         .dock :global(.done) {
           background: #dff0d4;
           color: #2f6f2d;
+        }
+        .dock :global(button) {
+          border: 1px solid rgba(122, 87, 52, 0.22);
+          box-shadow: 0 10px 22px rgba(74, 51, 28, 0.14);
+        }
+        .dock :global(.gate-action) {
+          min-width: 118px;
+          min-height: 72px;
+          display: grid;
+          grid-template-columns: 1fr;
+          place-items: center;
+          gap: 4px;
+          border-radius: 18px;
+          background: linear-gradient(180deg, #fff8eb, #f1d9ad);
+        }
+        .dock :global(.gate-action span) {
+          width: 34px;
+          height: 34px;
+          display: grid;
+          place-items: center;
+          border-radius: 999px;
+          background: rgba(255,255,255,0.72);
+          font-size: 1.18rem;
+        }
+        .dock :global(.gate-action.hush) {
+          background: linear-gradient(180deg, #edf7ff, #cce6f7);
+        }
+        .dock :global(.gate-action.open) {
+          background: linear-gradient(180deg, #f5eadb, #d1b18a);
         }
         .dock :global(.counter),
         .dock :global(.drag-chip),
