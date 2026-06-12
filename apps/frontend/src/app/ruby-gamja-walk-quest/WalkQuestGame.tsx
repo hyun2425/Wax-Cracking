@@ -157,7 +157,7 @@ export default function WalkQuestGame() {
   const [hearts, setHearts] = useState(false);
 
   const info = phaseInfo[phase];
-  const needsInput = ["living", "excited", "leashPrep"].includes(phase);
+  const needsInput = ["living", "leashPrep"].includes(phase);
   const showDogs = false;
   const useEmptyHome = (phase === "living" && calledDogs) || phase === "excited";
 
@@ -411,7 +411,7 @@ export default function WalkQuestGame() {
       showHearts("목줄 착용 완료! 이제 똥봉투를 확인하세요.");
     } else {
       setPhase("leashMission");
-      setMessage("좋아요. 다른 강아지도 목을 클릭해서 목줄을 채워주세요.");
+      setMessage("좋아요. 선반의 다른 목줄도 강아지 사진 위로 드래그해서 채워주세요.");
     }
   }
 
@@ -534,7 +534,9 @@ export default function WalkQuestGame() {
             <ThreeWalkWorld
               phase={phase}
               calledDogs={calledDogs}
-              canReachEntry={dogsSitting}
+              canReachEntry={phase === "excited" || dogsSitting}
+              rubyCalm={rubyCalm}
+              gamjaQuiet={gamjaQuiet}
               onReachLiving={reachLiving}
               onReachEntry={reachEntry}
               onReachGate={reachGate}
@@ -892,6 +894,8 @@ function ThreeWalkWorld({
   phase,
   calledDogs,
   canReachEntry = true,
+  rubyCalm,
+  gamjaQuiet,
   onReachLiving,
   onReachEntry,
   onReachGate,
@@ -899,6 +903,8 @@ function ThreeWalkWorld({
   phase: Phase;
   calledDogs: boolean;
   canReachEntry?: boolean;
+  rubyCalm: boolean;
+  gamjaQuiet: boolean;
   onReachLiving?: () => void;
   onReachEntry?: () => void;
   onReachGate?: () => void;
@@ -907,6 +913,8 @@ function ThreeWalkWorld({
   const positionRef = useRef({ x: 0, z: 5.5, yaw: 0 });
   const keysRef = useRef(new Set<string>());
   const reachedEntryRef = useRef(false);
+  const outdoorPhases: Phase[] = ["garden", "gate", "walk", "pull", "poop", "run", "car", "barkingDog", "boss", "home"];
+  const isOutdoor = outdoorPhases.includes(phase);
 
   useEffect(() => {
     const mount = mountRef.current;
@@ -914,11 +922,13 @@ function ThreeWalkWorld({
     reachedEntryRef.current = false;
     if (phase === "upstairs") positionRef.current = { x: -3.6, z: 8.2, yaw: 0 };
     if (phase === "garden") positionRef.current = { x: 0, z: 6.8, yaw: 0 };
+    if (phase === "gate") positionRef.current = { x: 0, z: -5.2, yaw: 0 };
+    if (["walk", "pull", "poop", "run", "car", "barkingDog", "boss", "home"].includes(phase)) positionRef.current = { x: 0, z: 7.2, yaw: 0 };
 
     const width = Math.max(1, mount.clientWidth);
     const height = Math.max(1, mount.clientHeight);
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(phase === "garden" || phase === "gate" || phase === "walk" ? "#cfe6c4" : "#f4eadc");
+    scene.background = new THREE.Color(isOutdoor ? "#cfe6c4" : "#f4eadc");
     scene.fog = new THREE.Fog(scene.background, 9, 26);
 
     const camera = new THREE.PerspectiveCamera(64, width / height, 0.1, 80);
@@ -937,7 +947,7 @@ function ThreeWalkWorld({
     scene.add(sun);
 
     const floorMat = new THREE.MeshStandardMaterial({
-      color: phase === "garden" || phase === "gate" || phase === "walk" ? "#7faf5f" : "#eee5d8",
+      color: isOutdoor ? "#86b86a" : "#eee5d8",
       roughness: 0.62,
       metalness: 0.02,
     });
@@ -946,20 +956,20 @@ function ThreeWalkWorld({
     floor.receiveShadow = true;
     scene.add(floor);
 
-    const grid = new THREE.GridHelper(34, 18, phase === "garden" || phase === "gate" ? "#8eb170" : "#c8b9a7", "#e2d7ca");
+    const grid = new THREE.GridHelper(34, 18, isOutdoor ? "#9fc184" : "#c8b9a7", isOutdoor ? "#b9d4a6" : "#e2d7ca");
     grid.position.y = 0.012;
     scene.add(grid);
 
-    if (phase === "garden" || phase === "gate" || phase === "walk") {
-      addOutdoor(scene);
+    if (isOutdoor) {
+      addOutdoor(scene, phase);
     } else {
       addInterior(scene);
     }
 
     const textureLoader = new THREE.TextureLoader();
     const isSleepingScene = phase === "upstairs" || (phase === "living" && !calledDogs);
-    const rubySrc = isSleepingScene ? dog.ruby.sleep : phase === "excited" ? dog.ruby.hop : dog.ruby.call;
-    const gamjaSrc = isSleepingScene ? dog.gamja.sleep : phase === "excited" ? dog.gamja.hop : dog.gamja.call;
+    const rubySrc = isSleepingScene ? dog.ruby.sleep : phase === "gate" && rubyCalm ? dog.ruby.sit : phase === "excited" ? dog.ruby.hop : dog.ruby.call;
+    const gamjaSrc = isSleepingScene ? dog.gamja.sleep : phase === "gate" && gamjaQuiet ? dog.gamja.sit : phase === "excited" || phase === "gate" ? dog.gamja.hop : dog.gamja.call;
     const rubyMap = textureLoader.load(rubySrc);
     const gamjaMap = textureLoader.load(gamjaSrc);
     const ruby = makeDogBillboard(rubyMap, isSleepingScene ? 2.6 : 1.55, isSleepingScene ? 1.25 : 2.15);
@@ -976,6 +986,16 @@ function ThreeWalkWorld({
     shelf.visible = ["leashPrep", "leashMission", "poopBag"].includes(phase);
     scene.add(shelf);
 
+    const car = makeParkCar();
+    car.visible = phase === "car";
+    car.position.set(-6.5, 0.42, -3.6);
+    scene.add(car);
+
+    const otherDog = makeOtherDog();
+    otherDog.visible = phase === "barkingDog" || phase === "boss";
+    otherDog.position.set(phase === "boss" ? 0.9 : 3.9, 0.45, phase === "boss" ? -3.6 : -5.2);
+    scene.add(otherDog);
+
     const clock = new THREE.Clock();
     let frame = 0;
     const animate = () => {
@@ -988,6 +1008,10 @@ function ThreeWalkWorld({
       if (keysRef.current.has("ArrowDown")) pos.z += speed;
       pos.x = THREE.MathUtils.clamp(pos.x, -6.2, 6.2);
       pos.z = THREE.MathUtils.clamp(pos.z, -10.5, 8.5);
+      if (phase === "gate") {
+        pos.x = THREE.MathUtils.clamp(pos.x, -2.4, 2.4);
+        pos.z = THREE.MathUtils.clamp(pos.z, -5.8, 6.2);
+      }
 
       if (phase === "upstairs" && !reachedEntryRef.current && pos.z < -2.8) {
         reachedEntryRef.current = true;
@@ -1007,15 +1031,26 @@ function ThreeWalkWorld({
       const stairCameraY = THREE.MathUtils.clamp(THREE.MathUtils.mapLinear(pos.z, 8.2, -2.8, 2.35, 1.52), 1.52, 2.35);
       camera.position.set(pos.x, phase === "upstairs" ? stairCameraY : 1.55, pos.z);
       camera.rotation.set(phase === "upstairs" ? -0.18 : 0, pos.yaw, 0);
+      camera.fov = phase === "pull" || phase === "run" ? 72 + Math.sin(clock.elapsedTime * 13) * 1.8 : 64;
+      camera.updateProjectionMatrix();
       dogGroup.children.forEach((child) => child.lookAt(camera.position));
       if (phase === "gate") {
-        ruby.position.x = -1.0 + Math.sin(clock.elapsedTime * 7) * 0.18;
-        ruby.rotation.z = Math.sin(clock.elapsedTime * 7) * 0.18;
-        gamja.position.y = 0.86 + Math.abs(Math.sin(clock.elapsedTime * 9)) * 0.22;
+        ruby.position.x = -1.0 + (rubyCalm ? 0 : Math.sin(clock.elapsedTime * 7) * 0.18);
+        ruby.rotation.z = rubyCalm ? 0 : Math.sin(clock.elapsedTime * 7) * 0.18;
+        gamja.position.y = gamjaQuiet ? 0.86 : 0.86 + Math.abs(Math.sin(clock.elapsedTime * 9)) * 0.22;
       }
-      if (phase === "garden" || phase === "walk") {
+      if (isOutdoor && phase !== "gate") {
         dogGroup.position.x = pos.x;
         dogGroup.position.z = pos.z - 3.4;
+      }
+      if (phase === "pull" || phase === "run") {
+        dogGroup.position.z = pos.z - 4.1 - Math.abs(Math.sin(clock.elapsedTime * 8)) * 0.35;
+      }
+      if (phase === "car") {
+        car.position.x = 5.8 - ((clock.elapsedTime * 3.4) % 12.5);
+      }
+      if (phase === "boss") {
+        otherDog.position.z = -4.5 + Math.sin(clock.elapsedTime * 5) * 0.35;
       }
       dogGroup.position.y = ["excited", "leashPrep"].includes(phase) ? Math.sin(clock.elapsedTime * 8) * 0.06 : 0;
       renderer.render(scene, camera);
@@ -1061,11 +1096,11 @@ function ThreeWalkWorld({
       gamjaMap.dispose();
       mount.removeChild(renderer.domElement);
     };
-  }, [calledDogs, canReachEntry, onReachEntry, onReachGate, onReachLiving, phase]);
+  }, [calledDogs, canReachEntry, gamjaQuiet, isOutdoor, onReachEntry, onReachGate, onReachLiving, phase, rubyCalm]);
 
   return (
     <div className="three-world" ref={mountRef} aria-label="3D 산책 공간">
-      <div className="move-help">방향키 ↑ 앞으로 · ↓ 뒤로 · ←/→ 방향 전환</div>
+      <div className="move-help">방향키 ↑ 앞으로 · ↓ 뒤로 · ← 왼쪽 · → 오른쪽</div>
       <style jsx>{`
         .three-world {
           position: absolute;
@@ -1130,30 +1165,133 @@ function addInterior(scene: THREE.Scene) {
   scene.add(plant);
 }
 
-function addOutdoor(scene: THREE.Scene) {
+function addOutdoor(scene: THREE.Scene, phase: Phase) {
+  const isBeforeGate = phase === "garden" || phase === "gate";
   const pathMat = new THREE.MeshStandardMaterial({ color: "#cfc6b5", roughness: 0.82 });
-  for (let i = 0; i < 8; i += 1) {
-    const stone = new THREE.Mesh(new THREE.CylinderGeometry(0.75, 0.75, 0.06, 18), pathMat);
-    stone.rotation.y = i * 0.34;
-    stone.position.set(Math.sin(i * 0.6) * 0.8, 0.04, 3.8 - i * 1.45);
-    stone.receiveShadow = true;
-    scene.add(stone);
+  const roadMat = new THREE.MeshStandardMaterial({ color: "#6c6f68", roughness: 0.72 });
+  const lineMat = new THREE.MeshStandardMaterial({ color: "#f6e9b9", roughness: 0.55 });
+  const bushMat = new THREE.MeshStandardMaterial({ color: "#4f7c3e", roughness: 0.9 });
+  const trunkMat = new THREE.MeshStandardMaterial({ color: "#7a5437", roughness: 0.82 });
+
+  const path = new THREE.Mesh(new THREE.PlaneGeometry(3.6, 36), pathMat);
+  path.rotation.x = -Math.PI / 2;
+  path.position.set(0, 0.025, -4);
+  path.receiveShadow = true;
+  scene.add(path);
+
+  if (!isBeforeGate) {
+    const road = new THREE.Mesh(new THREE.PlaneGeometry(6.8, 36), roadMat);
+    road.rotation.x = -Math.PI / 2;
+    road.position.set(0, 0.018, -4);
+    road.receiveShadow = true;
+    scene.add(road);
+    for (let i = 0; i < 10; i += 1) {
+      const lane = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.012, 1.2), lineMat);
+      lane.position.set(0, 0.04, 6 - i * 3.2);
+      scene.add(lane);
+    }
+    const sidewalkMat = new THREE.MeshStandardMaterial({ color: "#d7cfbf", roughness: 0.82 });
+    [-4.6, 4.6].forEach((x) => {
+      const walk = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 36), sidewalkMat);
+      walk.rotation.x = -Math.PI / 2;
+      walk.position.set(x, 0.026, -4);
+      scene.add(walk);
+    });
+  } else {
+    for (let i = 0; i < 10; i += 1) {
+      const stone = new THREE.Mesh(new THREE.CylinderGeometry(0.75, 0.75, 0.06, 18), pathMat);
+      stone.rotation.y = i * 0.34;
+      stone.position.set(Math.sin(i * 0.6) * 0.8, 0.055, 5.5 - i * 1.25);
+      stone.receiveShadow = true;
+      scene.add(stone);
+    }
   }
+
   const gateMat = new THREE.MeshStandardMaterial({ color: "#1f2321", roughness: 0.45, metalness: 0.15 });
+  const fenceMat = new THREE.MeshStandardMaterial({ color: "#202520", roughness: 0.5, metalness: 0.12 });
+  const addFenceRail = (x: number, z: number, width: number) => {
+    const rail = new THREE.Mesh(new THREE.BoxGeometry(width, 0.08, 0.08), fenceMat);
+    rail.position.set(x, 1.45, z);
+    scene.add(rail);
+  };
+  addFenceRail(-4.9, -6.8, 4.8);
+  addFenceRail(4.9, -6.8, 4.8);
+  for (let i = -14; i <= 14; i += 1) {
+    const x = i * 0.35;
+    if (Math.abs(x) < 1.65) continue;
+    const bar = new THREE.Mesh(new THREE.BoxGeometry(0.07, 2.2, 0.07), fenceMat);
+    bar.position.set(x, 1.1, -6.8);
+    scene.add(bar);
+  }
   for (let i = -3; i <= 3; i += 1) {
     const bar = new THREE.Mesh(new THREE.BoxGeometry(0.08, 2.3, 0.08), gateMat);
-    bar.position.set(i * 0.38, 1.15, -7.2);
+    bar.position.set(i * 0.38 + (isBeforeGate ? 0 : i * 0.16), 1.15, -6.8 + (isBeforeGate ? 0 : Math.abs(i) * 0.22));
+    bar.rotation.y = isBeforeGate ? 0 : i * 0.08;
     scene.add(bar);
   }
   const rail = new THREE.Mesh(new THREE.BoxGeometry(3.1, 0.08, 0.08), gateMat);
-  rail.position.set(0, 1.55, -7.2);
+  rail.position.set(0, 1.55, -6.8);
+  rail.rotation.y = isBeforeGate ? 0 : 0.28;
   scene.add(rail);
-  const bushMat = new THREE.MeshStandardMaterial({ color: "#4f7c3e", roughness: 0.9 });
-  [-4.6, 4.6].forEach((x) => {
-    const bush = new THREE.Mesh(new THREE.SphereGeometry(1.2, 16, 10), bushMat);
-    bush.position.set(x, 0.8, -4.5);
-    scene.add(bush);
+
+  [-5.8, 5.8].forEach((x) => {
+    for (let i = 0; i < 6; i += 1) {
+      const bush = new THREE.Mesh(new THREE.SphereGeometry(0.65 + (i % 2) * 0.18, 16, 10), bushMat);
+      bush.position.set(x + Math.sin(i) * 0.45, 0.55, 5.4 - i * 2.2);
+      bush.castShadow = true;
+      scene.add(bush);
+      const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.1, 0.9, 8), trunkMat);
+      trunk.position.set(x + Math.sin(i) * 0.45, 0.35, 5.4 - i * 2.2);
+      scene.add(trunk);
+    }
   });
+}
+
+function makeParkCar() {
+  const group = new THREE.Group();
+  const bodyMat = new THREE.MeshStandardMaterial({ color: "#384e64", roughness: 0.35, metalness: 0.2 });
+  const glassMat = new THREE.MeshStandardMaterial({ color: "#a8d4e8", roughness: 0.18, metalness: 0.05, transparent: true, opacity: 0.78 });
+  const tireMat = new THREE.MeshStandardMaterial({ color: "#161615", roughness: 0.8 });
+  const body = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.65, 1.25), bodyMat);
+  body.castShadow = true;
+  group.add(body);
+  const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.25, 0.55, 1.0), glassMat);
+  cabin.position.set(-0.15, 0.5, 0);
+  group.add(cabin);
+  [[-0.78, -0.68], [0.78, -0.68], [-0.78, 0.68], [0.78, 0.68]].forEach(([x, z]) => {
+    const tire = new THREE.Mesh(new THREE.CylinderGeometry(0.23, 0.23, 0.18, 18), tireMat);
+    tire.rotation.z = Math.PI / 2;
+    tire.position.set(x, -0.24, z);
+    group.add(tire);
+  });
+  group.rotation.y = Math.PI / 2;
+  return group;
+}
+
+function makeOtherDog() {
+  const group = new THREE.Group();
+  const fur = new THREE.MeshStandardMaterial({ color: "#8a5a35", roughness: 0.82 });
+  const dark = new THREE.MeshStandardMaterial({ color: "#3f2819", roughness: 0.82 });
+  const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.34, 0.85, 8, 16), fur);
+  body.rotation.z = Math.PI / 2;
+  body.castShadow = true;
+  group.add(body);
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.32, 18, 14), fur);
+  head.position.set(0.62, 0.16, 0);
+  group.add(head);
+  const snout = new THREE.Mesh(new THREE.SphereGeometry(0.14, 12, 8), dark);
+  snout.position.set(0.9, 0.14, 0);
+  group.add(snout);
+  [-0.32, -0.1, 0.14, 0.36].forEach((x) => {
+    const leg = new THREE.Mesh(new THREE.CapsuleGeometry(0.06, 0.34, 5, 8), dark);
+    leg.position.set(x, -0.34, 0.22);
+    group.add(leg);
+    const legBack = leg.clone();
+    legBack.position.z = -0.22;
+    group.add(legBack);
+  });
+  group.rotation.y = -0.35;
+  return group;
 }
 
 function makeShelf() {
@@ -2016,7 +2154,6 @@ function GearShelf({
 
   return (
     <div className={`gear-shelf ${side ? "side" : ""}`} aria-label="현관 선반">
-      <div className="shelf-title">현관 선반</div>
       <div
         draggable={!rubyLeashed}
         className={`gear-leash ruby ${rubyLeashed ? "used" : ""}`}
@@ -2064,12 +2201,6 @@ function GearShelf({
           right: 24px;
           width: min(260px, calc(100% - 48px));
           grid-template-columns: 1fr;
-        }
-        .shelf-title {
-          grid-column: 1 / -1;
-          font-size: 0.9rem;
-          font-weight: 950;
-          color: #5f4535;
         }
         .gear-leash,
         .poop-bag-icon {
