@@ -619,6 +619,7 @@ export default function WalkQuestGame() {
               canReachEntry={phase === "excited" || dogsSitting}
               rubyCalm={rubyCalm}
               gamjaQuiet={gamjaQuiet}
+              dogsRoadside={dogsRoadside}
               onReachLiving={reachLiving}
               onReachEntry={reachEntry}
               onReachGate={reachGate}
@@ -980,6 +981,7 @@ function ThreeWalkWorld({
   canReachEntry = true,
   rubyCalm,
   gamjaQuiet,
+  dogsRoadside,
   onReachLiving,
   onReachEntry,
   onReachGate,
@@ -989,6 +991,7 @@ function ThreeWalkWorld({
   canReachEntry?: boolean;
   rubyCalm: boolean;
   gamjaQuiet: boolean;
+  dogsRoadside: boolean;
   onReachLiving?: () => void;
   onReachEntry?: () => void;
   onReachGate?: () => void;
@@ -999,13 +1002,15 @@ function ThreeWalkWorld({
   const reachedEntryRef = useRef(false);
   const rubyCalmRef = useRef(rubyCalm);
   const gamjaQuietRef = useRef(gamjaQuiet);
+  const dogsRoadsideRef = useRef(dogsRoadside);
   const outdoorPhases: Phase[] = ["garden", "gate", "walk", "pull", "poop", "run", "car", "barkingDog", "boss", "home"];
   const isOutdoor = outdoorPhases.includes(phase);
 
   useEffect(() => {
     rubyCalmRef.current = rubyCalm;
     gamjaQuietRef.current = gamjaQuiet;
-  }, [rubyCalm, gamjaQuiet]);
+    dogsRoadsideRef.current = dogsRoadside;
+  }, [rubyCalm, gamjaQuiet, dogsRoadside]);
 
   useEffect(() => {
     const mount = mountRef.current;
@@ -1173,6 +1178,10 @@ function ThreeWalkWorld({
       if (phase === "pull" || phase === "run") {
         dogGroup.position.z = pos.z - 4.1 - Math.abs(Math.sin(clock.elapsedTime * 8)) * 0.35;
       }
+      if (phase === "car" && dogsRoadsideRef.current) {
+        dogGroup.position.x = 2.75;
+        dogGroup.position.z = pos.z - 2.9;
+      }
       if (phase === "car") {
         car.position.x = 0.15;
         car.position.z = -12 + Math.min(clock.elapsedTime * 1.15, 9.8);
@@ -1230,7 +1239,7 @@ function ThreeWalkWorld({
       gamjaSitMap.dispose();
       mount.removeChild(renderer.domElement);
     };
-  }, [calledDogs, canReachEntry, isOutdoor, onReachEntry, onReachGate, onReachLiving, phase]);
+  }, [calledDogs, canReachEntry, dogsRoadside, isOutdoor, onReachEntry, onReachGate, onReachLiving, phase]);
 
   return (
     <div className="three-world" ref={mountRef} aria-label="?? ??">
@@ -1974,7 +1983,8 @@ function SceneContent(props: {
   if (p.phase === "intro") {
     return <CenterCard title={"루비&감자\n산책시키기"} button="산책 START" onClick={p.start} image={dog.intro} variant="intro" />;
   }
-  if (["upstairs", "living", "excited", "garden", "pull", "barkingDog", "boss"].includes(p.phase)) return null;
+  if (p.phase === "pull") return <PullWarning timeLeft={p.timeLeft} />;
+  if (["upstairs", "living", "excited", "garden", "barkingDog", "boss"].includes(p.phase)) return null;
   if (p.phase === "leashPrep") return <GearShelf rubyLeashed={p.rubyLeashed} gamjaLeashed={p.gamjaLeashed} hasPoopBag={p.hasPoopBag} side />;
   if (p.phase === "leashMission") {
     return <><GearShelf rubyLeashed={p.rubyLeashed} gamjaLeashed={p.gamjaLeashed} hasPoopBag={p.hasPoopBag} side /><LeashTargets rubyLeashed={p.rubyLeashed} gamjaLeashed={p.gamjaLeashed} finish={p.finishLeash} /></>;
@@ -2023,18 +2033,51 @@ function CarSafetyDock({
   return (
     <div className="car-safety-ui">
       <div className={dogsRoadside ? "roadside-grass done" : "roadside-grass"} onDragOver={(event) => event.preventDefault()} onDrop={dropDogs}>
-        <span>{dogsRoadside ? "OK" : "풀쪽"}</span>
+        <span>{dogsRoadside ? "이동 완료" : "풀쪽"}</span>
       </div>
-      <div className="roadside-dogs" draggable onDragStart={(event) => { event.dataTransfer.effectAllowed = "move"; event.dataTransfer.setData("text/plain", "dogs-roadside"); }}>
-        <Image src={dog.ruby.back} alt="Ruby" width={82} height={92} />
-        <Image src={dog.gamja.back} alt="Gamja" width={66} height={74} />
+      <div className={dogsRoadside ? "roadside-drag-source moved" : "roadside-drag-source"} draggable onDragStart={(event) => { event.dataTransfer.effectAllowed = "move"; event.dataTransfer.setData("text/plain", "dogs-roadside"); }}>
+        <span>루감이</span>
       </div>
       <style jsx>{`
         .car-safety-ui { position: absolute; z-index: 22; inset: 0; pointer-events: none; }
         .roadside-grass { position: absolute; right: 26px; top: 31%; width: 142px; height: 170px; border-radius: 28px; display: grid; place-items: center; font-weight: 950; color: #fffde9; border: 2px dashed rgba(255,255,255,0.78); background: radial-gradient(circle at 28% 35%, rgba(255,255,255,0.22), transparent 26%), linear-gradient(135deg, rgba(67, 132, 58, 0.82), rgba(133, 184, 92, 0.86)); box-shadow: 0 18px 40px rgba(23, 77, 36, 0.22); pointer-events: auto; }
         .roadside-grass.done { border-style: solid; background: linear-gradient(135deg, rgba(62, 136, 54, 0.92), rgba(112, 184, 81, 0.92)); }
-        .roadside-dogs { position: absolute; left: 50%; bottom: 118px; display: flex; align-items: end; gap: 8px; cursor: grab; filter: drop-shadow(0 18px 16px rgba(0,0,0,0.24)); transform: translateX(-50%); pointer-events: auto; }
-        .roadside-dogs :global(img) { object-fit: contain; }
+        .roadside-drag-source { position: absolute; left: 50%; bottom: 86px; width: 230px; height: 180px; transform: translateX(-50%); cursor: grab; pointer-events: auto; border-radius: 44px; background: rgba(255,255,255,0.01); }
+        .roadside-drag-source span { position: absolute; left: 50%; bottom: -16px; transform: translateX(-50%); padding: 6px 12px; border-radius: 999px; background: rgba(255, 250, 242, 0.88); color: #4b3322; font-weight: 950; box-shadow: 0 8px 18px rgba(0,0,0,0.12); }
+        .roadside-drag-source.moved { display: none; }
+      `}</style>
+    </div>
+  );
+}
+
+function PullWarning({ timeLeft }: { timeLeft: number | null }) {
+  return (
+    <div className="pull-warning">
+      <b>루비가 신나서 줄을 당겨요!</b>
+      <span><strong>천천히</strong> 라고 입력해 주세요.</span>
+      {timeLeft !== null && <small>{timeLeft}s</small>}
+      <style jsx>{`
+        .pull-warning {
+          position: absolute;
+          z-index: 25;
+          left: 50%;
+          top: 50%;
+          transform: translate(-50%, -50%);
+          display: grid;
+          gap: 8px;
+          min-width: min(430px, calc(100vw - 56px));
+          padding: 20px 24px;
+          border-radius: 24px;
+          text-align: center;
+          color: #683034;
+          background: linear-gradient(180deg, rgba(255, 226, 226, 0.96), rgba(255, 198, 205, 0.94));
+          border: 2px solid rgba(210, 105, 118, 0.36);
+          box-shadow: 0 24px 54px rgba(94, 42, 44, 0.28);
+          pointer-events: none;
+        }
+        b { font-size: clamp(1.1rem, 2.2vw, 1.55rem); }
+        strong { display: inline-block; padding: 2px 10px 4px; border-radius: 999px; background: #fff9ec; color: #bf333e; font-size: 1.18em; box-shadow: 0 8px 18px rgba(156, 55, 65, 0.18); }
+        small { font-weight: 950; color: #a73d45; }
       `}</style>
     </div>
   );
@@ -2345,9 +2388,12 @@ function PoopTools({
             fill
             sizes="360px"
           />
+          {flashImage === "dirtyHand" && (
+            <div className="flash-caption">나뭇잎이 너무 작아요! 손에 묻어버렸어요...</div>
+          )}
         </div>
       )}
-      <div className="poop-dialog">
+      <div className={step === "sockReady" ? "poop-dialog normal" : "poop-dialog danger"}>
         {step === "ask" && (
           <>
             <b>{"주의! 감자가 똥을 쌌어요."}</b>
@@ -2392,7 +2438,7 @@ function PoopTools({
             <b>{"어쩔 수 없다... 양말뿐인건가..?"}</b>
             <div className="poop-actions">
               <button onClick={() => choose("sock")}>{"양말 벗기"}</button>
-              <button onClick={() => setMessage("그냥 가면 또 걸릴 것 같아요. 치워야겠어요..")} >{"그냥 가자"}</button>
+              <button onClick={() => { setGuardVisible(true); setMessage("그냥 가려다 경비 아저씨한테 또 걸렸어요! 치워야겠네요.."); }} >{"그냥 가자"}</button>
             </div>
           </>
         )}
@@ -2409,11 +2455,14 @@ function PoopTools({
         .poop-ui { position: absolute; z-index: 24; inset: 0; pointer-events: none; }
         .poop-hotspot { position: absolute; left: 57%; bottom: 148px; width: 82px; height: 62px; display: grid; place-items: center; pointer-events: auto; }
         .poop-pile { display: block; width: 46px; height: 36px; border-radius: 50% 50% 46% 46%; background: radial-gradient(circle at 50% 16%, #7a4a24 0 9px, transparent 10px), radial-gradient(circle at 34% 56%, #6a3b1d 0 14px, transparent 15px), radial-gradient(circle at 62% 60%, #8a562b 0 15px, transparent 16px); filter: drop-shadow(0 5px 5px rgba(0,0,0,0.18)); }
-        .leaf-grass { position: absolute; right: 36px; top: 42%; width: 116px; height: 132px; border-radius: 28px; display: grid; place-items: center; background: linear-gradient(135deg, rgba(78,142,59,0.72), rgba(139,190,87,0.72)); pointer-events: auto; }
+        .leaf-grass { position: absolute; right: 82px; bottom: 136px; width: 78px; height: 54px; display: grid; place-items: center; pointer-events: auto; }
         .guard-warning { position: absolute; left: 18px; bottom: 122px; width: min(270px, 34vw); aspect-ratio: 1; filter: drop-shadow(0 16px 24px rgba(48, 28, 18, 0.24)); pointer-events: none; }
         .guard-warning :global(img), .poop-flash :global(img) { object-fit: contain; }
-        .poop-flash { position: absolute; left: 50%; top: 50%; width: min(360px, 54vw); aspect-ratio: 1.45; transform: translate(-50%, -50%); z-index: 4; filter: drop-shadow(0 20px 28px rgba(48, 28, 18, 0.28)); pointer-events: none; animation: flash-pop 0.2s ease-out; }
-        .poop-dialog { position: absolute; left: 50%; bottom: 32px; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px; min-width: min(420px, calc(100vw - 64px)); padding: 16px 18px; border-radius: 18px; background: linear-gradient(180deg, rgba(255,229,229,0.97), rgba(255,205,211,0.95)); border: 2px solid rgba(224, 118, 128, 0.34); color: #5a2c2f; box-shadow: 0 16px 38px rgba(0,0,0,0.22); font-weight: 950; pointer-events: auto; }
+        .poop-flash { position: absolute; left: 50%; top: 46%; width: min(360px, 54vw); aspect-ratio: 1.45; transform: translate(-50%, -50%); z-index: 4; filter: drop-shadow(0 20px 28px rgba(48, 28, 18, 0.28)); pointer-events: none; animation: flash-pop 0.2s ease-out; }
+        .flash-caption { position: absolute; left: 50%; bottom: -48px; transform: translateX(-50%); min-width: min(430px, calc(100vw - 64px)); padding: 12px 16px; border-radius: 18px; background: linear-gradient(180deg, rgba(255,226,226,0.98), rgba(255,201,207,0.96)); border: 2px solid rgba(224, 118, 128, 0.34); color: #5a2c2f; font-weight: 950; text-align: center; box-shadow: 0 16px 32px rgba(94,42,44,0.24); }
+        .poop-dialog { position: absolute; left: 50%; bottom: 32px; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px; min-width: min(420px, calc(100vw - 64px)); padding: 16px 18px; border-radius: 18px; box-shadow: 0 16px 38px rgba(0,0,0,0.22); font-weight: 950; pointer-events: auto; }
+        .poop-dialog.danger { background: linear-gradient(180deg, rgba(255,229,229,0.97), rgba(255,205,211,0.95)); border: 2px solid rgba(224, 118, 128, 0.34); color: #5a2c2f; }
+        .poop-dialog.normal { background: linear-gradient(180deg, rgba(255,250,242,0.96), rgba(246,229,201,0.94)); border: 2px solid rgba(104, 77, 52, 0.2); color: #4b3322; }
         .poop-dialog b { font-size: 1.05rem; }
         .poop-actions, .bag-check, .tool-row { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; }
         .poop-actions button { min-width: 96px; padding: 10px 16px; border-radius: 999px; border: 2px solid rgba(104, 77, 52, 0.34); background: linear-gradient(180deg, #fff7e8, #efd4a5); color: #4b3322; font-weight: 950; box-shadow: 0 8px 18px rgba(65,43,25,0.14); }
@@ -2421,7 +2470,7 @@ function PoopTools({
         .bag-chip, .drag-chip { cursor: grab; width: 76px; height: 76px; border-radius: 20px; display: grid; place-items: center; background: rgba(255,252,244,0.95); border: 1px solid rgba(122,89,58,0.2); box-shadow: 0 12px 28px rgba(59,45,30,0.18); pointer-events: auto; font-size: 2.2rem; }
         .image-chip { overflow: hidden; }
         .image-chip :global(img) { object-fit: contain; border-radius: 14px; }
-        .leaf.image-chip { width: 64px; height: 54px; }
+        .leaf.image-chip { width: 64px; height: 50px; background: transparent; border: 0; box-shadow: 0 8px 14px rgba(52, 70, 30, 0.12); }
         @keyframes flash-pop {
           from { opacity: 0; transform: translate(-50%, -50%) scale(0.86); }
           to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
