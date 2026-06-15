@@ -36,26 +36,30 @@ const dog = {
   ruby: {
     call: "/ruby-gamja/custom/ruby-come.png",
     hop: "/ruby-gamja/custom/ruby-hop-new.png",
-    stairs: "/ruby-gamja/cutouts-v2/ruby-stairs.png",
+    stairs: "/ruby-gamja/custom/ruby-lie-stairs.png",
     sleep: "/ruby-gamja/custom/ruby-lie-stairs.png",
-    sit: "/ruby-gamja/cutouts-v2/ruby-sit.png",
-    walk: "/ruby-gamja/cutouts-v2/ruby-walk.png",
-    alert: "/ruby-gamja/cutouts-v2/ruby-alert.png",
-    run: "/ruby-gamja/cutouts-v2/ruby-run.png",
-    heart: "/ruby-gamja/cutouts-v2/ruby-heart.png",
+    sit: "/ruby-gamja/custom/ruby-gate-sit.png",
+    gateSit: "/ruby-gamja/custom/ruby-gate-sit.png",
+    walk: "/ruby-gamja/custom/ruby-back-walk.png",
+    back: "/ruby-gamja/custom/ruby-back-walk.png",
+    alert: "/ruby-gamja/custom/ruby-gate-sit.png",
+    run: "/ruby-gamja/custom/ruby-back-walk.png",
+    heart: "/ruby-gamja/custom/ruby-come.png",
   },
   gamja: {
     call: "/ruby-gamja/custom/gamja-come.png",
     hop: "/ruby-gamja/custom/gamja-hop-new.png",
-    stairs: "/ruby-gamja/cutouts-v3/gamja-stairs.png",
+    stairs: "/ruby-gamja/custom/gamja-lie-stairs.png",
     sleep: "/ruby-gamja/custom/gamja-lie-stairs.png",
-    sit: "/ruby-gamja/cutouts-v3/gamja-sit.png",
-    walk: "/ruby-gamja/cutouts-v3/gamja-walk.png",
-    alert: "/ruby-gamja/cutouts-v3/gamja-alert.png",
-    run: "/ruby-gamja/cutouts-v3/gamja-run.png",
+    sit: "/ruby-gamja/custom/gamja-gate-quiet.png",
+    gateQuiet: "/ruby-gamja/custom/gamja-gate-quiet.png",
+    walk: "/ruby-gamja/custom/gamja-back-walk.png",
+    back: "/ruby-gamja/custom/gamja-back-walk.png",
+    alert: "/ruby-gamja/custom/gamja-gate-quiet.png",
+    run: "/ruby-gamja/custom/gamja-back-walk.png",
     pee: "/ruby-gamja/cutouts-v3/gamja-pee.png",
     poop: "/ruby-gamja/cutouts-v3/gamja-poop.png",
-    heart: "/ruby-gamja/cutouts-v3/gamja-heart.png",
+    heart: "/ruby-gamja/custom/gamja-come.png",
   },
   intro: "/ruby-gamja/custom/intro-ruby-gamja.jpg",
   duo: "/ruby-gamja/custom/intro-ruby-gamja.jpg",
@@ -108,35 +112,35 @@ function playSound(name: SoundName) {
   window.setTimeout(() => void ctx.close(), 520);
 }
 
-const callWords = ["루비", "감자", "루감"];
-const walkWords = ["산책", "나가자", "나갈까"];
+const callWords = ["\uB8E8\uBE44", "\uAC10\uC790", "\uB8E8\uAC10"];
+const walkWords = ["\uC0B0\uCC45", "\uB098\uAC00\uC790", "\uB098\uAC08\uAE4C"];
 
 const phaseInfo: Record<Phase, { scene: string; mission: string; bg: string }> = {
-  intro: { scene: "우리집", mission: "Start 버튼을 눌러 산책을 시작하세요.", bg: "home" },
-  upstairs: { scene: "2층 계단", mission: "계단을 내려가 1층으로 이동하세요. 1층으로 내려가 볼까요?", bg: "stairs" },
-  living: { scene: "1층 거실", mission: "루비 또는 감자를 부르고, 산책 말을 해보세요.", bg: "living" },
-  excited: { scene: "거실", mission: "강아지들이 신났어요. 이제 목줄을 준비하세요.", bg: "living" },
-  leashPrep: { scene: "현관", mission: "먼저 앉아를 입력/클릭한 뒤 목줄 미션을 시작하세요.", bg: "entry" },
-  leashMission: { scene: "현관", mission: "5초 안에 선반의 목줄을 루비와 감자에게 채워주세요.", bg: "entry" },
-  leashZoom: { scene: "목줄 확대", mission: "목줄을 목 고리까지 옮겨 채우세요.", bg: "entry" },
-  poopBag: { scene: "현관문", mission: "필요하면 봉투를 가방에 넣고 정원으로 나가세요.", bg: "entry" },
-  garden: { scene: "정원", mission: "정원을 지나 대문 앞으로 가세요. 대문 밖으로 나가 본격적인 산책 해볼까요?", bg: "garden" },
-  gate: { scene: "대문 앞", mission: "루비는 앉아, 감자는 조용히 해. 진정 후 대문을 여세요.", bg: "gate" },
-  walk: { scene: "늘 가던 산책길", mission: "루비와 감자를 따라 안전하게 걸으세요.", bg: "street" },
-  pull: { scene: "산책길", mission: "루비가 당겨요. 5초 안에 천천히를 클릭하세요.", bg: "street" },
-  poop: { scene: "산책길", mission: "감자 똥을 처리하세요.", bg: "street" },
-  run: { scene: "산책길", mission: "스페이스바를 빠르게 눌러 속도를 따라가세요.", bg: "street" },
-  car: { scene: "공원 산책길", mission: "멈춰 → 풀밭으로 이동 → 기다려 순서로 처리하세요.", bg: "road" },
-  barkingDog: { scene: "담장 옆", mission: "다른 집 강아지가 짖어요. 5초 안에 무시해를 클릭하세요.", bg: "fence" },
-  boss: { scene: "마지막 보스", mission: "풀려 있는 강아지가 달려와요. 5초 안에 블로킹!", bg: "fence" },
-  home: { scene: "집 앞", mission: "집에 도착했어요. 마지막으로 문을 열고 들어가세요.", bg: "gate" },
-  clear: { scene: "산책 완료", mission: "산책 완료! 루비와 감자가 행복해 보여요.", bg: "home" },
-  fail: { scene: "산책 실패", mission: "산책 실패... 다시 도전해볼까요?", bg: "home" },
+  intro: { scene: "\uC624\uD504\uB2DD", mission: "Start \uBC84\uD2BC\uC744 \uB20C\uB7EC \uC0B0\uCC45\uC744 \uC2DC\uC791\uD558\uC138\uC694.", bg: "home" },
+  upstairs: { scene: "2\uCE35 \uACC4\uB2E8", mission: "1\uCE35\uC73C\uB85C \uB0B4\uB824\uAC00 \uBCFC\uAE4C\uC694? \uBC29\uD5A5\uD0A4\uB85C \uACC4\uB2E8\uC744 \uB0B4\uB824\uAC00\uC138\uC694.", bg: "stairs" },
+  living: { scene: "1\uCE35 \uAC70\uC2E4", mission: "\uB8E8\uBE44, \uAC10\uC790, \uB8E8\uAC10\uC774\uB77C\uACE0 \uBD88\uB7EC\uBCF4\uC138\uC694.", bg: "living" },
+  excited: { scene: "\uAC70\uC2E4", mission: "\uAC15\uC544\uC9C0\uB4E4\uC774 \uC2E0\uB098\uC11C \uB530\uB77C\uC640\uC694. \uD604\uAD00\uCABD\uC73C\uB85C \uAC00\uBCFC\uAE4C\uC694?", bg: "living" },
+  leashPrep: { scene: "\uD604\uAD00", mission: "\uC0B0\uCC45\uC774\uB77C\uB294 \uB9D0\uC5D0 \uD765\uBD84\uD55C \uAC15\uC544\uC9C0\uB4E4\uC744 \uC549\uD600\uBCFC\uAE4C\uC694?", bg: "entry" },
+  leashMission: { scene: "\uD604\uAD00", mission: "5\uCD08 \uC548\uC5D0 \uC120\uBC18\uC758 \uBAA9\uC904\uC744 \uB8E8\uBE44\uC640 \uAC10\uC790\uC5D0\uAC8C \uB4DC\uB798\uADF8\uD558\uC138\uC694.", bg: "entry" },
+  leashZoom: { scene: "\uBAA9\uC904", mission: "\uBAA9\uC904\uC744 \uCC44\uC6CC\uC8FC\uC138\uC694.", bg: "entry" },
+  poopBag: { scene: "\uD604\uAD00\uBB38", mission: "\uBAA9\uC904 \uCC29\uC6A9 \uC644\uB8CC! \uC78A\uC740 \uBB3C\uAC74\uC774 \uC788\uC9C0 \uC54A\uC740\uC9C0 \uD655\uC778\uD558\uACE0 \uB098\uAC00\uC138\uC694.", bg: "entry" },
+  garden: { scene: "\uC815\uC6D0", mission: "\uC815\uC6D0\uC744 \uC9C0\uB098 \uB300\uBB38 \uC55E\uC73C\uB85C \uAC00\uC138\uC694. \uB300\uBB38 \uBC16\uC73C\uB85C \uB098\uAC00 \uBCF8\uACA9\uC801\uC778 \uC0B0\uCC45 \uD574\uBCFC\uAE4C\uC694?", bg: "garden" },
+  gate: { scene: "\uB300\uBB38 \uC55E", mission: "\uB300\uBB38\uC744 \uC5F4\uAE30 \uC804, \uB8E8\uBE44\uB294 \uC549\uC544 \uAC10\uC790\uB294 \uC870\uC6A9\uD788 \uD574\uC57C \uD574\uC694.", bg: "gate" },
+  walk: { scene: "\uC0B0\uCC45\uAE38", mission: "\uB8E8\uBE44\uC640 \uAC10\uC790\uB97C \uB530\uB77C \uC548\uC804\uD558\uAC8C \uAC78\uC5B4\uAC00\uC138\uC694.", bg: "street" },
+  pull: { scene: "\uC0B0\uCC45\uAE38", mission: "\uB8E8\uBE44\uAC00 \uB2F9\uACA8\uC694. 7\uCD08 \uC548\uC5D0 \uCC9C\uCC9C\uD788\uB77C\uACE0 \uC785\uB825\uD558\uC138\uC694.", bg: "street" },
+  poop: { scene: "\uC0B0\uCC45\uAE38", mission: "\uAC10\uC790\uAC00 \uB625\uC744 \uC4CC\uC5B4\uC694. \uD3AB\uD2F0\uCF13\uC744 \uC9C0\uCF1C\uBCF4\uC138\uC694.", bg: "street" },
+  run: { scene: "\uC0B0\uCC45\uAE38", mission: "\uC2A4\uD398\uC774\uC2A4\uBC14\uB97C \uBE60\uB974\uAC8C \uB20C\uB7EC \uC18D\uB3C4\uB97C \uB530\uB77C\uAC00\uC138\uC694.", bg: "street" },
+  car: { scene: "\uACF5\uC6D0 \uC0B0\uCC45\uAE38", mission: "\uC18D\uB3C4\uB97C \uB530\uB77C\uC7A1\uC558\uC5B4\uC694! \uADF8\uB7F0\uB370 \uC55E\uC5D0 \uCC28\uAC00 \uC624\uB124\uC694! \uC5BC\uB978 \uD53C\uD574\uC8FC\uC138\uC694!!", bg: "road" },
+  barkingDog: { scene: "\uAE38\uAC00 \uC9D1", mission: "\uC815\uC6D0 \uC548 \uAC15\uC544\uC9C0\uAC00 \uC9D6\uC5B4\uC694. 5\uCD08 \uC548\uC5D0 \uBB34\uC2DC\uD574\uB77C\uACE0 \uC785\uB825\uD558\uC138\uC694.", bg: "fence" },
+  boss: { scene: "\uB9C8\uC9C0\uB9C9 \uBCF4\uC2A4", mission: "\uD480\uB824 \uC788\uB294 \uB2E4\uB978 \uAC15\uC544\uC9C0\uAC00 \uAC78\uC5B4\uC640\uC694. 5\uCD08 \uC548\uC5D0 \uBE14\uB85C\uD0B9!", bg: "fence" },
+  home: { scene: "\uC9D1 \uC55E", mission: "\uC9D1\uC5D0 \uB3C4\uCC29\uD588\uC5B4\uC694.", bg: "gate" },
+  clear: { scene: "\uC0B0\uCC45 \uC644\uB8CC", mission: "\uC0B0\uCC45 \uC644\uB8CC! \uB8E8\uBE44\uC640 \uAC10\uC790\uAC00 \uD589\uBCF5\uD574 \uBCF4\uC5EC\uC694.", bg: "home" },
+  fail: { scene: "\uC0B0\uCC45 \uC2E4\uD328", mission: "\uC0B0\uCC45 \uC2E4\uD328... \uB2E4\uC2DC \uB3C4\uC804\uD574\uBCFC\uAE4C\uC694?", bg: "home" },
 };
 
 export default function WalkQuestGame() {
   const [phase, setPhase] = useState<Phase>("intro");
-  const [message, setMessage] = useState("루비와 감자가 산책을 기다리고 있어요.");
+  const [message, setMessage] = useState("\uB8E8\uBE44\uC640 \uAC10\uC790\uAC00 \uC0B0\uCC45\uC744 \uAE30\uB2E4\uB9AC\uACE0 \uC788\uC5B4\uC694.");
   const [input, setInput] = useState("");
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const [falls, setFalls] = useState(0);
@@ -159,7 +163,7 @@ export default function WalkQuestGame() {
   const [hearts, setHearts] = useState(false);
 
   const info = phaseInfo[phase];
-  const needsInput = ["living", "leashPrep"].includes(phase);
+  const needsInput = ["living", "leashPrep", "pull", "car", "barkingDog", "boss"].includes(phase);
   const showDogs = false;
   const useEmptyHome = (phase === "living" && calledDogs) || phase === "excited";
 
@@ -253,19 +257,21 @@ export default function WalkQuestGame() {
           playSound("fall");
           if (nextFalls >= 3) {
             setPhase("fail");
-            setMessage("5초 안에 목줄을 못 채워 루비와 감자가 벌떡 일어났어요. 3번 넘어져서 오늘 산책은 실패예요.");
+            setMessage("5초 안에 목줄을 못 채워 강아지들이 다시 뛰었어요. 3번 넘어져서 오늘 산책은 실패예요.");
           } else {
             setPhase("leashPrep");
-            setMessage(`5초 안에 목줄을 못 채워 루비와 감자가 벌떡 일어났어요. 당황해서 넘어졌어요. 넘어짐 ${nextFalls}/3. 다시 앉아부터 해볼까요?`);
+            setMessage("5초 안에 목줄을 못 채워 강아지들이 다시 일어났어요. 흥분한 강아지들에게 밀려 넘어졌어요. 넘어짐 " + nextFalls + "/3. 다시 앉아부터 해볼까요?");
           }
         } else if (phase === "pull") {
-          fall("루비가 앞으로 확 당겼어요.");
+          fall("7초 안에 천천히라고 말하지 못해 넘어졌어요.");
+        } else if (phase === "car") {
+          fall("차를 피하는 동작이 늦어 넘어졌어요.");
         } else if (phase === "barkingDog") {
-          fall("다른 집 강아지에게 반응하다가 줄이 꼬였어요.");
+          fall("5초 안에 무시해라고 말하지 못해 넘어졌어요.");
         } else if (phase === "boss") {
-          hardFail("블로킹이 늦었어요. 루비/감자가 위험해져서 바로 실패입니다.");
+          hardFail("블로킹 실패. 루비와 감자가 위험해져 바로 실패예요.");
         } else if (phase === "run") {
-          fall("속도를 못 따라가서 발이 꼬였어요.");
+          fall("뛰는 속도를 따라잡지 못해 넘어졌어요.");
         }
       }, 0);
       return () => window.clearTimeout(timeout);
@@ -280,15 +286,16 @@ export default function WalkQuestGame() {
     if (phase !== "walk") return;
     const peeTimer = window.setInterval(() => {
       setPeePulse(true);
-      setMessage("감자가 멈춰서 오줌으로 영역 표시 중... 루비는 벌써 앞으로 가고 싶어 해요.");
+      setMessage("감자가 잠깐 멈춰 영역 표시 중... 루비가 조금 기다려 주고 있어요.");
       window.setTimeout(() => setPeePulse(false), 2400);
     }, 15000);
 
+    const eventDelay = walkStep === 1 ? 15000 : 3600;
     const eventTimer = window.setTimeout(() => {
       if (walkStep === 0) {
         setPhase("pull");
-        setTimeLeft(5);
-        setMessage("루비가 신나서 앞으로 당겨요. 천천히!");
+        setTimeLeft(7);
+        setMessage("루비가 줄을 당기기 시작했어요. 7초 안에 천천히라고 말하세요!");
       } else if (walkStep === 1) {
         setPhase("poop");
         setPoopStep("ask");
@@ -298,26 +305,26 @@ export default function WalkQuestGame() {
         setPhase("run");
         setRunTaps(0);
         setTimeLeft(8);
-        setMessage("날씨가 좋네요. 한번 뛰어볼까요? 스페이스바를 빠르게!");
+        setMessage("날씨가 좋아요. 한번 뛰어볼까요? 스페이스바를 빠르게 눌러주세요!");
       } else if (walkStep === 3) {
         setPhase("barkingDog");
         setTimeLeft(5);
-        setMessage("담장 안쪽 강아지가 짖어요. 루비와 감자도 반응하려고 해요.");
+        setMessage("길가 집 정원에서 다른 강아지가 짖어요. 5초 안에 무시해라고 말하세요.");
       } else if (walkStep === 4) {
         setPhase("boss");
         setTimeLeft(5);
-        setMessage("풀려 있는 강아지가 달려옵니다. 루감이를 지켜야 해요!");
+        setMessage("풀려 있는 다른 강아지가 우리 쪽으로 걸어와요. 5초 안에 블로킹이라고 말하세요!");
       } else {
         setPhase("home");
-        setMessage("익숙한 집 앞에 도착했어요.");
+        setMessage("집 앞에 거의 도착했어요.");
       }
-    }, 3600);
+    }, eventDelay);
 
     return () => {
       window.clearInterval(peeTimer);
       window.clearTimeout(eventTimer);
     };
-  }, [hasPoopBag, phase, walkStep]);
+  }, [phase, walkStep]);
 
   useEffect(() => {
     if (phase !== "run") return;
@@ -327,11 +334,11 @@ export default function WalkQuestGame() {
       setRunTaps((current) => {
         const next = current + 1;
         if (next >= 18) {
-          setTimeLeft(null);
           setPhase("car");
+          setTimeLeft(10);
           setCarStopped(false);
           setDogsRoadside(false);
-          showHearts("속도를 따라잡았어요! 그런데 15초쯤 지나 차가 보입니다.");
+          showHearts("속도를 따라잡았어요! 그런데 앞에 차가 오네요! 얼른 피해주세요!!");
         }
         return next;
       });
@@ -353,39 +360,75 @@ export default function WalkQuestGame() {
       if (callWords.some((word) => command.includes(word))) {
         setCalledDogs(true);
         playSound("happy");
-        showHearts("루비와 감자가 내 앞에 왔어요. 산책가자고 말해볼까요?");
+        showHearts("\uB8E8\uBE44\uC640 \uAC10\uC790\uAC00 \uB0B4 \uC55E\uC73C\uB85C \uB2EC\uB824\uC654\uC5B4\uC694. \uC0B0\uCC45\uAC00\uC790\uACE0 \uB9D0\uD574\uBCFC\uAE4C\uC694?");
       } else if (walkWords.some((word) => command.includes(word))) {
         setPhase("excited");
-        showHearts("루비와 감자가 콩콩 뛰기 시작했어요! 목줄과 똥봉투가 있는 현관쪽으로 가볼까요?");
+        showHearts("\uB8E8\uBE44\uC640 \uAC10\uC790\uAC00 \uCF69\uCF69 \uB6F0\uAE30 \uC2DC\uC791\uD588\uC5B4\uC694. \uBAA9\uC904\uACFC \uB625\uBD09\uD22C\uAC00 \uC788\uB294 \uD604\uAD00\uCABD\uC73C\uB85C \uAC00\uBCFC\uAE4C\uC694?");
       } else {
-        setMessage("아직 반응이 약해요. 이름을 부르거나 산책 말을 해보세요.");
+        setMessage("\uC544\uC9C1 \uBC18\uC751\uC774 \uC57D\uD574\uC694. \uB8E8\uBE44, \uAC10\uC790, \uB8E8\uAC10 \uB610\uB294 \uC0B0\uCC45\uAC00\uC790\uB77C\uACE0 \uB9D0\uD574\uBCF4\uC138\uC694.");
       }
       return;
     }
     if (phase === "excited") {
-      if (command.includes("앉아")) {
-        setDogsSitting(true);
-        showHearts("루비와 감자가 콩콩 뛰다가 잠깐 앉았어요. 이제 방향키로 현관 문 쪽으로 걸어가세요.");
-      } else {
-        setMessage("너무 신나서 콩콩 뛰고 있어요. 먼저 앉아라고 말해 진정시켜 주세요.");
-      }
+      setMessage("\uAC15\uC544\uC9C0\uB4E4\uC774 \uC2E0\uB098\uC11C \uB530\uB77C\uC624\uACE0 \uC788\uC5B4\uC694. \uD604\uAD00\uAE4C\uC9C0 \uAC00\uC11C \uC549\uC544\uB77C\uACE0 \uB9D0\uD574\uC8FC\uC138\uC694.");
       return;
     }
     if (phase === "leashPrep") {
-      if (command.includes("앉아")) {
+      if (command.includes("\uC549\uC544")) {
         setDogsSitting(true);
         setPhase("leashMission");
         setTimeLeft(5);
         playSound("leash");
-        setMessage("강아지들이 차분히 앉았어요. 다시 일어나기 전에 빨리 목줄을 채워봐요. 목줄을 강아지에게 드래그 하면 목줄을 채울 수 있어요!");
-      } else setMessage("목줄을 채우기 전에는 먼저 앉아를 말해야 해요.");
+        setMessage("\uAC15\uC544\uC9C0\uB4E4\uC774 \uCC28\uBD84\uD788 \uC549\uC558\uC5B4\uC694. \uB2E4\uC2DC \uC77C\uC5B4\uB098\uAE30 \uC804\uC5D0 \uBE68\uB9AC \uBAA9\uC904\uC744 \uCC44\uC6CC\uBD10\uC694. \uBAA9\uC904\uC744 \uAC15\uC544\uC9C0\uC5D0\uAC8C \uB4DC\uB798\uADF8 \uD558\uBA74 \uBAA9\uC904\uC744 \uCC44\uC6B8 \uC218 \uC788\uC5B4\uC694!");
+      } else {
+        setMessage("\uD604\uAD00\uC5D0 \uB3C4\uCC29\uD588\uC5B4\uC694. \uC0B0\uCC45\uC774\uB77C\uB294 \uB9D0\uC5D0 \uD765\uBD84\uD55C \uAC15\uC544\uC9C0\uB4E4\uC744 \uC549\uD600\uBCFC\uAE4C\uC694?");
+      }
+      return;
+    }
+    if (phase === "pull") {
+      if (command.includes("\uCC9C\uCC9C\uD788")) {
+        setTimeLeft(null);
+        resumeWalk("\uB8E8\uBE44\uAC00 \uC18D\uB3C4\uB97C \uC904\uC600\uC5B4\uC694. \uC774\uC81C 15\uCD08 \uC815\uB3C4 \uB354 \uAC78\uC5B4\uAC00\uC694.");
+      } else {
+        setMessage("\uB8E8\uBE44\uAC00 \uACC4\uC18D \uB2F9\uACA8\uC694. 7\uCD08 \uC548\uC5D0 \uCC9C\uCC9C\uD788\uB77C\uACE0 \uC785\uB825\uD558\uC138\uC694!");
+      }
+      return;
+    }
+    if (phase === "car") {
+      if (!carStopped && command.includes("\uBA48\uCDB0")) {
+        playSound("car");
+        setCarStopped(true);
+        setMessage("\uBA48\uCDB0\uC5B4\uC694. \uB8E8\uBE44\uC640 \uAC10\uC790\uB97C \uAE38 \uC606 \uD480 \uCABD\uC73C\uB85C \uC62E\uAE34 \uB2E4\uC74C \uAE30\uB2E4\uB824\uB77C\uACE0 \uC785\uB825\uD558\uC138\uC694.");
+      } else if (carStopped && dogsRoadside && command.includes("\uAE30\uB2E4\uB824")) {
+        finishCar();
+      } else if (carStopped && !dogsRoadside) {
+        setMessage("\uBA3C\uC800 \uB8E8\uBE44\uC640 \uAC10\uC790 \uC0AC\uC9C4\uC744 \uAE38 \uC606 \uD480 \uCABD\uC73C\uB85C \uC62E\uACA8\uC8FC\uC138\uC694.");
+      } else {
+        setMessage("\uCC28\uAC00 \uB2E4\uAC00\uC640\uC694. \uBA3C\uC800 \uBA48\uCDB0\uB77C\uACE0 \uC785\uB825\uD558\uC138\uC694!");
+      }
+      return;
+    }
+    if (phase === "barkingDog") {
+      if (command.includes("\uBB34\uC2DC\uD574")) {
+        ignoreDog();
+      } else {
+        setMessage("\uC606\uC9D1 \uAC15\uC544\uC9C0\uAC00 \uB354 \uD06C\uAC8C \uC9D6\uC5B4\uC694. 5\uCD08 \uC548\uC5D0 \uBB34\uC2DC\uD574\uB77C\uACE0 \uC785\uB825\uD558\uC138\uC694!");
+      }
+      return;
+    }
+    if (phase === "boss") {
+      if (command.includes("\uBE14\uB85C\uD0B9")) {
+        blockBoss();
+      } else {
+        setMessage("\uB2E4\uB978 \uAC15\uC544\uC9C0\uAC00 \uAC00\uAE4C\uC6CC\uC838\uC694. 5\uCD08 \uC548\uC5D0 \uBE14\uB85C\uD0B9\uC774\uB77C\uACE0 \uC785\uB825\uD558\uC138\uC694!");
+      }
     }
   }
 
   function sitDogs() {
     setDogsSitting(true);
     playSound("success");
-    showHearts("루비와 감자가 얌전히 앉았어요.");
+    showHearts("루비와 감자가 차분히 앉았어요.");
   }
 
   function startLeash() {
@@ -407,7 +450,7 @@ export default function WalkQuestGame() {
     setZoomDog(target);
     setPhase("leashZoom");
     playSound("leash");
-    setMessage(`${target === "ruby" ? "루비" : "감자"} 목 부분 확대. 목줄을 고리로 옮겨주세요.`);
+    setMessage(`${target === "ruby" ? "루비" : "감자"}에게 목줄을 채워주세요.`);
   }
 
   function finishLeash(target: Dog) {
@@ -423,7 +466,7 @@ export default function WalkQuestGame() {
       showHearts("목줄 착용 완료! 잊은 물건이 있지 않은지 확인하고 나가세요.");
     } else {
       setPhase("leashMission");
-      setMessage("좋아요. 선반의 다른 목줄도 강아지 사진 위로 드래그해서 채워주세요.");
+      setMessage("좋아요. 선반의 다른 목줄도 해당 강아지에게 드래그해서 채워주세요.");
     }
   }
 
@@ -435,13 +478,13 @@ export default function WalkQuestGame() {
 
   function openGate() {
     if (!rubyCalm || !gamjaQuiet) {
-      fall("대문을 그냥 열자 루비가 돌고 감자가 짖어서 넘어졌어요.");
+      fall("대문을 그냥 열자 루비가 뛰고 감자가 짖어서 넘어졌어요.");
       setPhase("gate");
       return;
     }
     setPhase("walk");
     playSound("step");
-    setMessage("안전하게 대문을 나섰어요. 늘 가던 산책길입니다.");
+    setMessage("안전하게 대문을 열고 나왔어요. 늘 가던 산책길입니다.");
   }
 
   function resumeWalk(text: string) {
@@ -457,7 +500,7 @@ export default function WalkQuestGame() {
     playSound("poop");
     if (tool === "leaf") {
       setPoopStep("leafReady");
-      setMessage("바닥에 있는 나뭇잎을 똥으로 옮겨보세요.");
+      setMessage("풀숲에서 나뭇잎을 찾아 똥을 주워보세요.");
     }
     if (tool === "sock") {
       setPoopStep("sockReady");
@@ -489,7 +532,7 @@ export default function WalkQuestGame() {
   function ignoreDog() {
     setTimeLeft(null);
     playSound("bark");
-    resumeWalk("무시해 성공! 루비와 감자가 조용히 지나갔어요.");
+    resumeWalk("무시해 성공! 루비와 감자가 조용히 지나가요.");
   }
 
   function blockBoss() {
@@ -502,11 +545,11 @@ export default function WalkQuestGame() {
 
   function finishCar() {
     if (!carStopped) {
-      setMessage("먼저 멈춰를 클릭해야 해요.");
+      setMessage("먼저 멈춰를 입력해야 해요.");
       return;
     }
     if (!dogsRoadside) {
-      setMessage("루감이를 옆 풀밭으로 옮겨야 해요.");
+      setMessage("루감이를 길 옆 풀쪽으로 옮겨야 해요.");
       return;
     }
     resumeWalk("루감이를 안전하게 지켜냈어요!");
@@ -538,21 +581,33 @@ export default function WalkQuestGame() {
     return "walk";
   }, [calledDogs, dogsSitting, phase]);
 
+  const commandPlaceholder = phase === "pull"
+    ? "\uCC9C\uCC9C\uD788"
+    : phase === "car"
+      ? carStopped ? "\uAE30\uB2E4\uB824" : "\uBA48\uCDB0"
+      : phase === "barkingDog"
+        ? "\uBB34\uC2DC\uD574"
+        : phase === "boss"
+          ? "\uBE14\uB85C\uD0B9"
+          : phase === "living"
+            ? "\uB9D0\uC744 \uC785\uB825\uD574 \uC8FC\uC138\uC694"
+            : "\uC549\uC544";
+
   return (
     <main className="walk-page">
-      <Link href="/" className="back-link">← 메인으로</Link>
+      <Link href="/" className="back-link">{"\uBA54\uC778\uC73C\uB85C"}</Link>
       <section className="game">
         <header className="topbar">
           <div>
-            <p>현실형 1인칭 강아지 산책 시뮬레이션</p>
-            <h1>루비 감자와 산책</h1>
+            <p>{"\uD604\uC2E4\uD615 1\uC778\uCE6D \uAC15\uC544\uC9C0 \uC0B0\uCC45 \uC2DC\uBBAC\uB808\uC774\uC158"}</p>
+            <h1>{"\uB8E8\uBE44 \uAC10\uC790\uC640 \uC0B0\uCC45"}</h1>
           </div>
           <div className="hud-pills">
-            <Pill label="넘어짐" value={`${falls}/3`} alert={falls > 0} />
-            <Pill label="시간" value={timeLeft === null ? "-" : `${timeLeft}s`} alert={timeLeft !== null && timeLeft <= 3} />
-            <Pill label="루비 목줄" value={rubyLeashed ? "착용" : "미착용"} />
-            <Pill label="감자 목줄" value={gamjaLeashed ? "착용" : "미착용"} />
-            <Pill label="똥봉투" value={hasPoopBag ? "보유" : "없음"} alert={!hasPoopBag && phase === "poop"} />
+            <Pill label="\uB118\uC5B4\uC9D0" value={`${falls}/3`} alert={falls > 0} />
+            <Pill label="\uC2DC\uAC04" value={timeLeft === null ? "-" : `${timeLeft}s`} alert={timeLeft !== null && timeLeft <= 3} />
+            <Pill label="\uB8E8\uBE44 \uBAA9\uC904" value={rubyLeashed ? "\uCC29\uC6A9" : "\uBBF8\uCC29\uC6A9"} />
+            <Pill label="\uAC10\uC790 \uBAA9\uC904" value={gamjaLeashed ? "\uCC29\uC6A9" : "\uBBF8\uCC29\uC6A9"} />
+            <Pill label="\uB625\uBD09\uD22C" value={hasPoopBag ? "\uBCF4\uC720" : "\uC5C6\uC74C"} alert={!hasPoopBag && phase === "poop"} />
           </div>
         </header>
 
@@ -620,10 +675,10 @@ export default function WalkQuestGame() {
               <input
                 value={input}
                 onChange={(event) => setInput(event.target.value)}
-                placeholder={phase === "living" ? "말을 입력해 주세요" : "앉아"}
+                placeholder={commandPlaceholder}
                 autoFocus
               />
-              <button type="submit">말하기</button>
+              <button type="submit">{"\uB9D0\uD558\uAE30"}</button>
             </form>
           )}
         </section>
@@ -1004,12 +1059,15 @@ function ThreeWalkWorld({
 
     const textureLoader = new THREE.TextureLoader();
     const isSleepingScene = phase === "upstairs" || (phase === "living" && !calledDogs);
-    const rubySrc = isSleepingScene ? dog.ruby.sleep : phase === "excited" ? dog.ruby.hop : dog.ruby.call;
-    const gamjaSrc = isSleepingScene ? dog.gamja.sleep : phase === "poop" ? dog.gamja.poop : phase === "excited" || phase === "gate" ? dog.gamja.hop : dog.gamja.call;
+    const walkingBackScene = ["walk", "pull", "run", "car", "barkingDog", "boss", "home"].includes(phase);
+    const rubySrc = isSleepingScene ? dog.ruby.sleep : walkingBackScene ? dog.ruby.back : phase === "excited" ? dog.ruby.hop : dog.ruby.call;
+    const gamjaSrc = isSleepingScene ? dog.gamja.sleep : phase === "poop" ? dog.gamja.poop : walkingBackScene ? dog.gamja.back : phase === "excited" || phase === "gate" ? dog.gamja.hop : dog.gamja.call;
     const rubyMap = textureLoader.load(rubySrc);
     const gamjaMap = textureLoader.load(gamjaSrc);
     const rubySitMap = textureLoader.load(dog.ruby.sit);
     const gamjaSitMap = textureLoader.load(dog.gamja.sit);
+    const rubyGateSitMap = textureLoader.load(dog.ruby.gateSit);
+    const gamjaGateQuietMap = textureLoader.load(dog.gamja.gateQuiet);
     const ruby = makeDogBillboard(rubyMap, isSleepingScene ? 2.6 : 1.55, isSleepingScene ? 1.25 : 2.15);
     ruby.position.set(isSleepingScene ? -1.2 : -1.0, isSleepingScene ? 0.55 : 1.08, isSleepingScene ? -4.2 : -1.6);
     const gamja = makeDogBillboard(gamjaMap, isSleepingScene ? 2.08 : 1.24, isSleepingScene ? 1.0 : 1.72);
@@ -1082,17 +1140,17 @@ function ThreeWalkWorld({
       dogGroup.children.forEach((child) => child.lookAt(camera.position));
       const rubyMaterial = ruby.material as THREE.MeshBasicMaterial;
       const gamjaMaterial = gamja.material as THREE.MeshBasicMaterial;
-      if (phase === "gate" && rubyCalmRef.current && rubyMaterial.map !== rubySitMap) {
-        rubyMaterial.map = rubySitMap;
+      if (phase === "gate" && rubyCalmRef.current && rubyMaterial.map !== rubyGateSitMap) {
+        rubyMaterial.map = rubyGateSitMap;
         rubyMaterial.needsUpdate = true;
       }
-      if (phase === "gate" && gamjaQuietRef.current && gamjaMaterial.map !== gamjaSitMap) {
-        gamjaMaterial.map = gamjaSitMap;
+      if (phase === "gate" && gamjaQuietRef.current && gamjaMaterial.map !== gamjaGateQuietMap) {
+        gamjaMaterial.map = gamjaGateQuietMap;
         gamjaMaterial.needsUpdate = true;
       }
       if (phase === "gate") {
         dogGroup.position.x = 0;
-        dogGroup.position.z = -5.05;
+        dogGroup.position.z = -4.72;
         ruby.position.x = -0.78 + (rubyCalmRef.current ? 0 : Math.sin(clock.elapsedTime * 7) * 0.18);
         ruby.rotation.z = rubyCalmRef.current ? 0 : Math.sin(clock.elapsedTime * 7) * 0.18;
         gamja.position.x = 0.72;
@@ -1110,11 +1168,15 @@ function ThreeWalkWorld({
         dogGroup.position.z = pos.z - 4.1 - Math.abs(Math.sin(clock.elapsedTime * 8)) * 0.35;
       }
       if (phase === "car") {
-        car.position.x = 0.7;
-        car.position.z = -10.5 + ((clock.elapsedTime * 4.2) % 16);
+        car.position.x = 0.15;
+        car.position.z = -12 + Math.min(clock.elapsedTime * 1.15, 9.8);
+      }
+      if (phase === "barkingDog") {
+        otherDog.position.set(4.2, 0.45, -4.5);
       }
       if (phase === "boss") {
-        otherDog.position.z = -4.5 + Math.sin(clock.elapsedTime * 5) * 0.35;
+        otherDog.position.x = 0.25;
+        otherDog.position.z = -7.4 + Math.min(clock.elapsedTime * 0.85, 3.7);
       }
       dogGroup.position.y = ["excited", "leashPrep"].includes(phase) ? Math.sin(clock.elapsedTime * 8) * 0.06 : 0;
       renderer.render(scene, camera);
@@ -1165,7 +1227,7 @@ function ThreeWalkWorld({
   }, [calledDogs, canReachEntry, isOutdoor, onReachEntry, onReachGate, onReachLiving, phase]);
 
   return (
-    <div className="three-world" ref={mountRef} aria-label="3D 산책 공간">
+    <div className="three-world" ref={mountRef} aria-label="?? ??">
       <div className="move-help">방향키 ↑ 앞으로 · ↓ 뒤로 · ← 왼쪽 · → 오른쪽</div>
       <style jsx>{`
         .three-world {
@@ -1374,6 +1436,12 @@ function addOutdoor(scene: THREE.Scene, phase: Phase) {
     scene.add(rail);
   }
 
+  if (phase === "barkingDog") {
+    const house = makeRoadsideHouse();
+    house.position.set(4.9, 0, -4.6);
+    scene.add(house);
+  }
+
   [-5.8, 5.8].forEach((x) => {
     for (let i = 0; i < 6; i += 1) {
       const bush = new THREE.Mesh(new THREE.SphereGeometry(0.65 + (i % 2) * 0.18, 16, 10), bushMat);
@@ -1385,6 +1453,30 @@ function addOutdoor(scene: THREE.Scene, phase: Phase) {
       scene.add(trunk);
     }
   });
+}
+
+function makeRoadsideHouse() {
+  const group = new THREE.Group();
+  const wallMat = new THREE.MeshStandardMaterial({ color: "#ead8c8", roughness: 0.72 });
+  const roofMat = new THREE.MeshStandardMaterial({ color: "#6b3f2a", roughness: 0.65 });
+  const fenceMat = new THREE.MeshStandardMaterial({ color: "#f3e5cc", roughness: 0.8 });
+  const wall = new THREE.Mesh(new THREE.BoxGeometry(2.3, 1.55, 1.1), wallMat);
+  wall.position.set(0, 0.82, 0);
+  group.add(wall);
+  const roof = new THREE.Mesh(new THREE.ConeGeometry(1.55, 0.7, 4), roofMat);
+  roof.rotation.y = Math.PI / 4;
+  roof.position.set(0, 1.9, 0);
+  group.add(roof);
+  for (let i = -3; i <= 3; i += 1) {
+    const picket = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.72, 0.06), fenceMat);
+    picket.position.set(i * 0.35, 0.36, -0.95);
+    group.add(picket);
+  }
+  const rail = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.06, 0.05), fenceMat);
+  rail.position.set(0, 0.5, -0.95);
+  group.add(rail);
+  group.rotation.y = -0.45;
+  return group;
 }
 
 function makeParkCar() {
@@ -1873,151 +1965,72 @@ function SceneContent(props: {
 }) {
   const p = props;
   if (p.phase === "intro") {
-    return <CenterCard title={"루비&감자\n산책시키기"} button="산책 START" onClick={p.start} image={dog.intro} variant="intro" />;
+    return <CenterCard title={"\uB8E8\uBE44&\uAC10\uC790\n\uC0B0\uCC45\uC2DC\uD0A4\uAE30"} button="\uC0B0\uCC45 START" onClick={p.start} image={dog.intro} variant="intro" />;
   }
-  if (p.phase === "upstairs") {
-    return null;
-  }
-  if (p.phase === "living") {
-    return null;
-  }
-  if (p.phase === "excited") {
-    return null;
-  }
-  if (p.phase === "leashPrep") {
-    return (
-      <>
-        <GearShelf rubyLeashed={p.rubyLeashed} gamjaLeashed={p.gamjaLeashed} hasPoopBag={p.hasPoopBag} side />
-      </>
-    );
-  }
+  if (["upstairs", "living", "excited", "garden", "pull", "barkingDog", "boss"].includes(p.phase)) return null;
+  if (p.phase === "leashPrep") return <GearShelf rubyLeashed={p.rubyLeashed} gamjaLeashed={p.gamjaLeashed} hasPoopBag={p.hasPoopBag} side />;
   if (p.phase === "leashMission") {
-    return (
-      <>
-        <GearShelf rubyLeashed={p.rubyLeashed} gamjaLeashed={p.gamjaLeashed} hasPoopBag={p.hasPoopBag} side />
-        <LeashTargets rubyLeashed={p.rubyLeashed} gamjaLeashed={p.gamjaLeashed} finish={p.finishLeash} />
-      </>
-    );
+    return <><GearShelf rubyLeashed={p.rubyLeashed} gamjaLeashed={p.gamjaLeashed} hasPoopBag={p.hasPoopBag} side /><LeashTargets rubyLeashed={p.rubyLeashed} gamjaLeashed={p.gamjaLeashed} finish={p.finishLeash} /></>;
   }
-  if (p.phase === "leashZoom" && p.zoomDog) {
-    return <LeashZoom dogKey={p.zoomDog} finish={p.finishLeash} />;
-  }
-  if (p.phase === "poopBag") {
-    return <PoopBagDock hasPoopBag={p.hasPoopBag} setHasPoopBag={p.setHasPoopBag} setMessage={p.setMessage} goOut={p.goOut} />;
-  }
-  if (p.phase === "garden") {
-    return null;
-  }
+  if (p.phase === "leashZoom" && p.zoomDog) return <LeashZoom dogKey={p.zoomDog} finish={p.finishLeash} />;
+  if (p.phase === "poopBag") return <PoopBagDock hasPoopBag={p.hasPoopBag} setHasPoopBag={p.setHasPoopBag} setMessage={p.setMessage} goOut={p.goOut} />;
   if (p.phase === "gate") {
     return (
       <ActionDock>
-        <button className={`gate-action sit ${p.rubyCalm ? "done" : ""}`} onClick={() => { playSound("success"); p.setRubyCalm(true); p.setMessage("루비가 빙글빙글 돌다가 앉았어요."); }}><span>🧘</span>앉아</button>
-        <button className={`gate-action hush ${p.gamjaQuiet ? "done" : ""}`} onClick={() => { playSound("bark"); p.setGamjaQuiet(true); p.setMessage("감자가 짖음을 멈췄어요."); }}><span>🤫</span>조용히 해</button>
-        <button className="gate-action open" onClick={p.openGate}><span>🚪</span>대문 열기</button>
+        <button className={p.rubyCalm ? "gate-action sit done" : "gate-action sit"} onClick={() => { playSound("success"); p.setRubyCalm(true); p.setMessage("\uB8E8\uBE44\uAC00 \uBE59\uAE00\uBE59\uAE00 \uB3CC\uB2E4\uAC00 \uC549\uC558\uC5B4\uC694."); }}><span>1</span>{"\uC549\uC544"}</button>
+        <button className={p.gamjaQuiet ? "gate-action hush done" : "gate-action hush"} onClick={() => { playSound("bark"); p.setGamjaQuiet(true); p.setMessage("\uAC10\uC790\uAC00 \uC9D6\uC74C\uC744 \uBA48\uCD94\uACE0 \uCC28\uBD84\uD574\uC84C\uC5B4\uC694."); }}><span>2</span>{"\uC870\uC6A9\uD788 \uD574"}</button>
+        <button className="gate-action open" onClick={p.openGate}><span>3</span>{"\uB300\uBB38 \uC5F4\uAE30"}</button>
       </ActionDock>
     );
   }
-  if (p.phase === "pull") {
-    return <ActionDock><button onClick={() => p.resumeWalk("루비가 속도를 줄였어요.")}>천천히</button></ActionDock>;
-  }
-  if (p.phase === "poop") {
-    return (
-      <PoopTools
-        hasPoopBag={p.hasPoopBag}
-        tool={p.poopTool}
-        step={p.poopStep}
-        setStep={p.setPoopStep}
-        setMessage={p.setMessage}
-        choose={p.choosePoopTool}
-        drop={p.dropPoopTool}
-      />
-    );
-  }
-  if (p.phase === "run") {
-    return <ActionDock><span className="counter">Space {p.runTaps}/18</span></ActionDock>;
-  }
-  if (p.phase === "car") {
-    return (
-      <ActionDock>
-        <button className={p.carStopped ? "done" : ""} onClick={() => { playSound("car"); p.setCarStopped(true); p.setMessage("멈췄어요. 이제 길 옆으로 이동!"); }}>멈춰</button>
-        <div
-          className={p.dogsRoadside ? "grass-drop done" : "grass-drop"}
-          onDragOver={(event) => event.preventDefault()}
-          onDrop={() => {
-            p.setDogsRoadside(true);
-            p.setMessage("루감이가 풀 쪽으로 안전하게 비켜섰어요. 기다려를 말해 주세요.");
-          }}
-        >
-          <span>길 옆 풀밭</span>
-        </div>
-        <div
-          draggable
-          className="dog-drag-card"
-          onDragStart={(event) => {
-            event.dataTransfer.effectAllowed = "move";
-            event.dataTransfer.setData("text/plain", "dogs-roadside");
-          }}
-        >
-          <Image src={dog.ruby.walk} alt="루비" width={58} height={58} />
-          <Image src={dog.gamja.walk} alt="감자" width={46} height={46} />
-        </div>
-        <button onClick={p.finishCar}>기다려</button>
-        <style jsx>{`
-          .grass-drop {
-            min-width: 128px;
-            min-height: 70px;
-            border-radius: 18px;
-            border: 2px dashed rgba(67, 122, 52, 0.55);
-            background:
-              linear-gradient(135deg, rgba(135, 190, 97, 0.78), rgba(68, 139, 70, 0.78)),
-              repeating-linear-gradient(90deg, transparent 0 9px, rgba(255,255,255,0.18) 10px 12px);
-            color: #fffdf3;
-            display: grid;
-            place-items: center;
-            font-weight: 950;
-            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.45);
-          }
-          .grass-drop.done {
-            border-style: solid;
-            background: linear-gradient(135deg, #5da342, #8bc96d);
-          }
-          .dog-drag-card {
-            cursor: grab;
-            display: flex;
-            align-items: flex-end;
-            justify-content: center;
-            min-width: 118px;
-            min-height: 76px;
-            padding: 6px 12px;
-            border-radius: 18px;
-            background: rgba(255, 252, 244, 0.94);
-            border: 1px solid rgba(123, 93, 63, 0.22);
-            box-shadow: 0 12px 28px rgba(62, 45, 28, 0.18);
-          }
-          .dog-drag-card :global(img) {
-            object-fit: contain;
-            filter: drop-shadow(0 8px 8px rgba(0,0,0,0.18));
-          }
-        `}</style>
-      </ActionDock>
-    );
-  }
-  if (p.phase === "barkingDog") {
-    return <ActionDock><button onClick={p.ignoreDog}>무시해</button></ActionDock>;
-  }
-  if (p.phase === "boss") {
-    return <ActionDock><button onClick={p.blockBoss}>블로킹</button></ActionDock>;
-  }
-  if (p.phase === "home") {
-    return <ActionDock><button onClick={() => p.setPhase("clear")}>집 문 열기</button></ActionDock>;
-  }
-  if (p.phase === "clear") {
-    return <CenterCard title="산책 완료!" body="산책 완료! 루비와 감자가 행복해 보여요." button="다시 하기" onClick={p.reset} image={dog.duo} />;
-  }
-  if (p.phase === "fail") {
-    return <CenterCard title="산책 실패..." body="다시 도전해볼까요?" button="Restart" onClick={p.reset} image={dog.duo} />;
-  }
+  if (p.phase === "poop") return <PoopTools hasPoopBag={p.hasPoopBag} tool={p.poopTool} step={p.poopStep} setStep={p.setPoopStep} setMessage={p.setMessage} choose={p.choosePoopTool} drop={p.dropPoopTool} />;
+  if (p.phase === "run") return <ActionDock><span className="counter">Space {p.runTaps}/18</span></ActionDock>;
+  if (p.phase === "car") return <CarSafetyDock carStopped={p.carStopped} dogsRoadside={p.dogsRoadside} setDogsRoadside={p.setDogsRoadside} setMessage={p.setMessage} />;
+  if (p.phase === "home") return <ActionDock><button onClick={() => p.setPhase("clear")}>{"\uC9D1 \uBB38 \uC5F4\uAE30"}</button></ActionDock>;
+  if (p.phase === "clear") return <CenterCard title="\uC0B0\uCC45 \uC644\uB8CC!" body="\uC0B0\uCC45 \uC644\uB8CC! \uB8E8\uBE44\uC640 \uAC10\uC790\uAC00 \uD589\uBCF5\uD574 \uBCF4\uC5EC\uC694." button="\uB2E4\uC2DC \uD558\uAE30" onClick={p.reset} image={dog.duo} />;
+  if (p.phase === "fail") return <CenterCard title="\uC0B0\uCC45 \uC2E4\uD328..." body="\uB2E4\uC2DC \uB3C4\uC804\uD574\uBCFC\uAE4C\uC694?" button="Restart" onClick={p.reset} image={dog.duo} />;
   return null;
+}
+
+function CarSafetyDock({
+  carStopped,
+  dogsRoadside,
+  setDogsRoadside,
+  setMessage,
+}: {
+  carStopped: boolean;
+  dogsRoadside: boolean;
+  setDogsRoadside: (value: boolean) => void;
+  setMessage: (message: string) => void;
+}) {
+  const dropDogs = (event: ReactDragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    if (!carStopped) {
+      setMessage("\uBA3C\uC800 \uBA48\uCDB0\uB77C\uACE0 \uC785\uB825\uD574\uC57C \uD574\uC694!");
+      return;
+    }
+    setDogsRoadside(true);
+    setMessage("\uB8E8\uAC10\uC774\uB97C \uD480 \uCABD\uC73C\uB85C \uC62E\uACBC\uC5B4\uC694. \uC774\uC81C \uAE30\uB2E4\uB824\uB77C\uACE0 \uC785\uB825\uD558\uC138\uC694.");
+  };
+
+  return (
+    <div className="car-safety-ui">
+      <div className={dogsRoadside ? "roadside-grass done" : "roadside-grass"} onDragOver={(event) => event.preventDefault()} onDrop={dropDogs}>
+        <span>{dogsRoadside ? "OK" : "\uD480\uCABD"}</span>
+      </div>
+      <div className="roadside-dogs" draggable onDragStart={(event) => { event.dataTransfer.effectAllowed = "move"; event.dataTransfer.setData("text/plain", "dogs-roadside"); }}>
+        <Image src={dog.ruby.back} alt="Ruby" width={82} height={92} />
+        <Image src={dog.gamja.back} alt="Gamja" width={66} height={74} />
+      </div>
+      <style jsx>{`
+        .car-safety-ui { position: absolute; z-index: 22; inset: 0; pointer-events: none; }
+        .roadside-grass { position: absolute; right: 26px; top: 31%; width: 142px; height: 170px; border-radius: 28px; display: grid; place-items: center; font-weight: 950; color: #fffde9; border: 2px dashed rgba(255,255,255,0.78); background: radial-gradient(circle at 28% 35%, rgba(255,255,255,0.22), transparent 26%), linear-gradient(135deg, rgba(67, 132, 58, 0.82), rgba(133, 184, 92, 0.86)); box-shadow: 0 18px 40px rgba(23, 77, 36, 0.22); pointer-events: auto; }
+        .roadside-grass.done { border-style: solid; background: linear-gradient(135deg, rgba(62, 136, 54, 0.92), rgba(112, 184, 81, 0.92)); }
+        .roadside-dogs { position: absolute; left: 50%; bottom: 118px; display: flex; align-items: end; gap: 8px; cursor: grab; filter: drop-shadow(0 18px 16px rgba(0,0,0,0.24)); transform: translateX(-50%); pointer-events: auto; }
+        .roadside-dogs :global(img) { object-fit: contain; }
+      `}</style>
+    </div>
+  );
 }
 
 function LeashZoom({ dogKey, finish }: { dogKey: Dog; finish: (dog: Dog) => void }) {
@@ -2283,214 +2296,80 @@ function PoopTools({
 
   return (
     <div className="poop-ui">
-      <div
-        className="poop-target"
-        onDragOver={(event) => event.preventDefault()}
-        onDrop={dropOnPoop}
-      >
+      <div className="poop-hotspot" onDragOver={(event) => event.preventDefault()} onDrop={dropOnPoop}>
         <span className="poop-pile" />
-        <small>똥 위로 옮기기</small>
       </div>
+      {step === "leafReady" && (
+        <div className="leaf-grass">
+          <div draggable className="drag-chip leaf" onDragStart={(event) => dragTool(event, "leaf")}>{"\uB098\uBB47\uC78E"}</div>
+        </div>
+      )}
       <div className="poop-dialog">
         {step === "ask" && (
           <>
-            <b>주의! 감자가 똥을 쌌어요.</b>
-            <span>펫티켓을 지키겠습니까?</span>
+            <b>{"\uC8FC\uC758! \uAC10\uC790\uAC00 \uB625\uC744 \uC4CC\uC5B4\uC694."}</b>
+            <span>{"\uD3AB\uD2F0\uCF13\uC744 \uC9C0\uD0A4\uACA0\uC2B5\uB2C8\uAE4C?"}</span>
             <div className="poop-actions">
-              <button
-                onClick={() => {
-                  setStep("bagCheck");
-                  setMessage("가방을 확인해 보세요.");
-                }}
-              >
-                네
-              </button>
-              <button
-                onClick={() => {
-                  setStep("bagCheck");
-                  setMessage("그냥 가려다 경비 아저씨한테 걸렸어요! 치워야겠네요..");
-                }}
-              >
-                아니요
-              </button>
+              <button onClick={() => { setStep("bagCheck"); setMessage("\uAC00\uBC29\uC744 \uD655\uC778\uD574 \uBCF4\uC138\uC694."); }}>{"\uB124"}</button>
+              <button onClick={() => { setStep("bagCheck"); setMessage("\uADF8\uB0E5 \uAC00\uB824\uB2E4 \uACBD\uBE44 \uC544\uC800\uC528\uD55C\uD14C \uAC78\uB838\uC5B4\uC694! \uCE58\uC6CC\uC57C\uACA0\uB124\uC694.."); }}>{"\uC544\uB2C8\uC694"}</button>
             </div>
           </>
         )}
         {step === "bagCheck" && (
           <div className="bag-check">
-            <button
-              className="bag-button"
-              onClick={() => {
-                if (hasPoopBag) {
-                  choose("bag");
-                  setMessage("가방에 똥봉투가 있어요. 똥봉투를 똥 위로 옮겨주세요.");
-                } else {
-                  setStep("leafAsk");
-                  setMessage("이런! 똥봉투를 안가져왔네요... 나뭇잎으로 치워볼까요?");
-                }
-              }}
-            >
-              <span className="bag-emoji">🎒</span>
-              가방 확인
-            </button>
+            <button className="bag-button" onClick={() => {
+              if (hasPoopBag) {
+                choose("bag");
+                setMessage("\uAC00\uBC29\uC5D0 \uB625\uBD09\uD22C\uAC00 \uC788\uC5B4\uC694. \uB625\uBD09\uD22C\uB97C \uB625 \uC704\uB85C \uC62E\uACA8\uC8FC\uC138\uC694.");
+              } else {
+                setStep("leafAsk");
+                setMessage("\uC774\uB7F0! \uB625\uBD09\uD22C\uB97C \uC548\uAC00\uC838\uC654\uB124\uC694... \uB098\uBB47\uC78E\uC73C\uB85C \uCE58\uC6CC\uBCFC\uAE4C\uC694?");
+              }
+            }}>{"\uAC00\uBC29 \uD655\uC778"}</button>
             {tool === "bag" && (
               <div draggable className="bag-chip" onDragStart={(event) => dragTool(event, "bag")}>
-                <Image src="/ruby-gamja/custom/poop-bag-real.png" alt="똥봉투" width={58} height={58} />
-                <small>똥봉투</small>
+                <Image src="/ruby-gamja/custom/poop-bag-real.png" alt="poop bag" width={58} height={58} />
               </div>
             )}
           </div>
         )}
         {step === "leafAsk" && (
           <>
-            <b>이런! 똥봉투를 안가져왔네요...</b>
-            <span>나뭇잎으로 치워볼까요?</span>
+            <b>{"\uC774\uB7F0! \uB625\uBD09\uD22C\uB97C \uC548\uAC00\uC838\uC654\uB124\uC694..."}</b>
+            <span>{"\uB098\uBB47\uC78E\uC73C\uB85C \uCE58\uC6CC\uBCFC\uAE4C\uC694?"}</span>
             <div className="poop-actions">
-              <button onClick={() => choose("leaf")}>네</button>
-              <button
-                onClick={() => {
-                  setStep("sockAsk");
-                  setMessage("경비 아저씨 눈빛이 매서워요... 양말뿐인건가..?");
-                }}
-              >
-                아니요
-              </button>
+              <button onClick={() => choose("leaf")}>{"\uB124"}</button>
+              <button onClick={() => { setStep("sockAsk"); setMessage("\uC5B4\uCA54 \uC218 \uC5C6\uB2E4... \uC591\uB9D0\uBFD0\uC778\uAC74\uAC00..?"); }}>{"\uC544\uB2C8\uC694"}</button>
             </div>
           </>
         )}
-        {step === "leafReady" && (
-          <div className="tool-row">
-            <b>나뭇잎을 똥 위로 옮겨보세요.</b>
-            <div draggable className="drag-chip leaf" onDragStart={(event) => dragTool(event, "leaf")}>
-              🍃
-              <small>나뭇잎</small>
-            </div>
-          </div>
-        )}
+        {step === "leafReady" && <b>{"\uD480\uC232\uC5D0\uC11C \uB098\uBB47\uC78E\uC744 \uCC3E\uC544 \uB625\uC744 \uC8FC\uC6CC\uBCF4\uC138\uC694"}</b>}
         {step === "sockAsk" && (
           <>
-            <b>어쩔 수 없다... 양말뿐인건가..?</b>
+            <b>{"\uC5B4\uCA54 \uC218 \uC5C6\uB2E4... \uC591\uB9D0\uBFD0\uC778\uAC74\uAC00..?"}</b>
             <div className="poop-actions">
-              <button onClick={() => choose("sock")}>양말 벗기</button>
-              <button onClick={() => setMessage("그냥 가려다 또 걸릴 것 같아요. 치워야겠네요..")}>그냥 가자</button>
+              <button onClick={() => choose("sock")}>{"\uC591\uB9D0 \uBC97\uAE30"}</button>
+              <button onClick={() => setMessage("\uADF8\uB0E5 \uAC00\uBA74 \uB610 \uAC78\uB9B4 \uAC83 \uAC19\uC544\uC694. \uCE58\uC6CC\uC57C\uACA0\uC5B4\uC694..")} >{"\uADF8\uB0E5 \uAC00\uC790"}</button>
             </div>
           </>
         )}
         {step === "sockReady" && (
           <div className="tool-row">
-            <b>손에 양말을 들었어요.</b>
-            <div draggable className="drag-chip sock" onDragStart={(event) => dragTool(event, "sock")}>
-              🧦
-              <small>양말</small>
-            </div>
+            <b>{"\uC190\uC5D0 \uC591\uB9D0\uC744 \uB4E4\uC5C8\uC5B4\uC694."}</b>
+            <div draggable className="drag-chip sock" onDragStart={(event) => dragTool(event, "sock")}>{"\uC591\uB9D0"}</div>
           </div>
         )}
       </div>
       <style jsx>{`
-        .poop-ui {
-          position: absolute;
-          z-index: 20;
-          inset: auto 24px 28px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 14px;
-        }
-        .poop-target,
-        .poop-dialog {
-          padding: 14px;
-          border-radius: 18px;
-          background: rgba(255,250,242,0.92);
-          box-shadow: 0 16px 38px rgba(0,0,0,0.22);
-          font-weight: 950;
-        }
-        .poop-target {
-          position: relative;
-          width: 118px;
-          height: 98px;
-          display: grid;
-          place-items: center;
-          border: 2px dashed rgba(102, 72, 44, 0.3);
-          background: rgba(255, 250, 242, 0.78);
-        }
-        .poop-pile {
-          display: block;
-          width: 42px;
-          height: 34px;
-          border-radius: 50% 50% 46% 46%;
-          background:
-            radial-gradient(circle at 50% 16%, #7a4a24 0 9px, transparent 10px),
-            radial-gradient(circle at 34% 56%, #6a3b1d 0 14px, transparent 15px),
-            radial-gradient(circle at 62% 60%, #8a562b 0 15px, transparent 16px);
-          filter: drop-shadow(0 5px 5px rgba(0,0,0,0.18));
-        }
-        .poop-target small {
-          font-size: 0.72rem;
-          color: #73513b;
-        }
-        .poop-dialog {
-          display: flex;
-          flex-direction: column;
-          align-items: stretch;
-          gap: 8px;
-          min-width: min(360px, calc(100vw - 180px));
-          color: #4b3322;
-        }
-        .poop-dialog b,
-        .poop-dialog span {
-          line-height: 1.35;
-        }
-        .poop-actions,
-        .bag-check,
-        .tool-row {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          flex-wrap: wrap;
-        }
-        .bag-chip {
-          cursor: grab;
-          width: 82px;
-          height: 82px;
-          border-radius: 20px;
-          display: grid;
-          place-items: center;
-          background: rgba(255, 252, 244, 0.94);
-          border: 1px solid rgba(122, 89, 58, 0.2);
-          box-shadow: 0 12px 28px rgba(59, 45, 30, 0.18);
-        }
-        .bag-button {
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
-        }
-        .bag-emoji {
-          font-size: 1.4rem;
-        }
-        .bag-chip :global(img) {
-          object-fit: contain;
-          border-radius: 12px;
-        }
-        .bag-chip small {
-          font-size: 0.72rem;
-          color: #4b3322;
-        }
-        .drag-chip {
-          cursor: grab;
-          display: grid;
-          place-items: center;
-          width: 88px;
-          height: 72px;
-          border-radius: 18px;
-          background: #fffaf1;
-          border: 1px solid rgba(122, 89, 58, 0.22);
-          box-shadow: 0 12px 28px rgba(59, 45, 30, 0.16);
-          font-size: 2rem;
-        }
-        .drag-chip small {
-          font-size: 0.76rem;
-          color: #4b3322;
-        }
+        .poop-ui { position: absolute; z-index: 24; inset: 0; pointer-events: none; }
+        .poop-hotspot { position: absolute; left: 57%; bottom: 148px; width: 82px; height: 62px; display: grid; place-items: center; pointer-events: auto; }
+        .poop-pile { display: block; width: 46px; height: 36px; border-radius: 50% 50% 46% 46%; background: radial-gradient(circle at 50% 16%, #7a4a24 0 9px, transparent 10px), radial-gradient(circle at 34% 56%, #6a3b1d 0 14px, transparent 15px), radial-gradient(circle at 62% 60%, #8a562b 0 15px, transparent 16px); filter: drop-shadow(0 5px 5px rgba(0,0,0,0.18)); }
+        .leaf-grass { position: absolute; right: 36px; top: 42%; width: 128px; height: 150px; border-radius: 28px; display: grid; place-items: center; background: linear-gradient(135deg, rgba(78,142,59,0.72), rgba(139,190,87,0.72)); pointer-events: auto; }
+        .poop-dialog { position: absolute; left: 50%; bottom: 32px; transform: translateX(-50%); display: flex; flex-direction: column; gap: 8px; min-width: min(420px, calc(100vw - 64px)); padding: 14px 16px; border-radius: 18px; background: rgba(255,250,242,0.94); color: #4b3322; box-shadow: 0 16px 38px rgba(0,0,0,0.22); font-weight: 950; pointer-events: auto; }
+        .poop-actions, .bag-check, .tool-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .bag-chip, .drag-chip { cursor: grab; width: 76px; height: 76px; border-radius: 20px; display: grid; place-items: center; background: rgba(255,252,244,0.95); border: 1px solid rgba(122,89,58,0.2); box-shadow: 0 12px 28px rgba(59,45,30,0.18); pointer-events: auto; font-size: 2.2rem; }
+        .bag-chip :global(img) { object-fit: contain; border-radius: 12px; }
+        .leaf { font-size: 2.6rem; }
       `}</style>
     </div>
   );
