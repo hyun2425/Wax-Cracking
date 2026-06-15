@@ -1042,8 +1042,10 @@ function ThreeWalkWorld({
       roughness: 0.62,
       metalness: 0.02,
     });
-    const floor = new THREE.Mesh(new THREE.PlaneGeometry(34, 42), floorMat);
+    const floorDepth = isOutdoor && !["garden", "gate"].includes(phase) ? 120 : 42;
+    const floor = new THREE.Mesh(new THREE.PlaneGeometry(34, floorDepth), floorMat);
     floor.rotation.x = -Math.PI / 2;
+    floor.position.z = isOutdoor && !["garden", "gate"].includes(phase) ? -38 : 0;
     floor.receiveShadow = true;
     scene.add(floor);
 
@@ -1107,7 +1109,8 @@ function ThreeWalkWorld({
       if (keysRef.current.has("ArrowUp")) pos.z -= speed;
       if (keysRef.current.has("ArrowDown")) pos.z += speed;
       pos.x = THREE.MathUtils.clamp(pos.x, -6.2, 6.2);
-      pos.z = THREE.MathUtils.clamp(pos.z, -10.5, 8.5);
+      const minZ = isOutdoor && !["garden", "gate"].includes(phase) ? -58 : -10.5;
+      pos.z = THREE.MathUtils.clamp(pos.z, minZ, 8.5);
       if (["leashPrep", "leashMission", "poopBag"].includes(phase)) {
         pos.x = THREE.MathUtils.clamp(pos.x, -5.35, 5.35);
         pos.z = THREE.MathUtils.clamp(pos.z, -6.35, 7.6);
@@ -1150,7 +1153,7 @@ function ThreeWalkWorld({
       }
       if (phase === "gate") {
         dogGroup.position.x = 0;
-        dogGroup.position.z = -4.72;
+        dogGroup.position.z = -4.62;
         ruby.position.x = -0.78 + (rubyCalmRef.current ? 0 : Math.sin(clock.elapsedTime * 7) * 0.18);
         ruby.rotation.z = rubyCalmRef.current ? 0 : Math.sin(clock.elapsedTime * 7) * 0.18;
         gamja.position.x = 0.72;
@@ -1163,6 +1166,9 @@ function ThreeWalkWorld({
       if (isOutdoor && phase !== "gate") {
         dogGroup.position.x = pos.x;
         dogGroup.position.z = pos.z - 3.4;
+      }
+      if (phase === "garden") {
+        dogGroup.position.z = Math.max(dogGroup.position.z, -5.85);
       }
       if (phase === "pull" || phase === "run") {
         dogGroup.position.z = pos.z - 4.1 - Math.abs(Math.sin(clock.elapsedTime * 8)) * 0.35;
@@ -1378,22 +1384,23 @@ function addOutdoor(scene: THREE.Scene, phase: Phase) {
   const bushMat = new THREE.MeshStandardMaterial({ color: "#4f7c3e", roughness: 0.9 });
   const trunkMat = new THREE.MeshStandardMaterial({ color: "#7a5437", roughness: 0.82 });
 
-  const path = new THREE.Mesh(new THREE.PlaneGeometry(isBeforeGate ? 3.6 : 4.4, 36), isBeforeGate ? pathMat : parkPathMat);
+  const pathDepth = isBeforeGate ? 36 : 112;
+  const path = new THREE.Mesh(new THREE.PlaneGeometry(isBeforeGate ? 3.6 : 4.4, pathDepth), isBeforeGate ? pathMat : parkPathMat);
   path.rotation.x = -Math.PI / 2;
-  path.position.set(0, 0.025, -4);
+  path.position.set(0, 0.025, isBeforeGate ? -4 : -40);
   path.receiveShadow = true;
   scene.add(path);
 
   if (!isBeforeGate) {
     const edgeMat = new THREE.MeshStandardMaterial({ color: "#a8c987", roughness: 0.92 });
     [-3.45, 3.45].forEach((x) => {
-      const grassEdge = new THREE.Mesh(new THREE.PlaneGeometry(1.7, 36), edgeMat);
+      const grassEdge = new THREE.Mesh(new THREE.PlaneGeometry(1.7, 112), edgeMat);
       grassEdge.rotation.x = -Math.PI / 2;
-      grassEdge.position.set(x, 0.03, -4);
+      grassEdge.position.set(x, 0.03, -40);
       grassEdge.receiveShadow = true;
       scene.add(grassEdge);
     });
-    for (let i = 0; i < 18; i += 1) {
+    for (let i = 0; i < 54; i += 1) {
       const pebble = new THREE.Mesh(new THREE.CylinderGeometry(0.08 + (i % 3) * 0.025, 0.08, 0.018, 10), new THREE.MeshStandardMaterial({ color: i % 2 ? "#b9ad98" : "#e5dcc8", roughness: 0.9 }));
       pebble.rotation.x = -Math.PI / 2;
       pebble.position.set(Math.sin(i * 1.7) * 1.55, 0.055, 7.2 - i * 1.7);
@@ -1443,7 +1450,7 @@ function addOutdoor(scene: THREE.Scene, phase: Phase) {
   }
 
   [-5.8, 5.8].forEach((x) => {
-    for (let i = 0; i < 6; i += 1) {
+    for (let i = 0; i < (isBeforeGate ? 6 : 24); i += 1) {
       const bush = new THREE.Mesh(new THREE.SphereGeometry(0.65 + (i % 2) * 0.18, 16, 10), bushMat);
       bush.position.set(x + Math.sin(i) * 0.45, 0.55, 5.4 - i * 2.2);
       bush.castShadow = true;
@@ -2283,6 +2290,8 @@ function PoopTools({
   choose: (tool: PoopTool) => void;
   drop: (tool?: PoopTool) => void;
 }) {
+  const [guardVisible, setGuardVisible] = useState(false);
+  const [flashImage, setFlashImage] = useState<"dirtyHand" | "sockPoop" | null>(null);
   const dragTool = (event: ReactDragEvent<HTMLDivElement>, selectedTool: Exclude<PoopTool, null>) => {
     event.dataTransfer.effectAllowed = "move";
     event.dataTransfer.setData("text/plain", selectedTool);
@@ -2291,7 +2300,24 @@ function PoopTools({
   const dropOnPoop = (event: ReactDragEvent<HTMLDivElement>) => {
     event.preventDefault();
     const dragged = event.dataTransfer.getData("text/plain") as PoopTool;
-    drop(dragged || tool || undefined);
+    const selected = dragged || tool || undefined;
+    if (selected === "leaf") {
+      setFlashImage("dirtyHand");
+      window.setTimeout(() => {
+        setFlashImage(null);
+        drop(selected);
+      }, 2000);
+      return;
+    }
+    if (selected === "sock") {
+      setFlashImage("sockPoop");
+      window.setTimeout(() => {
+        setFlashImage(null);
+        drop(selected);
+      }, 3000);
+      return;
+    }
+    drop(selected);
   };
 
   return (
@@ -2301,7 +2327,24 @@ function PoopTools({
       </div>
       {step === "leafReady" && (
         <div className="leaf-grass">
-          <div draggable className="drag-chip leaf" onDragStart={(event) => dragTool(event, "leaf")}>{"나뭇잎"}</div>
+          <div draggable className="drag-chip image-chip leaf" onDragStart={(event) => dragTool(event, "leaf")}>
+            <Image src="/ruby-gamja/custom/leaf-tool.png" alt="나뭇잎" width={56} height={38} />
+          </div>
+        </div>
+      )}
+      {guardVisible && (
+        <div className="guard-warning">
+          <Image src="/ruby-gamja/custom/guard-warning.png" alt="경비 아저씨 경고" fill sizes="260px" />
+        </div>
+      )}
+      {flashImage && (
+        <div className="poop-flash">
+          <Image
+            src={flashImage === "dirtyHand" ? "/ruby-gamja/custom/dirty-hand.png" : "/ruby-gamja/custom/sock-poop.png"}
+            alt={flashImage === "dirtyHand" ? "손에 묻음" : "양말로 치움"}
+            fill
+            sizes="360px"
+          />
         </div>
       )}
       <div className="poop-dialog">
@@ -2311,7 +2354,7 @@ function PoopTools({
             <span>{"펫티켓을 지키겠습니까?"}</span>
             <div className="poop-actions">
               <button onClick={() => { setStep("bagCheck"); setMessage("가방을 확인해 보세요."); }}>{"네"}</button>
-              <button onClick={() => { setStep("bagCheck"); setMessage("그냥 가려다 경비 아저씨한테 걸렸어요! 치워야겠네요.."); }}>{"아니요"}</button>
+              <button onClick={() => { setGuardVisible(true); setStep("bagCheck"); setMessage("그냥 가려다 경비 아저씨한테 걸렸어요! 치워야겠네요.."); }}>{"아니요"}</button>
             </div>
           </>
         )}
@@ -2356,7 +2399,9 @@ function PoopTools({
         {step === "sockReady" && (
           <div className="tool-row">
             <b>{"손에 양말을 들었어요."}</b>
-            <div draggable className="drag-chip sock" onDragStart={(event) => dragTool(event, "sock")}>{"양말"}</div>
+            <div draggable className="drag-chip image-chip sock" onDragStart={(event) => dragTool(event, "sock")}>
+              <Image src="/ruby-gamja/custom/sock-tool.png" alt="양말" width={74} height={52} />
+            </div>
           </div>
         )}
       </div>
@@ -2364,13 +2409,23 @@ function PoopTools({
         .poop-ui { position: absolute; z-index: 24; inset: 0; pointer-events: none; }
         .poop-hotspot { position: absolute; left: 57%; bottom: 148px; width: 82px; height: 62px; display: grid; place-items: center; pointer-events: auto; }
         .poop-pile { display: block; width: 46px; height: 36px; border-radius: 50% 50% 46% 46%; background: radial-gradient(circle at 50% 16%, #7a4a24 0 9px, transparent 10px), radial-gradient(circle at 34% 56%, #6a3b1d 0 14px, transparent 15px), radial-gradient(circle at 62% 60%, #8a562b 0 15px, transparent 16px); filter: drop-shadow(0 5px 5px rgba(0,0,0,0.18)); }
-        .leaf-grass { position: absolute; right: 36px; top: 42%; width: 128px; height: 150px; border-radius: 28px; display: grid; place-items: center; background: linear-gradient(135deg, rgba(78,142,59,0.72), rgba(139,190,87,0.72)); pointer-events: auto; }
-        .poop-dialog { position: absolute; left: 50%; bottom: 32px; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px; min-width: min(420px, calc(100vw - 64px)); padding: 16px 18px; border-radius: 18px; background: rgba(255,250,242,0.96); color: #4b3322; box-shadow: 0 16px 38px rgba(0,0,0,0.22); font-weight: 950; pointer-events: auto; }
+        .leaf-grass { position: absolute; right: 36px; top: 42%; width: 116px; height: 132px; border-radius: 28px; display: grid; place-items: center; background: linear-gradient(135deg, rgba(78,142,59,0.72), rgba(139,190,87,0.72)); pointer-events: auto; }
+        .guard-warning { position: absolute; left: 18px; bottom: 122px; width: min(270px, 34vw); aspect-ratio: 1; filter: drop-shadow(0 16px 24px rgba(48, 28, 18, 0.24)); pointer-events: none; }
+        .guard-warning :global(img), .poop-flash :global(img) { object-fit: contain; }
+        .poop-flash { position: absolute; left: 50%; top: 50%; width: min(360px, 54vw); aspect-ratio: 1.45; transform: translate(-50%, -50%); z-index: 4; filter: drop-shadow(0 20px 28px rgba(48, 28, 18, 0.28)); pointer-events: none; animation: flash-pop 0.2s ease-out; }
+        .poop-dialog { position: absolute; left: 50%; bottom: 32px; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px; min-width: min(420px, calc(100vw - 64px)); padding: 16px 18px; border-radius: 18px; background: linear-gradient(180deg, rgba(255,229,229,0.97), rgba(255,205,211,0.95)); border: 2px solid rgba(224, 118, 128, 0.34); color: #5a2c2f; box-shadow: 0 16px 38px rgba(0,0,0,0.22); font-weight: 950; pointer-events: auto; }
         .poop-dialog b { font-size: 1.05rem; }
         .poop-actions, .bag-check, .tool-row { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; }
         .poop-actions button { min-width: 96px; padding: 10px 16px; border-radius: 999px; border: 2px solid rgba(104, 77, 52, 0.34); background: linear-gradient(180deg, #fff7e8, #efd4a5); color: #4b3322; font-weight: 950; box-shadow: 0 8px 18px rgba(65,43,25,0.14); }
         .bag-button { width: 82px; height: 82px; border-radius: 28px; border: 2px solid rgba(104, 77, 52, 0.24); background: linear-gradient(180deg, #fffaf1, #f2dfbd); font-size: 2.4rem; box-shadow: 0 12px 24px rgba(65,43,25,0.16); }
         .bag-chip, .drag-chip { cursor: grab; width: 76px; height: 76px; border-radius: 20px; display: grid; place-items: center; background: rgba(255,252,244,0.95); border: 1px solid rgba(122,89,58,0.2); box-shadow: 0 12px 28px rgba(59,45,30,0.18); pointer-events: auto; font-size: 2.2rem; }
+        .image-chip { overflow: hidden; }
+        .image-chip :global(img) { object-fit: contain; border-radius: 14px; }
+        .leaf.image-chip { width: 64px; height: 54px; }
+        @keyframes flash-pop {
+          from { opacity: 0; transform: translate(-50%, -50%) scale(0.86); }
+          to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+        }
         .bag-chip :global(img) { object-fit: contain; border-radius: 12px; }
         .leaf { font-size: 2.6rem; }
       `}</style>
