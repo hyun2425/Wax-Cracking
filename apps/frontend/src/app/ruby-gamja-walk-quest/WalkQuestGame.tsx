@@ -125,31 +125,31 @@ function playSound(name: SoundName) {
   window.setTimeout(() => void ctx.close(), 520);
 }
 
-const callWords = ["루비", "감자", "루감"];
-const walkWords = ["산책", "나가자", "나갈까"];
+const callWords = ["??", "??", "??"];
+const walkWords = ["??", "???", "???"];
 
 const phaseInfo: Record<Phase, { scene: string; mission: string; bg: string }> = {
-  intro: { scene: "오프닝", mission: "Start 버튼을 눌러 산책을 시작하세요.", bg: "home" },
-  upstairs: { scene: "2층 계단", mission: "1층으로 내려가 볼까요? 방향키로 계단을 내려가세요.", bg: "stairs" },
-  living: { scene: "1층 거실", mission: "루비, 감자, 루감이라고 불러보세요.", bg: "living" },
-  excited: { scene: "거실", mission: "강아지들이 신나서 따라와요. 현관쪽으로 가볼까요?", bg: "living" },
-  leashPrep: { scene: "현관", mission: "산책이라는 말에 흥분한 강아지들을 앉혀볼까요?", bg: "entry" },
-  leashMission: { scene: "현관", mission: "5초 안에 선반의 목줄을 루비와 감자에게 드래그하세요.", bg: "entry" },
-  leashZoom: { scene: "목줄", mission: "목줄을 채워주세요.", bg: "entry" },
-  poopBag: { scene: "현관문", mission: "목줄 착용 완료! 잊은 물건이 있지 않은지 확인하고 나가세요.", bg: "entry" },
-  garden: { scene: "정원", mission: "정원을 지나 대문 앞으로 가세요. 대문 밖으로 나가 본격적인 산책 해볼까요?", bg: "garden" },
-  gate: { scene: "대문 앞", mission: "대문을 열기 전, 루비는 앉아 감자는 조용히 해야 해요.", bg: "gate" },
-  walk: { scene: "산책길", mission: "루비와 감자를 따라 안전하게 걸어가세요.", bg: "street" },
-  pull: { scene: "산책길", mission: "루비가 당겨요. 7초 안에 천천히라고 입력하세요.", bg: "street" },
-  poop: { scene: "산책길", mission: "감자가 똥을 쌌어요. 펫티켓을 지켜보세요.", bg: "street" },
-  run: { scene: "산책길", mission: "스페이스바를 빠르게 눌러 속도를 따라가세요.", bg: "street" },
-  car: { scene: "공원 산책길", mission: "속도를 따라잡았어요! 그런데 앞에 차가 오네요! 얼른 피해주세요!!", bg: "road" },
-  barkingDog: { scene: "길가 집", mission: "정원 안 강아지가 짖어요. 5초 안에 무시해라고 입력하세요.", bg: "fence" },
-  boss: { scene: "마지막 보스", mission: "풀려 있는 다른 강아지가 나타났어요. 2초 안에 클릭해서 막아주세요!", bg: "fence" },
-  cat: { scene: "고양이 발견", mission: "고양이가 왼쪽에 나타났어요. 5초 안에 안돼라고 입력하세요.", bg: "street" },
-  home: { scene: "집 앞", mission: "집에 도착했어요.", bg: "gate" },
-  clear: { scene: "산책 완료", mission: "산책 완료! 루비와 감자가 행복해 보여요.", bg: "home" },
-  fail: { scene: "산책 실패", mission: "산책 실패... 다시 도전해볼까요?", bg: "home" },
+  intro: { scene: "???", mission: "Start ??? ?? ??? ?????.", bg: "home" },
+  upstairs: { scene: "2? ??", mission: "1??? ??? ???? ???? ??? ?????.", bg: "stairs" },
+  living: { scene: "1? ??", mission: "??, ??, ????? ?????.", bg: "living" },
+  excited: { scene: "??", mission: "????? ??? ????. ????? ?????", bg: "living" },
+  leashPrep: { scene: "??", mission: "??? ?????. ????? ?? ??? ????? ??????", bg: "entry" },
+  leashMission: { scene: "??", mission: "5? ?? ??? ??? ??? ???? ??????.", bg: "entry" },
+  leashZoom: { scene: "??", mission: "??? ?????.", bg: "entry" },
+  poopBag: { scene: "?? ?", mission: "?? ?? ??! ?? ??? ?? ??? ???? ????.", bg: "entry" },
+  garden: { scene: "??", mission: "??? ?? ?? ??? ???. ?? ??? ?? ???? ?? ?????", bg: "garden" },
+  gate: { scene: "?? ?", mission: "??? ?? ? ??? ??, ??? ??? ?? ??.", bg: "gate" },
+  walk: { scene: "???", mission: "? ?? ??????. ??? ?????", bg: "street" },
+  pull: { scene: "???", mission: "??? ?? ???. 7? ?? ????? ?????.", bg: "street" },
+  poop: { scene: "???", mission: "??! ??? ?? ???. ???? ???????", bg: "street" },
+  run: { scene: "???", mission: "?????? ??? ?? ??? ?????.", bg: "street" },
+  car: { scene: "?? ???", mission: "??? ??????! ??? ?? ?? ???! ?? ?????!!", bg: "road" },
+  barkingDog: { scene: "?? ?", mission: "?? ? ???? ???. 5? ?? ????? ?????.", bg: "fence" },
+  boss: { scene: "??? ??", mission: "?? ?? ?? ???? ?????. ???? 3? ?? ???? ?????.", bg: "fence" },
+  cat: { scene: "??? ??", mission: "???? ??? ?????. 5? ?? ???? ?????.", bg: "street" },
+  home: { scene: "? ?", mission: "?? ?????.", bg: "gate" },
+  clear: { scene: "?? ??", mission: "?? ??! ??? ??? ??? ???.", bg: "home" },
+  fail: { scene: "?? ??", mission: "?? ??... ?? ???????", bg: "home" },
 };
 
 export default function WalkQuestGame() {
@@ -176,7 +176,9 @@ export default function WalkQuestGame() {
   const [dogsRoadside, setDogsRoadside] = useState(false);
   const [bossLane, setBossLane] = useState<Lane>("center");
   const [bossBlocks, setBossBlocks] = useState(0);
+  const [carGuide, setCarGuide] = useState(false);
   const [hearts, setHearts] = useState(false);
+  const walkForwardRef = useRef(0);
 
   const info = phaseInfo[phase];
   const needsInput = ["living", "leashPrep", "pull", "car", "barkingDog", "cat"].includes(phase);
@@ -192,7 +194,7 @@ export default function WalkQuestGame() {
 
   function reset() {
     setPhase("intro");
-    setMessage("루비와 감자가 산책을 기다리고 있어요.");
+    setMessage("\uB8E8\uBE44\uC640 \uAC10\uC790\uAC00 \uC0B0\uCC45\uC744 \uAE30\uB2E4\uB9AC\uACE0 \uC788\uC5B4\uC694.");
     setInput("");
     setTimeLeft(null);
     setFalls(0);
@@ -214,7 +216,9 @@ export default function WalkQuestGame() {
     setDogsRoadside(false);
     setBossLane("center");
     setBossBlocks(0);
+    setCarGuide(false);
     setHearts(false);
+    walkForwardRef.current = 0;
   }
 
   function start() {
@@ -238,6 +242,71 @@ export default function WalkQuestGame() {
     setPhase("gate");
     setMessage("대문 앞이에요. 루비는 빙글빙글 돌고, 감자는 신나서 짖고 있어요.");
   }, []);
+
+  const handleWalkForward = useCallback((delta: number) => {
+    if (phase !== "walk") return;
+    walkForwardRef.current += delta;
+
+    if (walkStep === 0 && walkForwardRef.current >= 3) {
+      walkForwardRef.current = 0;
+      setPhase("pull");
+      setTimeLeft(7);
+      setMessage("\uB8E8\uBE44\uAC00 \uC904\uC744 \uB2F9\uAE30\uAE30 \uC2DC\uC791\uD588\uC5B4\uC694. 7\uCD08 \uC548\uC5D0 \uCC9C\uCC9C\uD788\uB77C\uACE0 \uC785\uB825\uD558\uC138\uC694!");
+      return;
+    }
+
+    if (walkStep === 1 && walkForwardRef.current >= 15) {
+      walkForwardRef.current = 0;
+      setPhase("poop");
+      setPoopStep("ask");
+      setPoopTool(null);
+      setMessage("\uC8FC\uC758! \uAC10\uC790\uAC00 \uB625\uC744 \uC4CC\uC5B4\uC694. \uD3AB\uD2F0\uCF13\uC744 \uC9C0\uD0A4\uACA0\uC2B5\uB2C8\uAE4C?");
+      return;
+    }
+
+    if (walkStep === 2 && walkForwardRef.current >= 3) {
+      walkForwardRef.current = 0;
+      setPhase("car");
+      setCarStopped(false);
+      setDogsRoadside(false);
+      setCarGuide(true);
+      setTimeLeft(null);
+      setMessage("\uC18D\uB3C4\uB97C \uB530\uB77C\uC7A1\uC558\uC5B4\uC694! \uADF8\uB7F0\uB370 \uC55E\uC5D0 \uCC28\uAC00 \uC624\uB124\uC694! \uC5BC\uB978 \uBA48\uCCD0\uB77C\uACE0 \uC785\uB825\uD558\uACE0, \uB8E8\uAC10\uC774\uB97C \uD480\uCABD\uC73C\uB85C \uC62E\uAE34 \uB4A4 \uAE30\uB2E4\uB824\uB77C\uACE0 \uC785\uB825\uD558\uC138\uC694!");
+      return;
+    }
+
+    if (walkStep === 3 && walkForwardRef.current >= 15) {
+      walkForwardRef.current = 0;
+      setPhase("barkingDog");
+      setTimeLeft(5);
+      setMessage("\uAE38\uAC00 \uC9D1 \uC815\uC6D0\uC5D0\uC11C \uB2E4\uB978 \uAC15\uC544\uC9C0\uAC00 \uC9D6\uC5B4\uC694. 5\uCD08 \uC548\uC5D0 \uBB34\uC2DC\uD574\uB77C\uACE0 \uC785\uB825\uD558\uC138\uC694.");
+      return;
+    }
+
+    if (walkStep === 4 && walkForwardRef.current >= 3) {
+      walkForwardRef.current = 0;
+      setPhase("boss");
+      setBossBlocks(-1);
+      setBossLane(randomLane());
+      setTimeLeft(null);
+      setMessage("\uC0AC\uB098\uC6B4 \uAC15\uC544\uC9C0\uAC00 \uACE7 \uB098\uD0C0\uB0A0 \uAC70\uC608\uC694. \uB098\uD0C0\uB098\uBA74 3\uCD08 \uC548\uC5D0 \uD074\uB9AD\uD574\uC11C \uBE14\uB85C\uD0B9\uD558\uC138\uC694!");
+      return;
+    }
+
+    if (walkStep === 5 && walkForwardRef.current >= 3) {
+      walkForwardRef.current = 0;
+      setPhase("cat");
+      setTimeLeft(5);
+      setMessage("\uACE0\uC591\uC774\uAC00 \uC67C\uCABD\uC5D0 \uB098\uD0C0\uB0AC\uC5B4\uC694! \uAC10\uC790\uAC00 \uCA53\uC544\uAC00\uB824\uACE0 \uD574\uC694. 5\uCD08 \uC548\uC5D0 \uC548\uB3FC\uB77C\uACE0 \uC785\uB825\uD558\uC138\uC694!");
+      return;
+    }
+
+    if (walkStep >= 6 && walkForwardRef.current >= 3) {
+      walkForwardRef.current = 0;
+      setPhase("home");
+      setMessage("\uC9D1 \uC55E\uC5D0 \uAC70\uC758 \uB3C4\uCC29\uD588\uC5B4\uC694.");
+    }
+  }, [phase, walkStep]);
 
   function fall(reason: string) {
     playSound("fall");
@@ -306,51 +375,12 @@ export default function WalkQuestGame() {
     if (phase !== "walk") return;
     const peeTimer = window.setInterval(() => {
       setPeePulse(true);
-      setMessage("감자가 잠깐 멈춰 영역 표시 중... 루비가 조금 기다려 주고 있어요.");
+      setMessage("\uAC10\uC790\uAC00 \uC7A0\uAE50 \uBA48\uCDB0 \uC601\uC5ED \uD45C\uC2DC \uC911... \uB8E8\uBE44\uAC00 \uC870\uAE08 \uAE30\uB2E4\uB824 \uC8FC\uACE0 \uC788\uC5B4\uC694.");
       window.setTimeout(() => setPeePulse(false), 2400);
     }, 15000);
 
-    const eventDelay = walkStep === 1 ? 15000 : 3600;
-    const eventTimer = window.setTimeout(() => {
-      if (walkStep === 0) {
-        setPhase("pull");
-        setTimeLeft(7);
-        setMessage("루비가 줄을 당기기 시작했어요. 7초 안에 천천히라고 말하세요!");
-      } else if (walkStep === 1) {
-        setPhase("poop");
-        setPoopStep("ask");
-        setPoopTool(null);
-        setMessage("주의! 감자가 똥을 쌌어요. 펫티켓을 지키겠습니까?");
-      } else if (walkStep === 2) {
-        setPhase("run");
-        setRunTaps(0);
-        setTimeLeft(8);
-        setMessage("날씨가 좋아요. 한번 뛰어볼까요? 스페이스바를 빠르게 눌러주세요!");
-      } else if (walkStep === 3) {
-        setPhase("barkingDog");
-        setTimeLeft(5);
-        setMessage("길가 집 정원에서 다른 강아지가 짖어요. 5초 안에 무시해라고 말하세요.");
-      } else if (walkStep === 4) {
-        setPhase("boss");
-        setBossBlocks(0);
-        setBossLane(randomLane());
-        setTimeLeft(2);
-        setMessage("사나운 강아지가 달려와요! 2초 안에 클릭해서 막아주세요.");
-      } else if (walkStep === 5) {
-        setPhase("cat");
-        setTimeLeft(5);
-        setMessage("고양이가 왼쪽에 나타났어요! 감자가 쫓아가려고 해요. 5초 안에 안돼라고 입력하세요!");
-      } else {
-        setPhase("home");
-        setMessage("집 앞에 거의 도착했어요.");
-      }
-    }, eventDelay);
-
-    return () => {
-      window.clearInterval(peeTimer);
-      window.clearTimeout(eventTimer);
-    };
-  }, [phase, walkStep]);
+    return () => window.clearInterval(peeTimer);
+  }, [phase]);
 
   useEffect(() => {
     if (phase !== "run") return;
@@ -383,72 +413,76 @@ export default function WalkQuestGame() {
 
   function runCommand(command: string) {
     if (phase === "living") {
-      if (callWords.some((word) => command.includes(word))) {
+      if (!calledDogs && callWords.some((word) => command.includes(word))) {
         setCalledDogs(true);
-        playSound("happy");
-        showHearts("루비와 감자가 내 앞으로 달려왔어요. 산책가자고 말해볼까요?");
-      } else if (walkWords.some((word) => command.includes(word))) {
+        playSound("bark");
+        showHearts("??? ??? ??? ?????. ????? ??????");
+      } else if (calledDogs && walkWords.some((word) => command.includes(word))) {
         setPhase("excited");
-        showHearts("루비와 감자가 콩콩 뛰기 시작했어요. 목줄과 똥봉투가 있는 현관쪽으로 가볼까요?");
+        playSound("success");
+        showHearts("????? ?? ??? ??? ?? ?? ?????. ??? ???? ?? ????? ?????");
+      } else if (calledDogs) {
+        setMessage("????, ???, ??? ? ??? ?????.");
       } else {
-        setMessage("아직 반응이 약해요. 루비, 감자, 루감 또는 산책가자라고 말해보세요.");
+        setMessage("??, ??, ?? ????? ?????.");
       }
       return;
     }
-    if (phase === "excited") {
-      setMessage("강아지들이 신나서 따라오고 있어요. 현관까지 가서 앉아라고 말해주세요.");
-      return;
-    }
     if (phase === "leashPrep") {
-      if (command.includes("앉아")) {
+      if (command.includes("??")) {
         setDogsSitting(true);
         setPhase("leashMission");
         setTimeLeft(5);
         playSound("leash");
-        setMessage("강아지들이 차분히 앉았어요. 다시 일어나기 전에 빨리 목줄을 채워봐요. 목줄을 강아지에게 드래그 하면 목줄을 채울 수 있어요!");
+        setMessage("????? ??? ????. ?? ???? ?? ?? ??? ????. ??? ????? ??? ?? ??? ?? ? ???!");
       } else {
-        setMessage("현관에 도착했어요. 산책이라는 말에 흥분한 강아지들을 앉혀볼까요?");
+        setMessage("??? ?????. ????? ?? ??? ????? ??????");
       }
       return;
     }
     if (phase === "pull") {
-      if (command.includes("천천히")) {
+      if (command.includes("???")) {
         setTimeLeft(null);
-        resumeWalk("루비가 속도를 줄였어요. 다시 앞으로 가볼까요?");
+        resumeWalk("??? ??? ????. ?? ??? ?????");
       } else {
-        setMessage("루비가 계속 당겨요. 7초 안에 천천히라고 입력하세요.");
+        setMessage("??? ?? ???. 7? ?? ????? ?????.");
       }
       return;
     }
     if (phase === "car") {
-      if (!carStopped && command.includes("멈춰")) {
+      if (carGuide) {
+        setMessage("??? ??? ? ????. ??? ???? ??, ??? ??? ?????.");
+        return;
+      }
+      if (!carStopped && command.includes("??")) {
         playSound("car");
         setCarStopped(true);
-        setMessage("멈춰어요. 루비와 감자를 길 옆 풀 쪽으로 옮긴 다음 기다려라고 입력하세요.");
-      } else if (carStopped && dogsRoadside && command.includes("기다려")) {
+        setMessage("????. ??? ??? ? ? ???? ?? ?? ????? ?????.");
+      } else if (carStopped && dogsRoadside && command.includes("???")) {
         finishCar();
       } else if (carStopped && !dogsRoadside) {
-        setMessage("먼저 루비와 감자 사진을 길 옆 풀 쪽으로 옮겨주세요.");
+        setMessage("?? ??? ??? ???? ?????.");
       } else {
-        setMessage("차가 다가와요. 먼저 멈춰라고 입력하세요!");
+        setMessage("?? ????. ?? ???? ?????.");
       }
       return;
     }
     if (phase === "barkingDog") {
-      if (command.includes("무시해")) {
+      if (command.includes("???")) {
         ignoreDog();
       } else {
-        setMessage("옆집 강아지가 더 크게 짖어요. 5초 안에 무시해라고 입력하세요!");
+        setMessage("?? ???? ?? ???. 5? ?? ????? ?????.");
       }
       return;
     }
     if (phase === "cat") {
-      if (command.includes("안돼")) {
+      if (command.includes("??")) {
         setTimeLeft(null);
-        resumeWalk("감자가 멈췄어요. 고양이는 풀숲으로 사라졌고 다시 산책을 이어갑니다.");
+        resumeWalk("??? ????. ???? ??? ???? ?? ??? ?????.");
       } else {
-        setMessage("감자가 고양이 쪽으로 뛰려고 해요. 5초 안에 안돼라고 입력하세요!");
+        setMessage("??? ??? ??? ????? ??. 5? ?? ???? ?????.");
       }
+      return;
     }
   }
 
@@ -466,18 +500,18 @@ export default function WalkQuestGame() {
     setPhase("leashMission");
     setTimeLeft(5);
     playSound("leash");
-    setMessage("강아지들이 차분히 앉았어요. 다시 일어나기 전에 빨리 목줄을 채워봐요. 목줄을 강아지에게 드래그 하면 목줄을 채울 수 있어요!");
+    setMessage("강아지들이 차분히 앉았어요. 다시 일어나기 전에 빨리 목줄을 채워봐요. 목줄을 강아지에게 드래그하면 목줄을 채울 수 있어요!");
   }
 
   function openLeashZoom(target: Dog) {
     if ((target === "ruby" && rubyLeashed) || (target === "gamja" && gamjaLeashed)) {
-      setMessage(`${target === "ruby" ? "루비" : "감자"}는 이미 목줄을 찼어요.`);
+      setMessage((target === "ruby" ? "루비" : "감자") + "는 이미 목줄을 찼어요.");
       return;
     }
     setZoomDog(target);
     setPhase("leashZoom");
     playSound("leash");
-    setMessage(`${target === "ruby" ? "루비" : "감자"}에게 목줄을 채워주세요.`);
+    setMessage((target === "ruby" ? "루비" : "감자") + "에게 목줄을 채워주세요.");
   }
 
   function finishLeash(target: Dog) {
@@ -493,14 +527,14 @@ export default function WalkQuestGame() {
       showHearts("목줄 착용 완료! 잊은 물건이 있지 않은지 확인하고 나가세요.");
     } else {
       setPhase("leashMission");
-      setMessage("좋아요. 선반의 다른 목줄도 해당 강아지에게 드래그해서 채워주세요.");
+      setMessage("좋아요. 남은 목줄을 해당 강아지에게 드래그해서 채워주세요.");
     }
   }
 
   function goOut() {
     setPhase("garden");
     playSound("step");
-    setMessage(hasPoopBag ? "똥봉투까지 챙겼어요. 정원으로 나갑니다. 대문 밖으로 나가 본격적인 산책 해볼까요?" : "똥봉투 없이도 정원으로 나왔어요. 대문 밖으로 나가 본격적인 산책 해볼까요?");
+    setMessage(hasPoopBag ? "똥봉투까지 챙겼어요. 정원으로 나왔습니다. 대문 밖으로 나가 본격적인 산책 해볼까요?" : "똥봉투는 없지만 정원으로 나왔어요. 대문 밖으로 나가 본격적인 산책 해볼까요?");
   }
 
   function openGate() {
@@ -511,13 +545,17 @@ export default function WalkQuestGame() {
     }
     setPhase("walk");
     playSound("step");
-    setMessage("안전하게 대문을 열고 나왔어요. 늘 가던 산책길입니다.");
+    setWalkStep(0);
+    walkForwardRef.current = 0;
+    setMessage("늘 가던 산책길이에요. 앞으로 가볼까요?");
   }
 
   function resumeWalk(text: string) {
     setWalkStep((current) => current + 1);
+    walkForwardRef.current = 0;
     setPoopTool(null);
     setPoopStep("ask");
+    setCarGuide(false);
     setPhase("walk");
     showHearts(text);
   }
@@ -571,6 +609,7 @@ export default function WalkQuestGame() {
   }
 
   function clickBossDog() {
+    if (bossBlocks < 0) return;
     playSound("bark");
     setBossBlocks((current) => {
       const next = current + 1;
@@ -578,8 +617,8 @@ export default function WalkQuestGame() {
         blockBoss();
       } else {
         setBossLane(randomLane());
-        setTimeLeft(2);
-        setMessage(`좋아요! ${next}/3번 막았어요. 다시 나타나는 개를 클릭하세요!`);
+        setTimeLeft(3);
+        setMessage(`좋아요! ${next}/3번 막았어요. 다시 나타나는 개를 3초 안에 클릭하세요!`);
       }
       return next;
     });
@@ -605,6 +644,27 @@ export default function WalkQuestGame() {
   }, [phase]);
 
   useEffect(() => {
+    if (phase !== "boss" || bossBlocks !== -1) return;
+    const guideTimer = window.setTimeout(() => {
+      setBossBlocks(0);
+      setBossLane(randomLane());
+      setTimeLeft(3);
+      setMessage("사나운 강아지가 나타났어요! 3초 안에 강아지를 클릭하세요.");
+    }, 2000);
+    return () => window.clearTimeout(guideTimer);
+  }, [bossBlocks, phase]);
+
+  useEffect(() => {
+    if (phase !== "car" || !carGuide) return;
+    const guideTimer = window.setTimeout(() => {
+      setCarGuide(false);
+      setTimeLeft(10);
+      setMessage("차가 가까워져요! 멈춰를 입력하고 루비와 감자를 풀쪽으로 옮긴 뒤 기다려를 입력하세요.");
+    }, 3000);
+    return () => window.clearTimeout(guideTimer);
+  }, [carGuide, phase]);
+
+  useEffect(() => {
     if (phase !== "gate" || gamjaQuiet) return;
     const barkTimer = window.setInterval(() => playSound("bark"), 1300);
     return () => window.clearInterval(barkTimer);
@@ -624,16 +684,16 @@ export default function WalkQuestGame() {
   }, [calledDogs, dogsSitting, phase]);
 
   const commandPlaceholder = phase === "pull"
-    ? "천천히"
+    ? "???"
     : phase === "car"
-      ? carStopped ? "기다려" : "멈춰"
+      ? carStopped ? "???" : "??"
       : phase === "barkingDog"
-        ? "무시해"
+        ? "???"
         : phase === "cat"
-          ? "안돼"
+          ? "??"
           : phase === "living"
-            ? "말을 입력해 주세요"
-            : "앉아";
+            ? "?? ??? ???"
+            : "??";
 
   return (
     <main className="walk-page">
@@ -641,15 +701,15 @@ export default function WalkQuestGame() {
       <section className="game">
         <header className="topbar">
           <div>
-            <p>{"현실형 1인칭 강아지 산책 시뮬레이션"}</p>
-            <h1>{"루비 감자와 산책"}</h1>
+            <p>{"??? 1?? ??? ?? ?????"}</p>
+            <h1>{"?? ??? ??"}</h1>
           </div>
           <div className="hud-pills">
-            <Pill label="넘어짐" value={`${falls}/3`} alert={falls > 0} />
-            <Pill label="시간" value={timeLeft === null ? "-" : `${timeLeft}s`} alert={timeLeft !== null && timeLeft <= 3} />
-            <Pill label="루비 목줄" value={rubyLeashed ? "착용" : "미착용"} />
-            <Pill label="감자 목줄" value={gamjaLeashed ? "착용" : "미착용"} />
-            <Pill label="똥봉투" value={hasPoopBag ? "보유" : "없음"} alert={!hasPoopBag && phase === "poop"} />
+            <Pill label="???" value={`${falls}/3`} alert={falls > 0} />
+            <Pill label="??" value={timeLeft === null ? "-" : `${timeLeft}s`} alert={timeLeft !== null && timeLeft <= 3} />
+            <Pill label="?? ??" value={rubyLeashed ? "??" : "???"} />
+            <Pill label="?? ??" value={gamjaLeashed ? "??" : "???"} />
+            <Pill label="???" value={hasPoopBag ? "??" : "??"} alert={!hasPoopBag && phase === "poop"} />
           </div>
         </header>
 
@@ -665,6 +725,7 @@ export default function WalkQuestGame() {
               onReachLiving={reachLiving}
               onReachEntry={reachEntry}
               onReachGate={reachGate}
+              onWalkForward={handleWalkForward}
             />
           )}
           <div className="first-person" />
@@ -711,6 +772,7 @@ export default function WalkQuestGame() {
             ignoreDog={ignoreDog}
             blockBoss={blockBoss}
             clickBossDog={clickBossDog}
+            carGuide={carGuide}
           />
           <div className="scene-caption">
             <b>{info.scene}</b>
@@ -1002,7 +1064,7 @@ function Pill({ label, value, alert = false }: { label: string; value: string; a
           box-shadow: 0 7px 16px rgba(0,0,0,0.16);
         }
         .pill::before {
-          content: "•";
+          content: "?";
           color: #d79d71;
           font-size: 1.25rem;
           line-height: 0;
@@ -1030,6 +1092,7 @@ function ThreeWalkWorld({
   onReachLiving,
   onReachEntry,
   onReachGate,
+  onWalkForward,
 }: {
   phase: Phase;
   calledDogs: boolean;
@@ -1040,6 +1103,7 @@ function ThreeWalkWorld({
   onReachLiving?: () => void;
   onReachEntry?: () => void;
   onReachGate?: () => void;
+  onWalkForward?: (delta: number) => void;
 }) {
   const mountRef = useRef<HTMLDivElement | null>(null);
   const positionRef = useRef({ x: 0, z: 5.5, yaw: 0 });
@@ -1154,9 +1218,13 @@ function ThreeWalkWorld({
       const delta = Math.min(clock.getDelta(), 0.04);
       const pos = positionRef.current;
       const speed = 3.4 * delta;
+      const movingForward = keysRef.current.has("ArrowUp");
       if (keysRef.current.has("ArrowLeft")) pos.x -= speed;
       if (keysRef.current.has("ArrowRight")) pos.x += speed;
-      if (keysRef.current.has("ArrowUp")) pos.z -= speed;
+      if (movingForward) {
+        pos.z -= speed;
+        if (phase === "walk") onWalkForward?.(delta);
+      }
       if (keysRef.current.has("ArrowDown")) pos.z += speed;
       pos.x = THREE.MathUtils.clamp(pos.x, -6.2, 6.2);
       const minZ = isOutdoor && !["garden", "gate"].includes(phase) ? -58 : -10.5;
@@ -1285,7 +1353,7 @@ function ThreeWalkWorld({
       gamjaSitMap.dispose();
       mount.removeChild(renderer.domElement);
     };
-  }, [calledDogs, canReachEntry, dogsRoadside, isOutdoor, onReachEntry, onReachGate, onReachLiving, phase]);
+  }, [calledDogs, canReachEntry, dogsRoadside, isOutdoor, onReachEntry, onReachGate, onReachLiving, onWalkForward, phase]);
 
   return (
     <div className="three-world" ref={mountRef} aria-label="?? ??">
@@ -1641,12 +1709,13 @@ function DogLayer({
   const rubySrc = dog.ruby[pose as keyof typeof dog.ruby] || dog.ruby.walk;
   const gamjaSrc = dog.gamja[pose as keyof typeof dog.gamja] || dog.gamja.walk;
   const rubySpinning = phase === "gate" && !rubyCalm;
+  const gamjaBarking = phase === "gate" && !gamjaQuiet;
   return (
     <div className={`dogs dogs-${pose} phase-${phase} ${rubySpinning ? "dogs-spin" : ""}`}>
       <DogSprite src={rubySrc} name="루비" side="left" hearts={hearts} spinning={rubySpinning} />
       <DogSprite src={peePulse ? dog.gamja.pee : gamjaSrc} name="감자" side="right" hearts={hearts} />
-      {phase === "gate" && !gamjaQuiet && <div className="bark-bubble">멍! 멍!</div>}
-      {peePulse && <div className="pee-mark">영역 표시 중</div>}
+      {gamjaBarking && <span className="bark-bubble">{"?! ?!"}</span>}
+      {peePulse && <div className="pee-mark">{"?? ?? ?"}</div>}
       <style jsx>{`
         .dogs {
           position: absolute;
@@ -2038,6 +2107,7 @@ function SceneContent(props: {
   ignoreDog: () => void;
   blockBoss: () => void;
   clickBossDog: () => void;
+  carGuide: boolean;
 }) {
   const p = props;
   if (p.phase === "intro") {
@@ -2065,7 +2135,7 @@ function SceneContent(props: {
   }
   if (p.phase === "poop") return <PoopTools hasPoopBag={p.hasPoopBag} tool={p.poopTool} step={p.poopStep} setStep={p.setPoopStep} setMessage={p.setMessage} choose={p.choosePoopTool} drop={p.dropPoopTool} />;
   if (p.phase === "run") return <ActionDock><span className="counter">Space {p.runTaps}/18</span></ActionDock>;
-  if (p.phase === "car") return <CarSafetyDock carStopped={p.carStopped} dogsRoadside={p.dogsRoadside} setDogsRoadside={p.setDogsRoadside} setMessage={p.setMessage} />;
+  if (p.phase === "car") return <CarSafetyDock carGuide={p.carGuide} carStopped={p.carStopped} dogsRoadside={p.dogsRoadside} setDogsRoadside={p.setDogsRoadside} setMessage={p.setMessage} />;
   if (p.phase === "home") return <ActionDock><button onClick={() => p.setPhase("clear")}>{"집 문 열기"}</button></ActionDock>;
   if (p.phase === "clear") return <CenterCard title="산책 완료!" body="산책 완료! 루비와 감자가 행복해 보여요." button="다시 하기" onClick={p.reset} image={dog.duo} />;
   if (p.phase === "fail") return <CenterCard title="산책 실패..." body="다시 도전해볼까요?" button="Restart" onClick={p.reset} image={dog.duo} />;
@@ -2073,11 +2143,13 @@ function SceneContent(props: {
 }
 
 function CarSafetyDock({
+  carGuide,
   carStopped,
   dogsRoadside,
   setDogsRoadside,
   setMessage,
 }: {
+  carGuide: boolean;
   carStopped: boolean;
   dogsRoadside: boolean;
   setDogsRoadside: (value: boolean) => void;
@@ -2085,39 +2157,54 @@ function CarSafetyDock({
 }) {
   const dropDogs = (event: ReactDragEvent<HTMLDivElement>) => {
     event.preventDefault();
+    if (carGuide) {
+      setMessage("\uC548\uB0B4\uAC00 \uB05D\uB09C \uB4A4 \uC62E\uACA8\uC8FC\uC138\uC694. \uCC28\uAC00 \uB2E4\uAC00\uC624\uACE0 \uC788\uC5B4\uC694.");
+      return;
+    }
     if (!carStopped) {
-      setMessage("먼저 멈춰라고 입력해야 해요!");
+      setMessage("\uBA3C\uC800 \uBA48\uCCD0\uB77C\uACE0 \uC785\uB825\uD574\uC57C \uD574\uC694!");
       return;
     }
     setDogsRoadside(true);
-    setMessage("루감이를 풀 쪽으로 옮겼어요. 이제 기다려라고 입력하세요.");
+    setMessage("\uB8E8\uBE44\uC640 \uAC10\uC790\uB97C \uD480 \uCABD\uC73C\uB85C \uC62E\uACBC\uC5B4\uC694. \uC774\uC81C \uAE30\uB2E4\uB824\uB77C\uACE0 \uC785\uB825\uD558\uC138\uC694.");
   };
 
   return (
     <div className="car-safety-ui">
+      {carGuide && (
+        <div className="car-guide">
+          <b>{"\uCC28\uAC00 \uC6B0\uB9AC \uC55E\uC73C\uB85C \uC624\uACE0 \uC788\uC5B4\uC694!"}</b>
+          <span><strong>{"\uBA48\uCCD0"}</strong>{" \uC785\uB825 \uD6C4 \uB8E8\uBE44\uC640 \uAC10\uC790\uB97C \uD480\uCABD\uC73C\uB85C \uC62E\uAE30\uACE0 "}<strong>{"\uAE30\uB2E4\uB824"}</strong>{"\uB97C \uC785\uB825\uD558\uC138\uC694."}</span>
+        </div>
+      )}
       <div className={dogsRoadside ? "roadside-grass done" : "roadside-grass"} onDragOver={(event) => event.preventDefault()} onDrop={dropDogs}>
-        <span>{dogsRoadside ? "이동 완료" : "풀쪽"}</span>
+        <span>{dogsRoadside ? "\uC548\uC804 \uC9C0\uB300" : "\uD480\uCABD"}</span>
       </div>
-      <div className={dogsRoadside ? "roadside-drag-source moved" : "roadside-drag-source"} draggable onDragStart={(event) => { event.dataTransfer.effectAllowed = "move"; event.dataTransfer.setData("text/plain", "dogs-roadside"); }}>
-        <span>루감이</span>
+      <div className={dogsRoadside ? "roadside-drag-source moved" : "roadside-drag-source"} draggable={!carGuide} onDragStart={(event) => { event.dataTransfer.effectAllowed = "move"; event.dataTransfer.setData("text/plain", "dogs-roadside"); }}>
+        <Image className="road-dog ruby" src={dog.ruby.back} alt="\uB8E8\uBE44" width={116} height={150} draggable={false} />
+        <Image className="road-dog gamja" src={dog.gamja.back} alt="\uAC10\uC790" width={92} height={120} draggable={false} />
       </div>
       <style jsx>{`
         .car-safety-ui { position: absolute; z-index: 22; inset: 0; pointer-events: none; }
+        .car-guide { position: absolute; left: 50%; top: 16%; transform: translateX(-50%); display: grid; gap: 8px; min-width: min(480px, calc(100vw - 56px)); padding: 18px 22px; border-radius: 24px; text-align: center; color: #683034; background: linear-gradient(180deg, rgba(255,226,226,0.97), rgba(255,198,205,0.95)); border: 2px solid rgba(210, 105, 118, 0.38); box-shadow: 0 24px 54px rgba(94,42,44,0.28); font-weight: 950; }
+        .car-guide b { font-size: clamp(1.08rem, 2.2vw, 1.5rem); }
+        .car-guide strong { display: inline-block; margin: 0 3px; padding: 2px 10px 4px; border-radius: 999px; color: #bd2e3a; background: #fff8eb; box-shadow: 0 8px 18px rgba(156, 55, 65, 0.18); }
         .roadside-grass { position: absolute; right: 26px; top: 31%; width: 142px; height: 170px; border-radius: 28px; display: grid; place-items: center; font-weight: 950; color: #fffde9; border: 2px dashed rgba(255,255,255,0.78); background: radial-gradient(circle at 28% 35%, rgba(255,255,255,0.22), transparent 26%), linear-gradient(135deg, rgba(67, 132, 58, 0.82), rgba(133, 184, 92, 0.86)); box-shadow: 0 18px 40px rgba(23, 77, 36, 0.22); pointer-events: auto; }
         .roadside-grass.done { border-style: solid; background: linear-gradient(135deg, rgba(62, 136, 54, 0.92), rgba(112, 184, 81, 0.92)); }
         .roadside-drag-source { position: absolute; left: 50%; bottom: 86px; width: 230px; height: 180px; transform: translateX(-50%); cursor: grab; pointer-events: auto; border-radius: 44px; background: rgba(255,255,255,0.01); }
-        .roadside-drag-source span { position: absolute; left: 50%; bottom: -16px; transform: translateX(-50%); padding: 6px 12px; border-radius: 999px; background: rgba(255, 250, 242, 0.88); color: #4b3322; font-weight: 950; box-shadow: 0 8px 18px rgba(0,0,0,0.12); }
+        .roadside-drag-source :global(.road-dog) { position: absolute; bottom: 0; object-fit: contain; filter: drop-shadow(0 16px 16px rgba(0,0,0,0.26)); pointer-events: none; }
+        .roadside-drag-source :global(.ruby) { left: 20px; }
+        .roadside-drag-source :global(.gamja) { right: 28px; bottom: 5px; }
         .roadside-drag-source.moved { display: none; }
       `}</style>
     </div>
   );
 }
-
 function PullWarning({ timeLeft }: { timeLeft: number | null }) {
   return (
     <div className="pull-warning">
-      <b>루비가 신나서 줄을 당겨요!</b>
-      <span><strong>천천히</strong> 라고 입력해 주세요.</span>
+      <b>??? ??? ?? ???!</b>
+      <span><strong>???</strong> ?? ??? ???.</span>
       {timeLeft !== null && <small>{timeLeft}s</small>}
       <style jsx>{`
         .pull-warning {
@@ -2154,39 +2241,48 @@ function NeighborBarkDog() {
 
   return (
     <div className="neighbor-event">
+      <div className="neighbor-guide">
+        <b>?? ???? ?? ???!</b>
+        <span>5? ?? <strong>???</strong>?? ?????.</span>
+      </div>
       <div className="neighbor-yard">
-        <span className="house-label">옆집 정원</span>
-        <Image src={animal.neighborDog} alt="짖는 옆집 강아지" width={150} height={210} priority />
-        <span className="bark-bubble">멍! 멍!</span>
+        <span className="house-label">?? ??</span>
+        <Image src={animal.neighborDog} alt="?? ?? ???" width={150} height={210} priority />
+        <span className="bark-bubble">?! ?!</span>
       </div>
       <style jsx>{`
         .neighbor-event { position: absolute; z-index: 23; inset: 0; pointer-events: none; }
+        .neighbor-guide {
+          position: absolute;
+          left: 50%;
+          top: 16%;
+          transform: translateX(-50%);
+          display: grid;
+          gap: 7px;
+          min-width: min(430px, calc(100vw - 56px));
+          padding: 16px 20px;
+          border-radius: 22px;
+          text-align: center;
+          color: #683034;
+          background: linear-gradient(180deg, rgba(255,226,226,0.97), rgba(255,198,205,0.94));
+          border: 2px solid rgba(210, 105, 118, 0.36);
+          box-shadow: 0 20px 44px rgba(94,42,44,0.25);
+          font-weight: 950;
+        }
+        .neighbor-guide strong { display: inline-block; padding: 2px 9px 4px; border-radius: 999px; color: #bd2e3a; background: #fff8eb; }
         .neighbor-yard {
           position: absolute;
-          right: 7%;
-          top: 18%;
-          width: min(280px, 30vw);
-          height: min(340px, 43vh);
-          display: grid;
-          place-items: end center;
-          border-radius: 26px;
-          background:
-            linear-gradient(90deg, rgba(95, 70, 48, 0.72) 0 8px, transparent 8px 32px),
-            linear-gradient(180deg, rgba(255,248,232,0.62), rgba(94,132,74,0.4));
-          border: 2px solid rgba(255,255,255,0.35);
-          box-shadow: 0 24px 50px rgba(31, 54, 29, 0.24);
-          overflow: hidden;
+          right: clamp(36px, 9vw, 130px);
+          bottom: 104px;
+          width: clamp(190px, 22vw, 300px);
+          height: clamp(220px, 28vw, 360px);
+          border-radius: 28px 28px 8px 8px;
+          background: linear-gradient(180deg, rgba(247,239,215,0.62), rgba(73,109,57,0.48));
+          border: 2px solid rgba(255,255,255,0.42);
+          box-shadow: inset 0 -32px 0 rgba(54,91,45,0.32), 0 24px 46px rgba(0,0,0,0.24);
         }
-        .neighbor-yard :global(img) { object-fit: contain; filter: drop-shadow(0 16px 18px rgba(0,0,0,0.28)); }
-        .house-label, .bark-bubble {
-          position: absolute;
-          padding: 7px 12px;
-          border-radius: 999px;
-          background: rgba(255, 250, 242, 0.92);
-          color: #4b3322;
-          font-weight: 950;
-          box-shadow: 0 10px 22px rgba(0,0,0,0.14);
-        }
+        .neighbor-yard :global(img) { position: absolute; left: 50%; bottom: 24px; transform: translateX(-50%); object-fit: contain; filter: drop-shadow(0 18px 18px rgba(0,0,0,0.32)); }
+        .house-label, .bark-bubble { position: absolute; padding: 8px 11px; border-radius: 999px; background: #fff8e8; font-weight: 950; box-shadow: 0 10px 22px rgba(0,0,0,0.18); }
         .house-label { left: 12px; top: 12px; font-size: 0.85rem; }
         .bark-bubble { right: 12px; top: 54px; color: #b64339; animation: bark-pop 0.55s ease-in-out infinite alternate; }
         @keyframes bark-pop { from { transform: scale(0.94); } to { transform: scale(1.08); } }
@@ -2207,14 +2303,26 @@ function BossClickGame({
   clickBossDog: () => void;
 }) {
   const laneClass = `lane-${lane}`;
+  const guideMode = blocks < 0;
   return (
     <div className="boss-event">
-      <button className={`boss-dog ${laneClass}`} onClick={clickBossDog} aria-label="달려오는 강아지 막기">
-        <Image src={animal.bossDog} alt="달려오는 큰 강아지" fill sizes="260px" priority />
-      </button>
+      {!guideMode && (
+        <button className={`boss-dog ${laneClass}`} onClick={clickBossDog} aria-label="\uC0AC\uB098\uC6B4 \uAC15\uC544\uC9C0 \uD074\uB9AD">
+          <Image src={animal.bossDog} alt="\uC0AC\uB098\uC6B4 \uAC15\uC544\uC9C0" fill sizes="260px" priority />
+        </button>
+      )}
       <div className="boss-warning">
-        <b>달려오는 개를 클릭해서 막아주세요!</b>
-        <span>{blocks}/3 블로킹 {timeLeft !== null ? ` · ${timeLeft}s` : ""}</span>
+        {guideMode ? (
+          <>
+      <b>{"\uC0AC\uB098\uC6B4 \uAC15\uC544\uC9C0\uAC00 \uB098\uD0C0\uB0A0 \uAC70\uC608\uC694!"}</b>
+            <span>{"\uB098\uD0C0\uB098\uBA74 \uC0AC\uB098\uC6B4 \uAC15\uC544\uC9C0\uB97C \uC9C1\uC811 \uD074\uB9AD\uD574 \uC8FC\uC138\uC694. "}<strong>{"3\uCD08 \uC548\uC5D0 \uD074\uB9AD"}</strong>{"\uD558\uBA74 \uBE14\uB85C\uD0B9\uD569\uB2C8\uB2E4."}</span>
+          </>
+        ) : (
+          <>
+      <b>{"\uC0AC\uB098\uC6B4 \uAC15\uC544\uC9C0\uAC00 \uB098\uD0C0\uB0A0 \uAC70\uC608\uC694!"}</b>
+            <span>{blocks}/3 {"\uBE14\uB85C\uD0B9"}{timeLeft !== null ? ` ? ${timeLeft}s` : ""}</span>
+          </>
+        )}
       </div>
       <style jsx>{`
         .boss-event { position: absolute; z-index: 25; inset: 0; pointer-events: none; }
@@ -2241,8 +2349,8 @@ function BossClickGame({
           transform: translateX(-50%);
           display: grid;
           gap: 6px;
-          min-width: min(420px, calc(100vw - 54px));
-          padding: 15px 18px;
+          min-width: min(460px, calc(100vw - 54px));
+          padding: 16px 20px;
           border-radius: 22px;
           text-align: center;
           color: #683034;
@@ -2251,6 +2359,7 @@ function BossClickGame({
           box-shadow: 0 20px 44px rgba(94,42,44,0.25);
           font-weight: 950;
         }
+        strong { display: inline-block; padding: 2px 9px 4px; border-radius: 999px; color: #bd2e3a; background: #fff8eb; }
         @keyframes boss-run {
           from { translate: 0 8px; scale: 0.96; }
           to { translate: 0 -4px; scale: 1.02; }
@@ -2259,7 +2368,6 @@ function BossClickGame({
     </div>
   );
 }
-
 function CatChaseLayer({ timeLeft }: { timeLeft: number | null }) {
   return (
     <div className="cat-event">
@@ -2608,6 +2716,9 @@ function PoopTools({
           {flashImage === "dirtyHand" && (
             <div className="flash-caption">나뭇잎이 너무 작아요! 손에 묻어버렸어요...</div>
           )}
+          {flashImage === "sockPoop" && (
+            <div className="flash-caption green">똥이 들어있는 양말을 들었어요. 양말은 잃었지만 환경은 지켰어요!</div>
+          )}
         </div>
       )}
       <div className={step === "sockReady" ? "poop-dialog normal" : "poop-dialog danger"}>
@@ -2677,6 +2788,7 @@ function PoopTools({
         .guard-warning :global(img), .poop-flash :global(img) { object-fit: contain; }
         .poop-flash { position: absolute; left: 50%; top: 46%; width: min(360px, 54vw); aspect-ratio: 1.45; transform: translate(-50%, -50%); z-index: 4; filter: drop-shadow(0 20px 28px rgba(48, 28, 18, 0.28)); pointer-events: none; animation: flash-pop 0.2s ease-out; }
         .flash-caption { position: absolute; left: 50%; bottom: -48px; transform: translateX(-50%); min-width: min(430px, calc(100vw - 64px)); padding: 12px 16px; border-radius: 18px; background: linear-gradient(180deg, rgba(255,226,226,0.98), rgba(255,201,207,0.96)); border: 2px solid rgba(224, 118, 128, 0.34); color: #5a2c2f; font-weight: 950; text-align: center; box-shadow: 0 16px 32px rgba(94,42,44,0.24); }
+        .flash-caption.green { background: linear-gradient(180deg, rgba(225,247,218,0.98), rgba(188,229,180,0.96)); border-color: rgba(91,154,86,0.34); color: #2d6332; box-shadow: 0 16px 32px rgba(53,98,49,0.22); }
         .poop-dialog { position: absolute; left: 50%; bottom: 32px; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px; min-width: min(420px, calc(100vw - 64px)); padding: 16px 18px; border-radius: 18px; box-shadow: 0 16px 38px rgba(0,0,0,0.22); font-weight: 950; pointer-events: auto; }
         .poop-dialog.danger { background: linear-gradient(180deg, rgba(255,229,229,0.97), rgba(255,205,211,0.95)); border: 2px solid rgba(224, 118, 128, 0.34); color: #5a2c2f; }
         .poop-dialog.normal { background: linear-gradient(180deg, rgba(255,250,242,0.96), rgba(246,229,201,0.94)); border: 2px solid rgba(104, 77, 52, 0.2); color: #4b3322; }
@@ -3085,7 +3197,7 @@ function CenterCard({
             0 13px 24px rgba(0,0,0,0.45);
         }
         h2::after {
-          content: " ♥";
+          content: " ?";
           color: #f3a3ae;
           font-size: 0.46em;
           vertical-align: top;
