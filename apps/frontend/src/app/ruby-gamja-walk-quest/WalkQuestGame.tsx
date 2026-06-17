@@ -24,6 +24,7 @@ type Phase =
   | "barkingDog"
   | "boss"
   | "cat"
+  | "catFood"
   | "home"
   | "clear"
   | "fail";
@@ -147,6 +148,7 @@ const phaseInfo: Record<Phase, { scene: string; mission: string; bg: string }> =
   barkingDog: { scene: "\uC606\uC9D1 \uAC15\uC544\uC9C0", mission: "\uC606\uC9D1 \uAC15\uC544\uC9C0\uAC00 \uC9D6\uACE0 \uC788\uC5B4\uC694. 5\uCD08 \uC548\uC5D0 \uBB34\uC2DC\uD574\uB77C\uACE0 \uC785\uB825\uD558\uC138\uC694.", bg: "fence" },
   boss: { scene: "\uC0AC\uB098\uC6B4 \uAC15\uC544\uC9C0", mission: "\uC0AC\uB098\uC6B4 \uAC15\uC544\uC9C0\uAC00 \uB2EC\uB824\uC640\uC694. \uB098\uD0C0\uB098\uBA74 3\uCD08 \uC548\uC5D0 \uD074\uB9AD\uD558\uC138\uC694.", bg: "fence" },
   cat: { scene: "\uACE0\uC591\uC774 \uB4F1\uC7A5", mission: "\uACE0\uC591\uC774\uAC00 \uC67C\uCABD\uC5D0 \uB098\uD0C0\uB0AC\uC5B4\uC694. 5\uCD08 \uC548\uC5D0 \uC548\uB3FC\uB77C\uACE0 \uC785\uB825\uD558\uC138\uC694.", bg: "street" },
+  catFood: { scene: "길고양이 밥", mission: "왼쪽에 길고양이 밥이 있어요. 루비가 달려들기 전에 3초 안에 먹지마를 입력하세요.", bg: "street" },
   home: { scene: "\uC9D1 \uC55E", mission: "\uC9D1\uC5D0 \uAC70\uC758 \uB3C4\uCC29\uD588\uC5B4\uC694.", bg: "gate" },
   clear: { scene: "\uC0B0\uCC45 \uC644\uB8CC", mission: "\uC0B0\uCC45 \uC644\uB8CC! \uB8E8\uBE44\uC640 \uAC10\uC790\uAC00 \uD589\uBCF5\uD574 \uBCF4\uC5EC\uC694.", bg: "home" },
   fail: { scene: "\uC0B0\uCC45 \uC2E4\uD328", mission: "\uC0B0\uCC45 \uC2E4\uD328... \uB2E4\uC2DC \uB3C4\uC804\uD574\uBCFC\uAE4C\uC694?", bg: "home" },
@@ -181,7 +183,7 @@ export default function WalkQuestGame() {
   const walkForwardRef = useRef(0);
 
   const info = phaseInfo[phase];
-  const needsInput = ["living", "leashPrep", "pull", "car", "barkingDog", "cat"].includes(phase);
+  const needsInput = ["living", "leashPrep", "pull", "car", "barkingDog", "cat", "catFood"].includes(phase);
   const showDogs = false;
   const useEmptyHome = (phase === "living" && calledDogs) || phase === "excited";
 
@@ -301,7 +303,15 @@ export default function WalkQuestGame() {
       return;
     }
 
-    if (walkStep >= 6 && walkForwardRef.current >= 3) {
+    if (walkStep === 6 && walkForwardRef.current >= 3) {
+      walkForwardRef.current = 0;
+      setPhase("catFood");
+      setTimeLeft(3);
+      setMessage("왼쪽에 길고양이 밥이 있어요! 루비가 냄새를 맡고 확 달려들어요. 3초 안에 먹지마라고 입력하세요!");
+      return;
+    }
+
+    if (walkStep >= 7 && walkForwardRef.current >= 3) {
       walkForwardRef.current = 0;
       setPhase("home");
       setMessage("\uC9D1 \uC55E\uC5D0 \uAC70\uC758 \uB3C4\uCC29\uD588\uC5B4\uC694.");
@@ -359,6 +369,8 @@ export default function WalkQuestGame() {
           hardFail("\uBE14\uB85C\uD0B9 \uC2E4\uD328. \uB8E8\uBE44\uC640 \uAC10\uC790\uAC00 \uC704\uD5D8\uD574\uC838 \uBC14\uB85C \uC2E4\uD328\uD588\uC5B4\uC694.");
         } else if (phase === "cat") {
           fall("감자가 고양이를 쫓으려 해서 넘어졌어요.");
+        } else if (phase === "catFood") {
+          fall("루비가 길고양이 밥으로 달려들어 넘어졌어요.");
         } else if (phase === "run") {
           fall("뛰는 속도를 따라잡지 못해 넘어졌어요.");
         }
@@ -480,6 +492,15 @@ export default function WalkQuestGame() {
         resumeWalk("감자가 멈췄어요. 고양이는 무사히 지나갔어요.");
       } else {
         setMessage("감자가 고양이를 쫓아가려 해요. 5초 안에 안돼라고 입력하세요.");
+      }
+      return;
+    }
+    if (phase === "catFood") {
+      if (command.includes("먹지마")) {
+        setTimeLeft(null);
+        resumeWalk("루비가 길고양이 밥을 포기했어요. 조금만 더 걸어가면 집이에요.");
+      } else {
+        setMessage("루비가 길고양이 밥으로 뛰어들어요. 3초 안에 먹지마라고 입력하세요.");
       }
       return;
     }
@@ -678,6 +699,7 @@ export default function WalkQuestGame() {
     if (phase === "leashZoom" || phase === "gate") return "sit";
     if (phase === "pull" || phase === "run") return "run";
     if (phase === "poop") return "poop";
+    if (phase === "catFood") return "run";
     if (phase === "barkingDog" || phase === "boss" || phase === "car") return "alert";
     return "walk";
   }, [calledDogs, dogsSitting, phase]);
@@ -690,9 +712,11 @@ export default function WalkQuestGame() {
         ? "무시해"
         : phase === "cat"
           ? "안돼"
-          : phase === "living"
-            ? calledDogs ? "산책가자" : "루비와 감자를 불러보세요"
-            : "입력";
+          : phase === "catFood"
+            ? "먹지마"
+            : phase === "living"
+              ? calledDogs ? "산책가자" : "루비와 감자를 불러보세요"
+              : "입력";
 
   return (
     <main className="walk-page">
@@ -1114,7 +1138,7 @@ function ThreeWalkWorld({
   const rubyCalmRef = useRef(rubyCalm);
   const gamjaQuietRef = useRef(gamjaQuiet);
   const dogsRoadsideRef = useRef(dogsRoadside);
-  const outdoorPhases: Phase[] = ["garden", "gate", "walk", "pull", "poop", "run", "car", "barkingDog", "boss", "cat", "home"];
+  const outdoorPhases: Phase[] = ["garden", "gate", "walk", "pull", "poop", "run", "car", "barkingDog", "boss", "cat", "catFood", "home"];
   const isOutdoor = outdoorPhases.includes(phase);
 
   useEffect(() => {
@@ -1130,7 +1154,7 @@ function ThreeWalkWorld({
     if (phase === "upstairs") positionRef.current = { x: -3.6, z: 8.2, yaw: 0 };
     if (phase === "garden") positionRef.current = { x: 0, z: 6.8, yaw: 0 };
     if (phase === "gate") positionRef.current = { x: 0, z: -5.2, yaw: 0 };
-    if (["walk", "pull", "poop", "run", "car", "barkingDog", "boss", "cat", "home"].includes(phase)) positionRef.current = { x: 0, z: 7.2, yaw: 0 };
+    if (["walk", "pull", "poop", "run", "car", "barkingDog", "boss", "cat", "catFood", "home"].includes(phase)) positionRef.current = { x: 0, z: 7.2, yaw: 0 };
 
     const width = Math.max(1, mount.clientWidth);
     const height = Math.max(1, mount.clientHeight);
@@ -1745,6 +1769,12 @@ function DogLayer({
         .dogs-run {
           animation: run 0.28s ease-in-out infinite alternate;
         }
+        .phase-catFood :global(.left) {
+          animation: rubyFoodLunge 0.36s ease-in-out infinite alternate;
+        }
+        .phase-catFood :global(.right) {
+          transform: translateX(22px) scale(0.96);
+        }
         .dogs-spin {
           bottom: 104px;
         }
@@ -1784,6 +1814,10 @@ function DogLayer({
         }
         @keyframes run {
           to { transform: translateX(-50%) translateY(-8px) scale(1.02); }
+        }
+        @keyframes rubyFoodLunge {
+          from { transform: translate(-28px, 8px) rotate(-6deg) scale(1.04); }
+          to { transform: translate(-92px, 18px) rotate(-14deg) scale(1.1); }
         }
         @keyframes barkPop {
           to { transform: translateY(-5px) scale(1.04); }
@@ -2119,6 +2153,7 @@ function SceneContent(props: {
   if (p.phase === "barkingDog") return <NeighborBarkDog />;
   if (p.phase === "boss") return <BossClickGame lane={p.bossLane} blocks={p.bossBlocks} timeLeft={p.timeLeft} clickBossDog={p.clickBossDog} />;
   if (p.phase === "cat") return <CatChaseLayer timeLeft={p.timeLeft} />;
+  if (p.phase === "catFood") return <CatFoodLayer timeLeft={p.timeLeft} />;
   if (["upstairs", "living", "excited", "garden"].includes(p.phase)) return null;
   if (p.phase === "leashPrep") return <GearShelf rubyLeashed={p.rubyLeashed} gamjaLeashed={p.gamjaLeashed} hasPoopBag={p.hasPoopBag} side />;
   if (p.phase === "leashMission") {
@@ -2407,6 +2442,105 @@ function CatChaseLayer({ timeLeft }: { timeLeft: number | null }) {
         }
         strong { color: #bd2e3a; font-size: 1.16em; }
         @keyframes cat-step { from { transform: translateX(-6px); } to { transform: translateX(12px); } }
+      `}</style>
+    </div>
+  );
+}
+
+function CatFoodLayer({ timeLeft }: { timeLeft: number | null }) {
+  return (
+    <div className="cat-food-event">
+      <div className="cat-food-zone" aria-hidden="true">
+        <Image src={animal.cat} alt="길고양이" width={160} height={105} priority />
+        <div className="food-bowl">
+          <span />
+          <b>길고양이 밥</b>
+        </div>
+      </div>
+      <div className="cat-food-warning">
+        <b>루비가 길고양이 밥으로 달려들어요!</b>
+        <span><strong>먹지마</strong> 라고 입력하세요{timeLeft !== null ? ` · ${timeLeft}s` : ""}</span>
+      </div>
+      <style jsx>{`
+        .cat-food-event {
+          position: absolute;
+          z-index: 24;
+          inset: 0;
+          pointer-events: none;
+        }
+        .cat-food-zone {
+          position: absolute;
+          left: clamp(24px, 8vw, 120px);
+          bottom: 118px;
+          width: clamp(210px, 24vw, 330px);
+          height: 220px;
+          border-radius: 34px;
+          background:
+            radial-gradient(circle at 28% 84%, rgba(111, 154, 76, 0.55), transparent 36%),
+            linear-gradient(180deg, rgba(255, 248, 232, 0.22), rgba(79, 122, 66, 0.35));
+          box-shadow: inset 0 -34px 0 rgba(46, 99, 50, 0.28), 0 22px 44px rgba(0, 0, 0, 0.2);
+        }
+        .cat-food-zone :global(img) {
+          position: absolute;
+          left: 16px;
+          bottom: 58px;
+          object-fit: contain;
+          filter: drop-shadow(0 14px 14px rgba(0,0,0,0.26));
+          animation: cat-watch 1.2s ease-in-out infinite alternate;
+        }
+        .food-bowl {
+          position: absolute;
+          right: 28px;
+          bottom: 34px;
+          display: grid;
+          justify-items: center;
+          gap: 7px;
+          color: #5b3825;
+          font-weight: 950;
+        }
+        .food-bowl span {
+          width: 96px;
+          height: 42px;
+          border-radius: 0 0 48px 48px;
+          background:
+            radial-gradient(ellipse at 48% 18%, #b07a49 0 34%, transparent 36%),
+            linear-gradient(180deg, #fff4df 0 28%, #c96f50 29% 100%);
+          border: 4px solid rgba(97, 55, 37, 0.34);
+          box-shadow: inset 0 -9px 14px rgba(100, 45, 32, 0.28), 0 12px 18px rgba(0,0,0,0.2);
+        }
+        .cat-food-warning {
+          position: absolute;
+          left: 50%;
+          top: 18%;
+          transform: translateX(-50%);
+          display: grid;
+          gap: 8px;
+          min-width: min(480px, calc(100vw - 56px));
+          padding: 18px 22px;
+          border-radius: 24px;
+          text-align: center;
+          color: #683034;
+          background: linear-gradient(180deg, rgba(255,226,226,0.97), rgba(255,198,205,0.95));
+          border: 2px solid rgba(210, 105, 118, 0.38);
+          box-shadow: 0 24px 54px rgba(94,42,44,0.28);
+          font-weight: 950;
+        }
+        .cat-food-warning b {
+          font-size: clamp(1.08rem, 2.2vw, 1.5rem);
+        }
+        .cat-food-warning strong {
+          display: inline-block;
+          margin: 0 3px;
+          padding: 2px 10px 4px;
+          border-radius: 999px;
+          color: #bd2e3a;
+          background: #fff8eb;
+          box-shadow: 0 8px 18px rgba(156, 55, 65, 0.18);
+        }
+        @keyframes cat-watch {
+          from { transform: translateX(-5px) rotate(-1deg); }
+          to { transform: translateX(9px) rotate(1.5deg); }
+        }
       `}</style>
     </div>
   );
