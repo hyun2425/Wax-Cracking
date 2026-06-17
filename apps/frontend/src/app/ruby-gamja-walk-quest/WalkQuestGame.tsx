@@ -2728,8 +2728,7 @@ function PoopTools({
       <div className={step === "sockReady" ? "poop-dialog normal" : "poop-dialog danger"}>
         {step === "ask" && (
           <>
-            <b>{"주의! 감자가 똥을 쌌어요."}</b>
-            <span>{"펫티켓을 지키겠습니까?"}</span>
+            <b>{"주의! 감자가 똥을 쌌어요. 펫티켓을 지키겠습니까?"}</b>
             <div className="poop-actions">
               <button onClick={() => { setStep("bagCheck"); setMessage("가방을 확인해 보세요."); }}>{"네"}</button>
               <button onClick={() => { setGuardVisible(true); setStep("bagCheck"); setMessage("그냥 가려다 경비 아저씨한테 걸렸어요! 치워야겠네요.."); }}>{"아니요"}</button>
