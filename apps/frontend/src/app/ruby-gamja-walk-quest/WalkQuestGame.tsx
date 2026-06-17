@@ -1063,10 +1063,13 @@ function Pill({ label, value, alert = false }: { label: string; value: string; a
           box-shadow: 0 7px 16px rgba(0,0,0,0.16);
         }
         .pill::before {
-          content: "?";
-          color: #d79d71;
-          font-size: 1.25rem;
-          line-height: 0;
+          content: "";
+          width: 7px;
+          height: 7px;
+          border-radius: 50%;
+          background: #d79d71;
+          box-shadow: 0 0 0 3px rgba(215, 157, 113, 0.12);
+          flex: 0 0 auto;
         }
         small {
           color: #8c5d3d;
@@ -3196,12 +3199,6 @@ function CenterCard({
           text-shadow:
             0 5px 0 rgba(62, 42, 28, 0.92),
             0 13px 24px rgba(0,0,0,0.45);
-        }
-        h2::after {
-          content: " ?";
-          color: #f3a3ae;
-          font-size: 0.46em;
-          vertical-align: top;
         }
         p {
           position: relative;
