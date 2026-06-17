@@ -691,7 +691,7 @@ export default function WalkQuestGame() {
         : phase === "cat"
           ? "안돼"
           : phase === "living"
-            ? "루비 또는 감자"
+            ? calledDogs ? "산책가자" : "루비와 감자를 불러보세요"
             : "입력";
 
   return (
