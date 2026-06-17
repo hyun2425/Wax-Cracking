@@ -75,6 +75,7 @@ const dog = {
 
 const animal = {
   neighborDog: "/ruby-gamja/custom/neighbor-bark-dog.png",
+  neighborBarkAudio: "/ruby-gamja/custom/neighbor-chihuahua-bark.mp3",
   bossDog: "/ruby-gamja/custom/boss-dog.png",
   cat: "/ruby-gamja/custom/cat.png",
 };
@@ -657,7 +658,7 @@ export default function WalkQuestGame() {
   }
 
   useEffect(() => {
-    if (phase === "gate" || phase === "barkingDog" || phase === "boss") playSound("bark");
+    if (phase === "gate" || phase === "boss") playSound("bark");
     if (phase === "car") playSound("car");
     if (phase === "poop") playSound("poop");
     if (phase === "run") playSound("happy");
@@ -2274,8 +2275,16 @@ function PullWarning({ timeLeft }: { timeLeft: number | null }) {
 
 function NeighborBarkDog() {
   useEffect(() => {
-    const timer = window.setInterval(() => playSound("bark"), 900);
-    return () => window.clearInterval(timer);
+    const audio = new Audio(animal.neighborBarkAudio);
+    audio.loop = true;
+    audio.volume = 0.72;
+    void audio.play().catch(() => {
+      playSound("bark");
+    });
+    return () => {
+      audio.pause();
+      audio.currentTime = 0;
+    };
   }, []);
 
   return (
