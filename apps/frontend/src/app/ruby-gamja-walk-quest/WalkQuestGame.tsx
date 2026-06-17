@@ -77,6 +77,7 @@ const animal = {
   neighborDog: "/ruby-gamja/custom/neighbor-bark-dog.png",
   neighborBarkAudio: "/ruby-gamja/custom/neighbor-chihuahua-bark.mp3",
   bossDog: "/ruby-gamja/custom/boss-dog.png",
+  bossDogAudio: "/ruby-gamja/custom/boss-dog-bark.mp3",
   cat: "/ruby-gamja/custom/cat.png",
 };
 
@@ -623,7 +624,6 @@ export default function WalkQuestGame() {
 
   function blockBoss() {
     setTimeLeft(null);
-    playSound("bark");
     setWalkStep(5);
     setPhase("walk");
     showHearts("사나운 강아지를 막아냈어요. 조금만 더 걸어가면 집이에요.");
@@ -631,7 +631,6 @@ export default function WalkQuestGame() {
 
   function clickBossDog() {
     if (bossBlocks < 0) return;
-    playSound("bark");
     setBossBlocks((current) => {
       const next = current + 1;
       if (next >= 3) {
@@ -658,7 +657,7 @@ export default function WalkQuestGame() {
   }
 
   useEffect(() => {
-    if (phase === "gate" || phase === "boss") playSound("bark");
+    if (phase === "gate") playSound("bark");
     if (phase === "car") playSound("car");
     if (phase === "poop") playSound("poop");
     if (phase === "run") playSound("happy");
@@ -2352,6 +2351,20 @@ function BossClickGame({
 }) {
   const laneClass = `lane-${lane}`;
   const guideMode = blocks < 0;
+
+  useEffect(() => {
+    const audio = new Audio(animal.bossDogAudio);
+    audio.loop = true;
+    audio.volume = 0.78;
+    void audio.play().catch(() => {
+      playSound("bark");
+    });
+    return () => {
+      audio.pause();
+      audio.currentTime = 0;
+    };
+  }, []);
+
   return (
     <div className="boss-event">
       {!guideMode && (
