@@ -694,8 +694,8 @@ export default function WalkQuestGame() {
     if (phase === "intro" || phase === "clear") return "heart";
     if (phase === "living" && !calledDogs) return "sleep";
     if (phase === "living" && calledDogs) return "call";
-    if (phase === "excited" || phase === "leashPrep") return dogsSitting ? "call" : "hop";
-    if (phase === "leashMission") return "call";
+    if (phase === "excited" || phase === "leashPrep") return dogsSitting ? "sit" : "hop";
+    if (phase === "leashMission") return "sit";
     if (phase === "leashZoom" || phase === "gate") return "sit";
     if (phase === "pull" || phase === "run") return "run";
     if (phase === "poop") return "poop";
@@ -2743,7 +2743,7 @@ function LeashTargets({ rubyLeashed, gamjaLeashed, finish }: { rubyLeashed: bool
         }}
         onDrop={makeDrop("ruby")}
       >
-        <Image src={dog.ruby.call} alt="루비" fill sizes="210px" />
+        <Image src={dog.ruby.sit} alt="앉은 루비" fill sizes="210px" />
         <span>{rubyLeashed ? "루비 목줄 착용!" : "루비"}</span>
       </div>
       <div
@@ -2756,7 +2756,7 @@ function LeashTargets({ rubyLeashed, gamjaLeashed, finish }: { rubyLeashed: bool
         }}
         onDrop={makeDrop("gamja")}
       >
-        <Image src={dog.gamja.call} alt="감자" fill sizes="150px" />
+        <Image src={dog.gamja.sit} alt="앉은 감자" fill sizes="150px" />
         <span>{gamjaLeashed ? "감자 목줄 착용!" : "감자"}</span>
       </div>
       <style jsx>{`
