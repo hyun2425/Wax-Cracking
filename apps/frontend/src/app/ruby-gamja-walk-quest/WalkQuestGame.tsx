@@ -264,7 +264,7 @@ export default function WalkQuestGame() {
       setPhase("poop");
       setPoopStep("ask");
       setPoopTool(null);
-      setMessage("\uC8FC\uC758! \uAC10\uC790\uAC00 \uB625\uC744 \uC4CC\uC5B4\uC694. \uD3AB\uD2F0\uCF13\uC744 \uC9C0\uD0A4\uACA0\uC2B5\uB2C8\uAE4C?");
+      setMessage("주의! 감자가 똥을 쌌어요. 펫티켓을 지키겠습니까?");
       return;
     }
 
