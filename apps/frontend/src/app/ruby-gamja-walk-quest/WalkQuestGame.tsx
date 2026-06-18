@@ -653,7 +653,7 @@ export default function WalkQuestGame() {
       setMessage("루감이를 길 옆 풀쪽으로 옮겨야 해요.");
       return;
     }
-    resumeWalk("루감이를 안전하게 지켜냈어요!");
+    resumeWalk("루감이를 안전하게 지켜냈어요! 다시 산책을 해볼까요?");
   }
 
   useEffect(() => {
