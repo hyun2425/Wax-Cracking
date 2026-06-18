@@ -1274,7 +1274,7 @@ function ThreeWalkWorld({
         onReachEntry?.();
       }
 
-      if (phase === "garden" && !reachedEntryRef.current && pos.z < -6.8) {
+      if (phase === "garden" && !reachedEntryRef.current && pos.z < -5.15) {
         reachedEntryRef.current = true;
         onReachGate?.();
       }
@@ -2190,9 +2190,9 @@ function SceneContent(props: {
   if (p.phase === "gate") {
     return (
       <ActionDock>
-        <button className={p.rubyCalm ? "gate-action sit done" : "gate-action sit"} onClick={() => { playSound("success"); p.setRubyCalm(true); p.setMessage("루비가 빙글빙글 돌다가 앉았어요."); }}><span>1</span>{"앉아"}</button>
-        <button className={p.gamjaQuiet ? "gate-action hush done" : "gate-action hush"} onClick={() => { playSound("bark"); p.setGamjaQuiet(true); p.setMessage("감자가 짖음을 멈추고 차분해졌어요."); }}><span>2</span>{"조용히 해"}</button>
-        <button className="gate-action open" onClick={p.openGate}><span>3</span>{"대문 열기"}</button>
+        <button className={p.rubyCalm ? "gate-action sit done" : "gate-action sit"} onClick={() => { playSound("success"); p.setRubyCalm(true); p.setMessage("루비가 빙글빙글 돌다가 앉았어요."); }}>{"앉아"}</button>
+        <button className={p.gamjaQuiet ? "gate-action hush done" : "gate-action hush"} onClick={() => { playSound("bark"); p.setGamjaQuiet(true); p.setMessage("감자가 짖음을 멈추고 차분해졌어요."); }}>{"조용히 해"}</button>
+        <button className="gate-action open" onClick={p.openGate}>{"대문 열기"}</button>
       </ActionDock>
     );
   }
@@ -3249,15 +3249,6 @@ function ActionDock({ children }: { children: ReactNode }) {
           gap: 4px;
           border-radius: 18px;
           background: linear-gradient(180deg, #fff8eb, #f1d9ad);
-        }
-        .dock :global(.gate-action span) {
-          width: 34px;
-          height: 34px;
-          display: grid;
-          place-items: center;
-          border-radius: 999px;
-          background: rgba(255,255,255,0.72);
-          font-size: 1.18rem;
         }
         .dock :global(.gate-action.hush) {
           background: linear-gradient(180deg, #edf7ff, #cce6f7);
