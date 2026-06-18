@@ -699,7 +699,7 @@ export default function WalkQuestGame() {
     if (phase === "leashZoom" || phase === "gate") return "sit";
     if (phase === "pull" || phase === "run") return "run";
     if (phase === "poop") return "poop";
-    if (phase === "catFood") return "run";
+    if (phase === "catFood") return "walk";
     if (phase === "barkingDog" || phase === "boss" || phase === "car") return "alert";
     return "walk";
   }, [calledDogs, dogsSitting, phase]);
@@ -1201,7 +1201,7 @@ function ThreeWalkWorld({
 
     const textureLoader = new THREE.TextureLoader();
     const isSleepingScene = phase === "upstairs" || (phase === "living" && !calledDogs);
-    const walkingBackScene = ["walk", "pull", "run", "car", "barkingDog", "boss", "cat", "home"].includes(phase);
+    const walkingBackScene = ["walk", "pull", "run", "car", "barkingDog", "boss", "cat", "catFood", "home"].includes(phase);
     const rubySrc = isSleepingScene ? dog.ruby.sleep : walkingBackScene ? dog.ruby.back : phase === "excited" ? dog.ruby.hop : dog.ruby.call;
     const gamjaSrc = isSleepingScene ? dog.gamja.sleep : phase === "poop" ? dog.gamja.poop : walkingBackScene ? dog.gamja.back : phase === "excited" || phase === "gate" ? dog.gamja.hop : dog.gamja.call;
     const rubyMap = textureLoader.load(rubySrc);
