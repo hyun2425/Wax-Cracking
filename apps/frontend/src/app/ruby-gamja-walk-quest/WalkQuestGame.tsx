@@ -2473,14 +2473,13 @@ function CatFoodLayer({ timeLeft }: { timeLeft: number | null }) {
   return (
     <div className="cat-food-event">
       <div className="cat-food-zone" aria-hidden="true">
-        <Image src={animal.cat} alt="길고양이" width={160} height={105} priority />
         <div className="food-bowl">
           <span />
           <b>길고양이 밥</b>
         </div>
       </div>
       <div className="cat-food-warning">
-        <b>루비가 길고양이 밥으로 달려들어요!</b>
+        <b>루비가 길가의 고양이 밥으로 달려들어요!</b>
         <span><strong>먹지마</strong> 라고 입력하세요{timeLeft !== null ? ` · ${timeLeft}s` : ""}</span>
       </div>
       <style jsx>{`
@@ -2494,26 +2493,20 @@ function CatFoodLayer({ timeLeft }: { timeLeft: number | null }) {
           position: absolute;
           left: clamp(24px, 8vw, 120px);
           bottom: 118px;
-          width: clamp(210px, 24vw, 330px);
-          height: 220px;
+          width: clamp(190px, 22vw, 300px);
+          height: 150px;
           border-radius: 34px;
           background:
-            radial-gradient(circle at 28% 84%, rgba(111, 154, 76, 0.55), transparent 36%),
-            linear-gradient(180deg, rgba(255, 248, 232, 0.22), rgba(79, 122, 66, 0.35));
-          box-shadow: inset 0 -34px 0 rgba(46, 99, 50, 0.28), 0 22px 44px rgba(0, 0, 0, 0.2);
-        }
-        .cat-food-zone :global(img) {
-          position: absolute;
-          left: 16px;
-          bottom: 58px;
-          object-fit: contain;
-          filter: drop-shadow(0 14px 14px rgba(0,0,0,0.26));
-          animation: cat-watch 1.2s ease-in-out infinite alternate;
+            radial-gradient(ellipse at 50% 88%, rgba(74, 125, 54, 0.62), transparent 48%),
+            radial-gradient(circle at 22% 30%, rgba(255, 244, 205, 0.22), transparent 26%),
+            linear-gradient(180deg, rgba(255, 248, 232, 0.12), rgba(79, 122, 66, 0.32));
+          box-shadow: inset 0 -26px 0 rgba(46, 99, 50, 0.24), 0 20px 40px rgba(0, 0, 0, 0.18);
         }
         .food-bowl {
           position: absolute;
-          right: 28px;
-          bottom: 34px;
+          left: 50%;
+          bottom: 26px;
+          transform: translateX(-50%);
           display: grid;
           justify-items: center;
           gap: 7px;
@@ -2558,10 +2551,6 @@ function CatFoodLayer({ timeLeft }: { timeLeft: number | null }) {
           color: #bd2e3a;
           background: #fff8eb;
           box-shadow: 0 8px 18px rgba(156, 55, 65, 0.18);
-        }
-        @keyframes cat-watch {
-          from { transform: translateX(-5px) rotate(-1deg); }
-          to { transform: translateX(9px) rotate(1.5deg); }
         }
       `}</style>
     </div>
