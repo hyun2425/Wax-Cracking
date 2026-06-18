@@ -816,7 +816,7 @@ export default function WalkQuestGame() {
       </section>
 
       <style jsx global>{`
-        @import url("https://fonts.googleapis.com/css2?family=Jua&family=Nanum+Pen+Script&display=swap");
+        @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css");
       `}</style>
       <style jsx>{`
         .walk-page {
@@ -827,7 +827,7 @@ export default function WalkQuestGame() {
             radial-gradient(circle at 82% 14%, rgba(184, 222, 255, 0.7), transparent 24rem),
             linear-gradient(135deg, #f9efd7, #d8eef7 55%, #e8f3d2);
           color: #231a15;
-          font-family: "Jua", "NanumSquareRound", "Pretendard", "Segoe UI", sans-serif;
+          font-family: 'Pretendard', sans-serif;
           font-size: 1.05rem;
         }
 
