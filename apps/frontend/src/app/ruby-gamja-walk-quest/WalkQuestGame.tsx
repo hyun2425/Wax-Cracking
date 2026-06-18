@@ -437,7 +437,7 @@ export default function WalkQuestGame() {
       } else if (calledDogs) {
         setMessage("산책, 나가자, 나갈까 중 하나를 말해보세요.");
       } else {
-        setMessage("루비, 감자, 루감이를 불러보세요.");
+        setMessage("루비, 감자를 불러보세요.");
       }
       return;
     }
@@ -470,11 +470,11 @@ export default function WalkQuestGame() {
       if (!carStopped && command.includes("멈춰")) {
         playSound("car");
         setCarStopped(true);
-        setMessage("멈췄어요. 루비와 감자를 풀 쪽으로 옮긴 뒤 기다려라고 입력하세요.");
+        setMessage("멈췄어요. 루비와 감자를 길가 쪽으로 옮긴 뒤 기다려라고 입력하세요.");
       } else if (carStopped && dogsRoadside && command.includes("기다려")) {
         finishCar();
       } else if (carStopped && !dogsRoadside) {
-        setMessage("루비와 감자를 풀 쪽으로 옮겨주세요.");
+        setMessage("루비와 감자를 길가로 옮겨주세요.");
       } else {
         setMessage("차가 와요. 먼저 멈춰라고 입력하세요.");
       }
@@ -484,7 +484,7 @@ export default function WalkQuestGame() {
       if (command.includes("무시해")) {
         ignoreDog();
       } else {
-        setMessage("옆집 개가 짖고 있어요. 5초 안에 무시해라고 입력하세요.");
+        setMessage("옆집 개가 맹렬히 짖고 있어요. 5초 안에 무시해라고 입력하세요.");
       }
       return;
     }
@@ -502,7 +502,7 @@ export default function WalkQuestGame() {
         setTimeLeft(null);
         resumeWalk("루비가 길고양이 밥을 포기했어요. 조금만 더 걸어가면 집이에요.");
       } else {
-        setMessage("루비가 길고양이 밥으로 뛰어들어요. 3초 안에 먹지마라고 입력하세요.");
+        setMessage("루비가 길고양이 밥을 먹으려고 뛰어들어요. 3초 안에 먹지마라고 입력하세요.");
       }
       return;
     }
@@ -679,7 +679,7 @@ export default function WalkQuestGame() {
     const guideTimer = window.setTimeout(() => {
       setCarGuide(false);
       setTimeLeft(10);
-      setMessage("차가 가까워져요! 멈춰를 입력하고 루비와 감자를 풀쪽으로 옮긴 뒤 기다려를 입력하세요.");
+      setMessage("차가 가까워져요! 멈춰를 입력하고 루비와 감자를 길가쪽으로 옮긴 뒤 기다려를 입력하세요.");
     }, 3000);
     return () => window.clearTimeout(guideTimer);
   }, [carGuide, phase]);
@@ -2505,7 +2505,7 @@ function CatFoodLayer({ timeLeft }: { timeLeft: number | null }) {
         </div>
       </div>
       <div className="cat-food-warning">
-        <b>루비가 길가의 고양이 밥으로 달려들어요!</b>
+        <b>루비가 길고양이 밥을 먹으려고 달려들어요!</b>
         <span><strong>먹지마</strong> 라고 입력하세요{timeLeft !== null ? ` · ${timeLeft}s` : ""}</span>
       </div>
       <style jsx>{`
@@ -2911,10 +2911,10 @@ function PoopTools({
             <button className="bag-button" onClick={() => {
               if (hasPoopBag) {
                 choose("bag");
-                setMessage("가방에 똥봉투가 있어요. 똥봉투를 똥 위로 옮겨주세요.");
+                setMessage("가방에 똥봉투가 있어요. 똥봉투로 똥을 주워주세요.");
               } else {
                 setStep("leafAsk");
-                setMessage("이런! 똥봉투를 안가져왔네요... 나뭇잎으로 치워볼까요?");
+                setMessage("이런! 똥봉투를 안가져왔네요... 나뭇잎으로라도 치워볼까요?");
               }
             }} aria-label="가방 열기">🎒</button>
             {tool === "bag" && (
@@ -2927,7 +2927,7 @@ function PoopTools({
         {step === "leafAsk" && (
           <>
             <b>{"이런! 똥봉투를 안가져왔네요..."}</b>
-            <span>{"나뭇잎으로 치워볼까요?"}</span>
+            <span>{"나뭇잎으로라도 치워볼까요?"}</span>
             <div className="poop-actions">
               <button onClick={() => choose("leaf")}>{"네"}</button>
               <button onClick={() => { setStep("sockAsk"); setMessage("어쩔 수 없다... 양말뿐인건가..?"); }}>{"아니요"}</button>
