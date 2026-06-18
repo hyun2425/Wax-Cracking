@@ -1317,6 +1317,13 @@ function ThreeWalkWorld({
       if (phase === "pull" || phase === "run") {
         dogGroup.position.z = pos.z - 4.1 - Math.abs(Math.sin(clock.elapsedTime * 8)) * 0.35;
       }
+      if (phase === "catFood") {
+        dogGroup.position.x = pos.x - 0.55;
+        dogGroup.position.z = pos.z - 3.75;
+        ruby.position.x = -1.22 - Math.abs(Math.sin(clock.elapsedTime * 7.5)) * 0.34;
+        ruby.rotation.z = -0.16 - Math.abs(Math.sin(clock.elapsedTime * 7.5)) * 0.14;
+        gamja.position.x = 0.9;
+      }
       if (phase === "car" && dogsRoadsideRef.current) {
         dogGroup.position.x = 2.75;
         dogGroup.position.z = pos.z - 2.9;
@@ -1770,10 +1777,25 @@ function DogLayer({
           animation: run 0.28s ease-in-out infinite alternate;
         }
         .phase-catFood :global(.left) {
-          animation: rubyFoodLunge 0.36s ease-in-out infinite alternate;
+          animation: rubyFoodLunge 0.32s ease-in-out infinite alternate;
         }
         .phase-catFood :global(.right) {
           transform: translateX(22px) scale(0.96);
+        }
+        .phase-catFood::before {
+          content: "";
+          position: absolute;
+          z-index: 1;
+          left: clamp(10px, 7vw, 86px);
+          bottom: clamp(190px, 25vw, 278px);
+          width: clamp(210px, 29vw, 360px);
+          height: 5px;
+          border-radius: 999px;
+          background: linear-gradient(90deg, rgba(220, 118, 139, 0.95), rgba(91, 64, 47, 0.58));
+          box-shadow: 0 6px 12px rgba(48, 30, 24, 0.22);
+          transform: rotate(-13deg);
+          transform-origin: left center;
+          animation: leashTension 0.32s ease-in-out infinite alternate;
         }
         .dogs-spin {
           bottom: 104px;
@@ -1816,8 +1838,12 @@ function DogLayer({
           to { transform: translateX(-50%) translateY(-8px) scale(1.02); }
         }
         @keyframes rubyFoodLunge {
-          from { transform: translate(-28px, 8px) rotate(-6deg) scale(1.04); }
-          to { transform: translate(-92px, 18px) rotate(-14deg) scale(1.1); }
+          from { transform: translate(-56px, 10px) rotate(-8deg) scale(1.04); }
+          to { transform: translate(-148px, 24px) rotate(-18deg) scale(1.1); }
+        }
+        @keyframes leashTension {
+          from { transform: rotate(-12deg) scaleX(0.88); opacity: 0.72; }
+          to { transform: rotate(-16deg) scaleX(1.06); opacity: 1; }
         }
         @keyframes barkPop {
           to { transform: translateY(-5px) scale(1.04); }
@@ -2491,21 +2517,21 @@ function CatFoodLayer({ timeLeft }: { timeLeft: number | null }) {
         }
         .cat-food-zone {
           position: absolute;
-          left: clamp(24px, 8vw, 120px);
-          bottom: 118px;
-          width: clamp(190px, 22vw, 300px);
-          height: 150px;
-          border-radius: 34px;
+          left: clamp(12px, 5vw, 72px);
+          bottom: 88px;
+          width: clamp(124px, 14vw, 190px);
+          height: 94px;
+          border-radius: 24px;
           background:
             radial-gradient(ellipse at 50% 88%, rgba(74, 125, 54, 0.62), transparent 48%),
             radial-gradient(circle at 22% 30%, rgba(255, 244, 205, 0.22), transparent 26%),
             linear-gradient(180deg, rgba(255, 248, 232, 0.12), rgba(79, 122, 66, 0.32));
-          box-shadow: inset 0 -26px 0 rgba(46, 99, 50, 0.24), 0 20px 40px rgba(0, 0, 0, 0.18);
+          box-shadow: inset 0 -16px 0 rgba(46, 99, 50, 0.22), 0 16px 30px rgba(0, 0, 0, 0.16);
         }
         .food-bowl {
           position: absolute;
           left: 50%;
-          bottom: 26px;
+          bottom: 15px;
           transform: translateX(-50%);
           display: grid;
           justify-items: center;
@@ -2514,14 +2540,14 @@ function CatFoodLayer({ timeLeft }: { timeLeft: number | null }) {
           font-weight: 950;
         }
         .food-bowl span {
-          width: 96px;
-          height: 42px;
+          width: 66px;
+          height: 29px;
           border-radius: 0 0 48px 48px;
           background:
             radial-gradient(ellipse at 48% 18%, #b07a49 0 34%, transparent 36%),
             linear-gradient(180deg, #fff4df 0 28%, #c96f50 29% 100%);
-          border: 4px solid rgba(97, 55, 37, 0.34);
-          box-shadow: inset 0 -9px 14px rgba(100, 45, 32, 0.28), 0 12px 18px rgba(0,0,0,0.2);
+          border: 3px solid rgba(97, 55, 37, 0.34);
+          box-shadow: inset 0 -6px 10px rgba(100, 45, 32, 0.28), 0 9px 14px rgba(0,0,0,0.18);
         }
         .cat-food-warning {
           position: absolute;
