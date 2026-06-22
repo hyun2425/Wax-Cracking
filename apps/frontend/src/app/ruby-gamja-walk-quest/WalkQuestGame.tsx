@@ -823,16 +823,12 @@ export default function WalkQuestGame() {
         html,
         body {
           margin: 0;
-          overflow: hidden;
         }
       `}</style>
       <style jsx>{`
         .walk-page {
-          width: 100vw;
-          height: 100dvh;
-          min-height: 100dvh;
-          padding: 0;
-          overflow: hidden;
+          min-height: 100vh;
+          padding: 24px;
           background:
             radial-gradient(circle at 16% 4%, rgba(255, 237, 189, 0.82), transparent 18rem),
             radial-gradient(circle at 82% 14%, rgba(184, 222, 255, 0.7), transparent 24rem),
@@ -855,32 +851,19 @@ export default function WalkQuestGame() {
         }
 
         .back-link {
-          position: fixed;
-          left: 16px;
-          top: 14px;
-          z-index: 70;
-          padding: 8px 12px;
-          border-radius: 999px;
-          background: rgba(255, 250, 241, 0.82);
           color: #60442f;
           font-weight: 900;
           text-decoration: none;
-          box-shadow: 0 8px 22px rgba(55, 37, 24, 0.12);
-          backdrop-filter: blur(8px);
         }
 
         .game {
-          width: 100vw;
-          height: 100dvh;
-          min-height: 100dvh;
-          margin: 0;
-          border: 0;
-          border-radius: 0;
+          max-width: 1180px;
+          margin: 18px auto 0;
+          border: 2px solid rgba(72, 50, 35, 0.28);
+          border-radius: 24px;
           background: #fffaf1;
           overflow: hidden;
-          box-shadow: none;
-          display: flex;
-          flex-direction: column;
+          box-shadow: 0 28px 80px rgba(37, 28, 22, 0.28);
         }
 
         .topbar {
@@ -888,24 +871,23 @@ export default function WalkQuestGame() {
           justify-content: space-between;
           align-items: end;
           gap: 18px;
-          flex: 0 0 auto;
-          padding: 14px 22px 10px;
+          padding: 20px 22px 16px;
           border-bottom: 1px solid rgba(135, 101, 66, 0.18);
           background: linear-gradient(180deg, #fff7e8, #f2d9ad);
           color: #4b3424;
         }
 
         .topbar p {
-          margin: 0 0 2px;
+          margin: 0 0 6px;
           color: #8b674c;
-          font-size: 0.92rem;
+          font-size: 1rem;
           font-weight: 900;
         }
 
         h1 {
           margin: 0;
           font-family: 'Jua', 'Poor Story', 'Pretendard', sans-serif;
-          font-size: clamp(1.8rem, 3.8vw, 3rem);
+          font-size: clamp(2.1rem, 4.8vw, 3.6rem);
           letter-spacing: 0;
           color: #3d2b20;
           text-shadow:
@@ -922,11 +904,11 @@ export default function WalkQuestGame() {
 
         .scene {
           position: relative;
-          flex: 1;
-          min-height: 0;
+          min-height: 650px;
           overflow: hidden;
           background: #f2eee8;
-          border: 0;
+          border-top: 1px solid rgba(255,255,255,0.12);
+          border-bottom: 1px solid rgba(255,255,255,0.12);
         }
 
         .scene::before {
@@ -1095,19 +1077,17 @@ export default function WalkQuestGame() {
 
         @media (max-width: 820px) {
           .walk-page {
-            padding: 0;
+            padding: 12px;
           }
 
           .topbar {
             grid-template-columns: 1fr;
             flex-direction: column;
             align-items: stretch;
-            gap: 8px;
-            padding: 10px 14px 8px;
           }
 
           .scene {
-            min-height: 0;
+            min-height: 610px;
           }
         }
       `}</style>
@@ -3644,6 +3624,7 @@ function CenterCard({
           padding: 24px;
           background: rgba(32, 22, 16, 0.58);
           backdrop-filter: blur(8px);
+          pointer-events: auto;
         }
         .home-modal {
           width: min(980px, 100%);
