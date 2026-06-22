@@ -721,7 +721,8 @@ export default function WalkQuestGame() {
   return (
     <main className="walk-page">
       <Link href="/" className="back-link">{"메인으로"}</Link>
-      <section className="game">
+      <section className={`game ${phase === "intro" ? "intro-mode" : ""}`}>
+        {phase !== "intro" && (
         <header className="topbar">
           <div>
             <p>현실형 1인칭 산책 미션</p>
@@ -735,6 +736,7 @@ export default function WalkQuestGame() {
             <Pill label="봉투" value={hasPoopBag ? "있음" : "없음"} alert={!hasPoopBag && phase === "poop"} />
           </div>
         </header>
+        )}
 
         <section className={`scene bg-${info.bg} ${useEmptyHome ? "called-dogs" : ""} ${needsInput ? "input-open" : ""}`}>
           {phase !== "intro" && phase !== "clear" && phase !== "fail" && (
@@ -828,7 +830,8 @@ export default function WalkQuestGame() {
       <style jsx>{`
         .walk-page {
           min-height: 100vh;
-          padding: 24px;
+          box-sizing: border-box;
+          padding: 14px 18px 18px;
           background:
             radial-gradient(circle at 16% 4%, rgba(255, 237, 189, 0.82), transparent 18rem),
             radial-gradient(circle at 82% 14%, rgba(184, 222, 255, 0.7), transparent 24rem),
@@ -858,36 +861,41 @@ export default function WalkQuestGame() {
 
         .game {
           max-width: 1180px;
-          margin: 18px auto 0;
+          height: min(780px, calc(100vh - 58px));
+          min-height: 620px;
+          margin: 10px auto 0;
           border: 2px solid rgba(72, 50, 35, 0.28);
           border-radius: 24px;
           background: #fffaf1;
           overflow: hidden;
           box-shadow: 0 28px 80px rgba(37, 28, 22, 0.28);
+          display: flex;
+          flex-direction: column;
         }
 
         .topbar {
           display: flex;
+          flex: 0 0 auto;
           justify-content: space-between;
           align-items: end;
           gap: 18px;
-          padding: 20px 22px 16px;
+          padding: 14px 18px 12px;
           border-bottom: 1px solid rgba(135, 101, 66, 0.18);
           background: linear-gradient(180deg, #fff7e8, #f2d9ad);
           color: #4b3424;
         }
 
         .topbar p {
-          margin: 0 0 6px;
+          margin: 0 0 3px;
           color: #8b674c;
-          font-size: 1rem;
+          font-size: 0.94rem;
           font-weight: 900;
         }
 
         h1 {
           margin: 0;
           font-family: 'Jua', 'Poor Story', 'Pretendard', sans-serif;
-          font-size: clamp(2.1rem, 4.8vw, 3.6rem);
+          font-size: clamp(1.9rem, 4.2vw, 3.2rem);
           letter-spacing: 0;
           color: #3d2b20;
           text-shadow:
@@ -904,7 +912,8 @@ export default function WalkQuestGame() {
 
         .scene {
           position: relative;
-          min-height: 650px;
+          flex: 1 1 auto;
+          min-height: 0;
           overflow: hidden;
           background: #f2eee8;
           border-top: 1px solid rgba(255,255,255,0.12);
@@ -1077,17 +1086,19 @@ export default function WalkQuestGame() {
 
         @media (max-width: 820px) {
           .walk-page {
-            padding: 12px;
+            padding: 8px;
+          }
+
+          .game {
+            height: calc(100vh - 38px);
+            min-height: 560px;
           }
 
           .topbar {
             grid-template-columns: 1fr;
             flex-direction: column;
             align-items: stretch;
-          }
-
-          .scene {
-            min-height: 610px;
+            gap: 8px;
           }
         }
       `}</style>
@@ -2204,7 +2215,7 @@ function SceneContent(props: {
 }) {
   const p = props;
   if (p.phase === "intro") {
-    return <CenterCard title={"루비&감자\n산책시키기"} button="산책 START" onClick={p.start} image={dog.intro} variant="intro" />;
+    return <CenterCard title={"루비 감자와 산책하기"} button="산책 START" onClick={p.start} image={dog.intro} variant="intro" />;
   }
   if (p.phase === "pull") return <PullWarning timeLeft={p.timeLeft} />;
   if (p.phase === "barkingDog") return <NeighborBarkDog />;
@@ -3330,6 +3341,523 @@ const albumItems = [
   { src: "/ruby-gamja/custom/gamja-back-walk.png", title: "감자 산책", caption: "루비 옆에서 씩씩하게 걷기" },
 ];
 
+function IntroStyles() {
+  return (
+    <style jsx global>{`
+      .center-card.intro {
+        position: absolute;
+        z-index: 30;
+        inset: 0;
+        overflow: hidden;
+        color: #3d2b20;
+        font-family: 'Poor Story', 'Pretendard', sans-serif;
+        pointer-events: auto;
+      }
+
+      .intro-bg {
+        position: absolute;
+        inset: 0;
+        z-index: -3;
+      }
+
+      .intro-bg :global(img) {
+        object-fit: cover;
+        object-position: 62% 44%;
+        filter: saturate(1.18) contrast(1.08) brightness(1.03);
+        transform: scale(1.04);
+      }
+
+      .intro-bg::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background:
+          linear-gradient(90deg, rgba(255, 251, 235, 0.18) 0%, rgba(255, 251, 235, 0.1) 26%, rgba(255, 251, 235, 0.01) 52%, rgba(255, 251, 235, 0.03) 100%),
+          linear-gradient(180deg, rgba(221, 242, 255, 0.1) 0%, rgba(255, 255, 255, 0.01) 44%, rgba(242, 232, 166, 0.12) 100%);
+      }
+
+      .intro-sky {
+        position: absolute;
+        inset: 0;
+        z-index: -4;
+        background:
+          radial-gradient(circle at 8% 10%, rgba(255,255,255,0.98), transparent 10rem),
+          radial-gradient(circle at 92% 0%, rgba(185, 224, 130, 0.78), transparent 15rem),
+          linear-gradient(180deg, #d8efff, #f7edb7);
+      }
+
+      .intro-hud {
+        position: absolute;
+        top: 18px;
+        right: 22px;
+        z-index: 4;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 8px;
+        max-width: min(680px, calc(100% - 300px));
+        padding: 10px 12px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.78);
+        border: 1px solid rgba(255, 255, 255, 0.86);
+        box-shadow: 0 14px 36px rgba(58, 45, 30, 0.16);
+        backdrop-filter: blur(10px);
+      }
+
+      .intro-hud span {
+        white-space: nowrap;
+        font-family: 'Jua', 'Poor Story', sans-serif;
+        font-size: clamp(0.82rem, 1.3vw, 1rem);
+        color: #4d3c2e;
+      }
+
+      .intro-copy {
+        position: absolute;
+        top: 20px;
+        left: 34px;
+        z-index: 3;
+        width: min(560px, 48%);
+        text-align: left;
+      }
+
+      .intro-kicker {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 10px;
+        padding: 7px 12px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.76);
+        color: #3d2b20;
+        font-family: 'Jua', 'Poor Story', sans-serif;
+        box-shadow: 0 10px 24px rgba(83, 72, 48, 0.14);
+      }
+
+      h2 {
+        margin: 0;
+        font-family: 'Jua', 'Poor Story', sans-serif;
+        font-size: clamp(2.3rem, 4.5vw, 4rem);
+        line-height: 0.98;
+        white-space: pre-line;
+        color: #4b2f1f;
+        letter-spacing: 0;
+        text-shadow:
+          0 4px 0 rgba(255,255,255,0.9),
+          0 14px 28px rgba(74, 48, 28, 0.18);
+      }
+
+      h2::first-line {
+        color: #4b2f1f;
+      }
+
+      .intro-copy p {
+        margin: 12px 0 0;
+        color: #4a3829;
+        font-family: 'Poor Story', 'Pretendard', sans-serif;
+        font-size: clamp(1.12rem, 1.7vw, 1.38rem);
+        font-weight: 900;
+        line-height: 1.55;
+        text-shadow: 0 2px 0 rgba(255,255,255,0.86);
+      }
+
+      .mission-board {
+        position: absolute;
+        left: 34px;
+        bottom: 118px;
+        z-index: 3;
+        width: min(360px, 38%);
+        padding: 26px 22px 22px;
+        border-radius: 26px;
+        background: rgba(255, 255, 245, 0.72);
+        border: 2px solid rgba(255, 255, 255, 0.9);
+        box-shadow: 0 18px 46px rgba(61, 50, 28, 0.18);
+        backdrop-filter: blur(12px);
+      }
+
+      .mission-board > b {
+        position: absolute;
+        top: -22px;
+        left: 18px;
+        display: inline-flex;
+        align-items: center;
+        padding: 12px 28px;
+        border-radius: 18px;
+        background: linear-gradient(180deg, #8bc15d, #5f9a37);
+        color: #fffbe9;
+        font-family: 'Jua', 'Poor Story', sans-serif;
+        font-size: 1.1rem;
+        box-shadow: 0 10px 22px rgba(78, 120, 45, 0.28);
+      }
+
+      .mission-board ul {
+        list-style: none;
+        display: grid;
+        gap: 0;
+        margin: 0;
+        padding: 0;
+      }
+
+      .mission-board li {
+        display: grid;
+        grid-template-columns: 30px 1fr auto;
+        align-items: center;
+        gap: 10px;
+        padding: 15px 0;
+        border-bottom: 1px dashed rgba(104, 91, 68, 0.18);
+        color: #3e3025;
+        font-family: 'Jua', 'Poor Story', sans-serif;
+        font-size: 1.1rem;
+      }
+
+      .mission-board li:last-child {
+        border-bottom: 0;
+      }
+
+      .mission-board li span {
+        width: 22px;
+        height: 22px;
+        border-radius: 999px;
+        border: 3px solid rgba(107, 112, 69, 0.24);
+        background: rgba(255,255,255,0.48);
+      }
+
+      .mission-board em {
+        color: #6d963f;
+        font-style: normal;
+      }
+
+      .dog-status {
+        position: absolute;
+        right: 52px;
+        bottom: 210px;
+        z-index: 3;
+        display: flex;
+        gap: 16px;
+      }
+
+      .dog-status article {
+        display: grid;
+        grid-template-columns: 62px 1fr;
+        grid-template-rows: auto auto auto;
+        column-gap: 12px;
+        min-width: 160px;
+        padding: 14px 16px;
+        border-radius: 24px;
+        background: rgba(255, 255, 255, 0.78);
+        border: 2px solid rgba(255,255,255,0.94);
+        box-shadow: 0 16px 36px rgba(44, 34, 24, 0.2);
+        backdrop-filter: blur(10px);
+      }
+
+      .dog-status article div {
+        position: relative;
+        grid-row: 1 / 4;
+        width: 62px;
+        height: 62px;
+        border-radius: 999px;
+        overflow: hidden;
+        background: #fff7dd;
+        border: 3px solid #75a447;
+      }
+
+      .dog-status article:nth-child(2) div {
+        border-color: #e29b50;
+      }
+
+      .dog-status article div :global(img) {
+        object-fit: cover;
+      }
+
+      .dog-status b {
+        font-family: 'Jua', 'Poor Story', sans-serif;
+        font-size: 1.35rem;
+      }
+
+      .dog-status span {
+        font-weight: 900;
+        color: #6c573f;
+      }
+
+      .dog-status i {
+        width: 84px;
+        height: 9px;
+        margin-top: 6px;
+        border-radius: 999px;
+        background: linear-gradient(90deg, #f28662 0 24%, #7db24a 24%);
+      }
+
+      .intro-menu {
+        position: absolute;
+        left: 34px;
+        right: auto;
+        bottom: 20px;
+        z-index: 4;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(150px, 1fr));
+        gap: 14px;
+        width: min(360px, 34%);
+      }
+
+      .menu-card {
+        min-width: 0;
+        min-height: 96px;
+        padding: 14px 10px;
+        border-radius: 24px;
+        border: 2px solid rgba(255,255,255,0.9);
+        background: rgba(255, 255, 245, 0.76);
+        color: #3f3023;
+        box-shadow: 0 14px 34px rgba(68, 52, 31, 0.16);
+        backdrop-filter: blur(10px);
+      }
+
+      .menu-card strong,
+      .menu-card small {
+        display: block;
+      }
+
+      .menu-card strong {
+        font-family: 'Jua', 'Poor Story', sans-serif;
+        font-size: clamp(0.96rem, 1.35vw, 1.15rem);
+        white-space: nowrap;
+      }
+
+      .menu-card small {
+        margin-top: 6px;
+        color: #8a693f;
+        font-size: 0.92rem;
+        font-weight: 900;
+      }
+
+      .start-panel {
+        position: absolute;
+        right: 24px;
+        bottom: 14px;
+        z-index: 4;
+        width: min(300px, 25%);
+        padding: 14px;
+        border-radius: 22px;
+        background: rgba(255, 255, 245, 0.82);
+        border: 2px solid rgba(255,255,255,0.92);
+        box-shadow: 0 18px 42px rgba(71, 60, 35, 0.18);
+        text-align: center;
+        backdrop-filter: blur(12px);
+      }
+
+      .start-panel span {
+        display: block;
+        margin-bottom: 9px;
+        color: #5e8e37;
+        font-family: 'Jua', 'Poor Story', sans-serif;
+        font-size: clamp(0.9rem, 1.25vw, 1.05rem);
+      }
+
+      .start-panel button {
+        width: 100%;
+        min-width: 0;
+        padding: 15px 20px;
+        border-radius: 999px;
+        border: 0;
+        background: linear-gradient(180deg, #85bd55, #4f9132);
+        color: #fffbea;
+        font-family: 'Jua', 'Poor Story', sans-serif;
+        font-size: clamp(1.45rem, 2.45vw, 2.1rem);
+        text-shadow: 0 3px 0 rgba(42, 79, 26, 0.28);
+        box-shadow:
+          inset 0 2px 0 rgba(255,255,255,0.35),
+          0 10px 0 rgba(49, 102, 34, 0.32),
+          0 18px 38px rgba(45, 88, 29, 0.34);
+      }
+
+      .home-overlay {
+        position: fixed;
+        z-index: 80;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        background: rgba(32, 22, 16, 0.58);
+        backdrop-filter: blur(8px);
+        pointer-events: auto;
+      }
+
+      .home-modal {
+        width: min(980px, 100%);
+        max-height: min(760px, calc(100vh - 48px));
+        overflow: auto;
+        padding: 20px;
+        border-radius: 28px;
+        background: linear-gradient(180deg, #fffaf1, #f6dfbe);
+        color: #4b3322;
+        box-shadow: 0 32px 90px rgba(0,0,0,0.36);
+      }
+
+      .profile-modal {
+        width: min(760px, 100%);
+      }
+
+      .modal-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 14px;
+        margin-bottom: 16px;
+      }
+
+      .modal-head b {
+        display: block;
+        font-family: 'Jua', 'Poor Story', sans-serif;
+        font-size: 2rem;
+      }
+
+      .modal-head span {
+        color: #7b5b45;
+        font-weight: 850;
+      }
+
+      .modal-head button {
+        min-width: auto;
+        padding: 10px 16px;
+        border-radius: 999px;
+        font-family: 'Jua', 'Poor Story', sans-serif;
+        font-size: 1.05rem;
+      }
+
+      .profile-row {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+        width: 100%;
+      }
+
+      .profile-row article {
+        padding: 16px;
+        border-radius: 24px;
+        background: rgba(255, 248, 235, 0.86);
+        color: #4b3322;
+        border: 1px solid rgba(255, 255, 255, 0.44);
+        box-shadow: 0 12px 28px rgba(34, 23, 16, 0.18);
+        text-align: left;
+      }
+
+      .profile-photo {
+        position: relative;
+        height: 190px;
+        margin-bottom: 10px;
+        border-radius: 20px;
+        overflow: hidden;
+        background: linear-gradient(180deg, #f8ead5, #e8cfac);
+      }
+
+      .profile-photo :global(img) {
+        object-fit: contain;
+        padding: 10px;
+      }
+
+      .profile-row article span,
+      .profile-row article b,
+      .profile-row article p {
+        display: block;
+      }
+
+      .profile-row article span {
+        color: #b1744a;
+        font-family: 'Jua', 'Poor Story', sans-serif;
+      }
+
+      .profile-row article b {
+        font-family: 'Jua', 'Poor Story', sans-serif;
+        font-size: 1.45rem;
+      }
+
+      .profile-row article p {
+        margin: 4px 0 0;
+        color: #5c4535;
+        font-size: 1rem;
+        line-height: 1.35;
+      }
+
+      .album-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      figure {
+        margin: 0;
+        overflow: hidden;
+        border-radius: 20px;
+        background: rgba(255,255,255,0.72);
+        border: 1px solid rgba(119, 82, 54, 0.16);
+        box-shadow: 0 10px 24px rgba(82, 56, 35, 0.12);
+      }
+
+      figure > div {
+        position: relative;
+        height: 150px;
+        background: #efe1cf;
+      }
+
+      figure :global(img) {
+        object-fit: cover;
+      }
+
+      figcaption {
+        display: grid;
+        gap: 2px;
+        padding: 10px 12px 12px;
+        text-align: left;
+      }
+
+      figcaption b {
+        font-family: 'Jua', 'Poor Story', sans-serif;
+        font-size: 1.1rem;
+      }
+
+      figcaption span {
+        color: #775942;
+        font-size: 0.95rem;
+        line-height: 1.25;
+      }
+
+      @media (max-width: 900px) {
+        .intro-copy {
+          top: 28px;
+          width: calc(100% - 36px);
+        }
+
+        .intro-hud {
+          display: none;
+        }
+
+        .mission-board,
+        .dog-status {
+          display: none;
+        }
+
+        .intro-menu {
+          left: 18px;
+          right: 18px;
+          bottom: 118px;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .start-panel {
+          left: 18px;
+          right: 18px;
+          bottom: 14px;
+          width: auto;
+          padding: 14px;
+        }
+
+        .album-grid,
+        .profile-row {
+          grid-template-columns: 1fr;
+        }
+      }
+    `}</style>
+  );
+}
+
 function CenterCard({
   title,
   body,
@@ -3348,6 +3876,95 @@ function CenterCard({
   const [albumOpen, setAlbumOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const isIntro = variant === "intro";
+
+  if (isIntro) {
+    return (
+      <div className="center-card intro">
+        <div className="intro-bg"><Image src={image} alt="루비와 감자" fill sizes="1180px" priority /></div>
+        <div className="intro-sky" />
+        <div className="intro-hud">
+          <span>🏁 넘어짐 <b>0/3</b></span>
+          <span>⏰ 시간 제한 없음</span>
+          <span>🏅 루비 목줄 미착용</span>
+          <span>🏅 감자 목줄 미착용</span>
+          <span>💼 봉투 없음</span>
+        </div>
+        <section className="intro-copy" aria-label="게임 소개">
+          <span className="intro-kicker">🐾 현실형 1인칭 산책 미션</span>
+          <h2>{title}</h2>
+          <p>루비와 감자와 함께 산책하고<br />다양한 미션을 완료해 보세요!</p>
+        </section>
+        <nav className="intro-menu" aria-label="홈 메뉴">
+          <button type="button" className="menu-card" onClick={() => setProfileOpen(true)}>
+            <strong>📖 루비&감자 소개</strong>
+            <small>성격 보기</small>
+          </button>
+          <button type="button" className="menu-card" onClick={() => setAlbumOpen(true)}>
+            <strong>🏆 루비&감자 앨범</strong>
+            <small>사진 보기</small>
+          </button>
+        </nav>
+        <section className="start-panel">
+          <span>🍃 루비와 감자와 함께 떠나볼까요?</span>
+          <button onClick={onClick}>{button}</button>
+        </section>
+        {profileOpen && (
+          <div className="home-overlay" role="dialog" aria-modal="true" aria-label="루비 감자 소개">
+            <div className="home-modal profile-modal">
+              <div className="modal-head">
+                <div>
+                  <b>루비&감자 소개</b>
+                  <span>오늘 산책을 함께할 주인공들이에요</span>
+                </div>
+                <button type="button" onClick={() => setProfileOpen(false)}>닫기</button>
+              </div>
+              <div className="profile-row">
+                <article>
+                  <div className="profile-photo"><Image src="/ruby-gamja/custom/ruby-come.png" alt="루비" fill sizes="220px" /></div>
+                  <span>RUBY</span>
+                  <b>루비 · 2021년생</b>
+                  <p>사람을 좋아하고 호기심이 많은 강아지. 새로운 길도 먼저 킁킁 확인해요.</p>
+                </article>
+                <article>
+                  <div className="profile-photo"><Image src="/ruby-gamja/custom/gamja-come.png" alt="감자" fill sizes="220px" /></div>
+                  <span>GAMJA</span>
+                  <b>감자 · 2016년생</b>
+                  <p>루비보다 언니예요. 한번 마음을 열면 끝까지 지켜주는 의리 있는 강아지예요.</p>
+                </article>
+              </div>
+            </div>
+          </div>
+        )}
+        {albumOpen && (
+          <div className="home-overlay" role="dialog" aria-modal="true" aria-label="루비 감자 앨범">
+            <div className="home-modal album-card">
+              <div className="modal-head">
+                <div>
+                  <b>루감이 앨범</b>
+                  <span>산책 전에 사진부터 보고 가요</span>
+                </div>
+                <button type="button" onClick={() => setAlbumOpen(false)}>닫기</button>
+              </div>
+              <div className="album-grid">
+                {albumItems.map((item) => (
+                  <figure key={item.src}>
+                    <div>
+                      <Image src={item.src} alt={item.title} fill sizes="220px" />
+                    </div>
+                    <figcaption>
+                      <b>{item.title}</b>
+                      <span>{item.caption}</span>
+                    </figcaption>
+                  </figure>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+        <IntroStyles />
+      </div>
+    );
+  }
 
   return (
     <div className={`center-card ${variant}`}>
@@ -3436,7 +4053,7 @@ function CenterCard({
         .center-card.intro {
           width: 100%;
           height: 100%;
-          min-height: 650px;
+          min-height: 100%;
           background: transparent;
           color: #4b3322;
           padding: 10px 24px 24px;
@@ -3699,7 +4316,7 @@ function CenterCard({
         }
         @media (max-width: 820px) {
           .center-card.intro {
-            min-height: 620px;
+            min-height: 100%;
             padding: 16px;
           }
           .intro h2 {
