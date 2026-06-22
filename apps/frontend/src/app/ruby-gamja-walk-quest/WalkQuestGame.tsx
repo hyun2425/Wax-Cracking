@@ -69,7 +69,7 @@ const dog = {
     poop: "/ruby-gamja/cutouts-v3/gamja-poop.png",
     heart: "/ruby-gamja/custom/gamja-come.png",
   },
-  intro: "/ruby-gamja/custom/intro-ruby-gamja.jpg",
+  intro: "/ruby-gamja/custom/opening-ruby-gamja.jpg",
   duo: "/ruby-gamja/custom/intro-ruby-gamja.jpg",
 };
 
@@ -797,10 +797,12 @@ export default function WalkQuestGame() {
             clickBossDog={clickBossDog}
             carGuide={carGuide}
           />
-          <div className="scene-caption">
-            <b>{info.scene}</b>
-            <span>{message}</span>
-          </div>
+          {phase !== "intro" && (
+            <div className="scene-caption">
+              <b>{info.scene}</b>
+              <span>{message}</span>
+            </div>
+          )}
           {needsInput && (
             <form className="command" onSubmit={submitCommand}>
               <input
@@ -817,34 +819,68 @@ export default function WalkQuestGame() {
 
       <style jsx global>{`
         @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css");
+        @import url("https://fonts.googleapis.com/css2?family=Dongle:wght@400;700&family=Gaegu:wght@400;700&family=Gowun+Dodum&family=Jua&family=Poor+Story&family=Single+Day&display=swap");
+        html,
+        body {
+          margin: 0;
+          overflow: hidden;
+        }
       `}</style>
       <style jsx>{`
         .walk-page {
-          min-height: 100vh;
-          padding: 24px;
+          width: 100vw;
+          height: 100dvh;
+          min-height: 100dvh;
+          padding: 0;
+          overflow: hidden;
           background:
             radial-gradient(circle at 16% 4%, rgba(255, 237, 189, 0.82), transparent 18rem),
             radial-gradient(circle at 82% 14%, rgba(184, 222, 255, 0.7), transparent 24rem),
             linear-gradient(135deg, #f9efd7, #d8eef7 55%, #e8f3d2);
           color: #231a15;
-          font-family: 'Pretendard', sans-serif;
+          font-family: 'Poor Story', 'Pretendard', sans-serif;
           font-size: 1.05rem;
         }
 
+        .walk-page :global(button),
+        .walk-page :global(.gate-action),
+        .walk-page :global(.bag-button) {
+          font-family: 'Jua', 'Poor Story', 'Pretendard', sans-serif;
+        }
+
+        .walk-page :global(input),
+        .walk-page :global(textarea),
+        .walk-page :global(select) {
+          font-family: 'Poor Story', 'Pretendard', sans-serif;
+        }
+
         .back-link {
+          position: fixed;
+          left: 16px;
+          top: 14px;
+          z-index: 70;
+          padding: 8px 12px;
+          border-radius: 999px;
+          background: rgba(255, 250, 241, 0.82);
           color: #60442f;
           font-weight: 900;
           text-decoration: none;
+          box-shadow: 0 8px 22px rgba(55, 37, 24, 0.12);
+          backdrop-filter: blur(8px);
         }
 
         .game {
-          max-width: 1180px;
-          margin: 18px auto 0;
-          border: 2px solid rgba(72, 50, 35, 0.28);
-          border-radius: 24px;
+          width: 100vw;
+          height: 100dvh;
+          min-height: 100dvh;
+          margin: 0;
+          border: 0;
+          border-radius: 0;
           background: #fffaf1;
           overflow: hidden;
-          box-shadow: 0 28px 80px rgba(37, 28, 22, 0.28);
+          box-shadow: none;
+          display: flex;
+          flex-direction: column;
         }
 
         .topbar {
@@ -852,22 +888,24 @@ export default function WalkQuestGame() {
           justify-content: space-between;
           align-items: end;
           gap: 18px;
-          padding: 20px 22px 16px;
+          flex: 0 0 auto;
+          padding: 14px 22px 10px;
           border-bottom: 1px solid rgba(135, 101, 66, 0.18);
           background: linear-gradient(180deg, #fff7e8, #f2d9ad);
           color: #4b3424;
         }
 
         .topbar p {
-          margin: 0 0 6px;
+          margin: 0 0 2px;
           color: #8b674c;
-          font-size: 1rem;
+          font-size: 0.92rem;
           font-weight: 900;
         }
 
         h1 {
           margin: 0;
-          font-size: clamp(2.1rem, 4.8vw, 3.6rem);
+          font-family: 'Jua', 'Poor Story', 'Pretendard', sans-serif;
+          font-size: clamp(1.8rem, 3.8vw, 3rem);
           letter-spacing: 0;
           color: #3d2b20;
           text-shadow:
@@ -884,11 +922,11 @@ export default function WalkQuestGame() {
 
         .scene {
           position: relative;
-          min-height: 650px;
+          flex: 1;
+          min-height: 0;
           overflow: hidden;
           background: #f2eee8;
-          border-top: 1px solid rgba(255,255,255,0.12);
-          border-bottom: 1px solid rgba(255,255,255,0.12);
+          border: 0;
         }
 
         .scene::before {
@@ -903,8 +941,8 @@ export default function WalkQuestGame() {
 
         .bg-home {
           background:
-            linear-gradient(90deg, rgba(42,31,22,0.34), rgba(42,31,22,0.04) 48%, rgba(42,31,22,0.18)),
-            url("/ruby-gamja/custom/intro-ruby-gamja.jpg") center / cover no-repeat;
+            linear-gradient(90deg, rgba(255,247,233,0.22), rgba(255,247,233,0.02) 46%, rgba(255,247,233,0.12)),
+            url("/ruby-gamja/custom/opening-ruby-gamja.jpg") center / cover no-repeat;
         }
 
         .bg-stairs {
@@ -1047,19 +1085,29 @@ export default function WalkQuestGame() {
           line-height: 1.45;
         }
 
+        .scene-caption b {
+          font-family: 'Jua', 'Poor Story', 'Pretendard', sans-serif;
+        }
+
+        .scene-caption span {
+          font-family: 'Poor Story', 'Pretendard', sans-serif;
+        }
+
         @media (max-width: 820px) {
           .walk-page {
-            padding: 12px;
+            padding: 0;
           }
 
           .topbar {
             grid-template-columns: 1fr;
             flex-direction: column;
             align-items: stretch;
+            gap: 8px;
+            padding: 10px 14px 8px;
           }
 
           .scene {
-            min-height: 610px;
+            min-height: 0;
           }
         }
       `}</style>
@@ -1318,11 +1366,14 @@ function ThreeWalkWorld({
         dogGroup.position.z = pos.z - 4.1 - Math.abs(Math.sin(clock.elapsedTime * 8)) * 0.35;
       }
       if (phase === "catFood") {
-        dogGroup.position.x = pos.x - 0.55;
-        dogGroup.position.z = pos.z - 3.75;
-        ruby.position.x = -1.22 - Math.abs(Math.sin(clock.elapsedTime * 7.5)) * 0.34;
-        ruby.rotation.z = -0.16 - Math.abs(Math.sin(clock.elapsedTime * 7.5)) * 0.14;
-        gamja.position.x = 0.9;
+        const pull = Math.abs(Math.sin(clock.elapsedTime * 7.5));
+        dogGroup.position.x = pos.x - 0.82;
+        dogGroup.position.z = pos.z - 4.25;
+        ruby.position.x = -1.38 - pull * 0.46;
+        ruby.position.z = -1.78 - pull * 0.2;
+        ruby.rotation.z = -0.2 - pull * 0.16;
+        gamja.position.x = 0.78;
+        gamja.position.z = -1.2;
       }
       if (phase === "car" && dogsRoadsideRef.current) {
         dogGroup.position.x = 2.75;
@@ -2505,7 +2556,7 @@ function CatFoodLayer({ timeLeft }: { timeLeft: number | null }) {
         </div>
       </div>
       <div className="cat-food-warning">
-        <b>루비가 길고양이 밥을 먹으려고 달려들어요!</b>
+        <b>루비가 길고양이 밥 쪽으로 확 끌려가요!</b>
         <span><strong>먹지마</strong> 라고 입력하세요{timeLeft !== null ? ` · ${timeLeft}s` : ""}</span>
       </div>
       <style jsx>{`
@@ -2517,10 +2568,10 @@ function CatFoodLayer({ timeLeft }: { timeLeft: number | null }) {
         }
         .cat-food-zone {
           position: absolute;
-          left: clamp(12px, 5vw, 72px);
-          bottom: 88px;
-          width: clamp(124px, 14vw, 190px);
-          height: 94px;
+          left: clamp(38px, 13vw, 180px);
+          bottom: clamp(238px, 32vh, 330px);
+          width: clamp(92px, 10vw, 136px);
+          height: 72px;
           border-radius: 24px;
           background:
             radial-gradient(ellipse at 50% 88%, rgba(74, 125, 54, 0.62), transparent 48%),
@@ -2531,17 +2582,18 @@ function CatFoodLayer({ timeLeft }: { timeLeft: number | null }) {
         .food-bowl {
           position: absolute;
           left: 50%;
-          bottom: 15px;
+          bottom: 10px;
           transform: translateX(-50%);
           display: grid;
           justify-items: center;
-          gap: 7px;
+          gap: 5px;
           color: #5b3825;
           font-weight: 950;
+          font-size: 0.8rem;
         }
         .food-bowl span {
-          width: 66px;
-          height: 29px;
+          width: 54px;
+          height: 24px;
           border-radius: 0 0 48px 48px;
           background:
             radial-gradient(ellipse at 48% 18%, #b07a49 0 34%, transparent 36%),
@@ -2834,7 +2886,14 @@ function PoopTools({
   drop: (tool?: PoopTool) => void;
 }) {
   const [guardVisible, setGuardVisible] = useState(false);
+  const [guardNotice, setGuardNotice] = useState<string | null>(null);
   const [flashImage, setFlashImage] = useState<"dirtyHand" | "sockPoop" | null>(null);
+  const showGuardNotice = (text: string) => {
+    setGuardVisible(true);
+    setGuardNotice(text);
+    setMessage(text);
+    window.setTimeout(() => setGuardNotice(null), 2000);
+  };
   const dragTool = (event: ReactDragEvent<HTMLDivElement>, selectedTool: Exclude<PoopTool, null>) => {
     event.dataTransfer.effectAllowed = "move";
     event.dataTransfer.setData("text/plain", selectedTool);
@@ -2880,6 +2939,7 @@ function PoopTools({
           <Image src="/ruby-gamja/custom/guard-warning.png" alt="경비 아저씨 경고" fill sizes="260px" />
         </div>
       )}
+      {guardNotice && <div className="guard-notice">{guardNotice}</div>}
       {flashImage && (
         <div className="poop-flash">
           <Image
@@ -2902,7 +2962,7 @@ function PoopTools({
             <b>{"주의! 감자가 똥을 쌌어요. 펫티켓을 지키겠습니까?"}</b>
             <div className="poop-actions">
               <button onClick={() => { setStep("bagCheck"); setMessage("가방을 확인해 보세요."); }}>{"네"}</button>
-              <button onClick={() => { setGuardVisible(true); setStep("bagCheck"); setMessage("그냥 가려다 경비 아저씨한테 걸렸어요! 치워야겠네요.."); }}>{"아니요"}</button>
+              <button onClick={() => { setStep("bagCheck"); showGuardNotice("그냥 가려다 경비 아저씨한테 걸렸어요! 치워야겠네요.."); }}>{"아니요"}</button>
             </div>
           </>
         )}
@@ -2940,7 +3000,7 @@ function PoopTools({
             <b>{"어쩔 수 없다... 양말뿐인건가..?"}</b>
             <div className="poop-actions">
               <button onClick={() => choose("sock")}>{"양말 벗기"}</button>
-              <button onClick={() => { setGuardVisible(true); setMessage("그냥 가려다 경비 아저씨한테 또 걸렸어요! 치워야겠네요.."); }} >{"그냥 가자"}</button>
+              <button onClick={() => { showGuardNotice("그냥 가려다 경비 아저씨한테 또 걸렸어요! 치워야겠네요.."); }} >{"그냥 가자"}</button>
             </div>
           </>
         )}
@@ -2960,6 +3020,7 @@ function PoopTools({
         .leaf-grass { position: absolute; right: 82px; bottom: 136px; width: 78px; height: 54px; display: grid; place-items: center; pointer-events: auto; }
         .guard-warning { position: absolute; left: 18px; bottom: 122px; width: min(270px, 34vw); aspect-ratio: 1; filter: drop-shadow(0 16px 24px rgba(48, 28, 18, 0.24)); pointer-events: none; }
         .guard-warning :global(img), .poop-flash :global(img) { object-fit: contain; }
+        .guard-notice { position: absolute; z-index: 6; left: 50%; top: 42%; transform: translate(-50%, -50%); width: min(520px, calc(100vw - 56px)); padding: 18px 22px; border-radius: 24px; text-align: center; background: linear-gradient(180deg, rgba(255,226,226,0.98), rgba(255,191,201,0.96)); border: 2px solid rgba(220, 92, 108, 0.38); color: #642b31; font-weight: 950; box-shadow: 0 22px 48px rgba(102, 40, 48, 0.26); pointer-events: none; animation: guard-pop 0.18s ease-out; }
         .poop-flash { position: absolute; left: 50%; top: 46%; width: min(360px, 54vw); aspect-ratio: 1.45; transform: translate(-50%, -50%); z-index: 4; filter: drop-shadow(0 20px 28px rgba(48, 28, 18, 0.28)); pointer-events: none; animation: flash-pop 0.2s ease-out; }
         .flash-caption { position: absolute; left: 50%; bottom: -48px; transform: translateX(-50%); min-width: min(430px, calc(100vw - 64px)); padding: 12px 16px; border-radius: 18px; background: linear-gradient(180deg, rgba(255,226,226,0.98), rgba(255,201,207,0.96)); border: 2px solid rgba(224, 118, 128, 0.34); color: #5a2c2f; font-weight: 950; text-align: center; box-shadow: 0 16px 32px rgba(94,42,44,0.24); }
         .flash-caption.green { background: linear-gradient(180deg, rgba(225,247,218,0.98), rgba(188,229,180,0.96)); border-color: rgba(91,154,86,0.34); color: #2d6332; box-shadow: 0 16px 32px rgba(53,98,49,0.22); }
@@ -2976,6 +3037,10 @@ function PoopTools({
         .leaf.image-chip { width: 64px; height: 50px; background: transparent; border: 0; box-shadow: 0 8px 14px rgba(52, 70, 30, 0.12); }
         @keyframes flash-pop {
           from { opacity: 0; transform: translate(-50%, -50%) scale(0.86); }
+          to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+        }
+        @keyframes guard-pop {
+          from { opacity: 0; transform: translate(-50%, -50%) scale(0.9); }
           to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
         }
         .bag-chip :global(img) { object-fit: contain; border-radius: 12px; }
@@ -3274,6 +3339,17 @@ function ActionDock({ children }: { children: ReactNode }) {
   );
 }
 
+const albumItems = [
+  { src: "/ruby-gamja/custom/opening-ruby-gamja.jpg", title: "루비&감자", caption: "산책 전부터 벌써 기대 중" },
+  { src: "/ruby-gamja/custom/home-sleep-dogs.png", title: "낮잠 시간", caption: "1층 거실에서 조용히 쉬는 중" },
+  { src: "/ruby-gamja/custom/ruby-come.png", title: "루비", caption: "부르면 바로 달려오는 산책 대장" },
+  { src: "/ruby-gamja/custom/gamja-come.png", title: "감자", caption: "작지만 존재감 확실한 감시반장" },
+  { src: "/ruby-gamja/custom/ruby-hop-new.png", title: "신난 루비", caption: "산책이라는 말에 콩콩" },
+  { src: "/ruby-gamja/custom/gamja-hop-new.png", title: "신난 감자", caption: "꼬리부터 먼저 출발" },
+  { src: "/ruby-gamja/custom/ruby-back-walk.png", title: "루비 산책", caption: "앞장서서 길 안내 중" },
+  { src: "/ruby-gamja/custom/gamja-back-walk.png", title: "감자 산책", caption: "루비 옆에서 씩씩하게 걷기" },
+];
+
 function CenterCard({
   title,
   body,
@@ -3289,12 +3365,75 @@ function CenterCard({
   image: string;
   variant?: "intro" | "";
 }) {
+  const [albumOpen, setAlbumOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const isIntro = variant === "intro";
+
   return (
     <div className={`center-card ${variant}`}>
       <div className="hero-dogs"><Image src={image} alt="루비와 감자" fill sizes="520px" priority /></div>
       <h2>{title}</h2>
       {body && <p>{body}</p>}
+      {isIntro && (
+        <div className="intro-home">
+          <button type="button" className="home-button" onClick={() => setProfileOpen(true)}>루비 감자 소개</button>
+          <button type="button" className="home-button" onClick={() => setAlbumOpen(true)}>루감이 앨범 보기</button>
+        </div>
+      )}
       <button onClick={onClick}>{button}</button>
+      {isIntro && profileOpen && (
+        <div className="home-overlay" role="dialog" aria-modal="true" aria-label="루비 감자 소개">
+          <div className="home-modal profile-modal">
+            <div className="modal-head">
+              <div>
+                <b>루비 감자 소개</b>
+                <span>오늘 산책을 함께할 주인공들이에요</span>
+              </div>
+              <button type="button" onClick={() => setProfileOpen(false)}>닫기</button>
+            </div>
+            <div className="profile-row">
+              <article>
+                <div className="profile-photo"><Image src="/ruby-gamja/custom/ruby-come.png" alt="루비" fill sizes="220px" /></div>
+                <span>RUBY</span>
+                <b>루비</b>
+                <p>산책길을 앞장서는 든든한 언니. 신나면 줄을 살짝 당겨요.</p>
+              </article>
+              <article>
+                <div className="profile-photo"><Image src="/ruby-gamja/custom/gamja-come.png" alt="감자" fill sizes="220px" /></div>
+                <span>GAMJA</span>
+                <b>감자</b>
+                <p>작지만 목소리는 큰 귀염둥이. 냄새 맡기와 영역 표시 담당.</p>
+              </article>
+            </div>
+          </div>
+        </div>
+      )}
+      {isIntro && albumOpen && (
+        <div className="home-overlay" role="dialog" aria-modal="true" aria-label="루비 감자 앨범">
+          <div className="home-modal album-card">
+            <div className="modal-head">
+              <div>
+                <b>루감이 앨범</b>
+                <span>산책 전에 사진부터 보고 가요</span>
+              </div>
+              <button type="button" onClick={() => setAlbumOpen(false)}>닫기</button>
+            </div>
+            <div className="album-grid">
+              {albumItems.map((item) => (
+                <figure key={item.src}>
+                  <div>
+                    <Image src={item.src} alt={item.title} fill sizes="220px" />
+                  </div>
+                  <figcaption>
+                    <b>{item.title}</b>
+                    <span>{item.caption}</span>
+                  </figcaption>
+                </figure>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
       <style jsx>{`
         .center-card {
           position: absolute;
@@ -3315,10 +3454,22 @@ function CenterCard({
           color: #fff9ef;
         }
         .center-card.intro {
-          background:
-            linear-gradient(90deg, rgba(26, 18, 13, 0.5), rgba(26, 18, 13, 0.08) 58%, rgba(26, 18, 13, 0.38));
-          color: #fff8ec;
-          padding-top: 280px;
+          width: 100%;
+          height: 100%;
+          min-height: 650px;
+          background: transparent;
+          color: #4b3322;
+          padding: 10px 24px 24px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: space-between;
+          text-align: center;
+          border-radius: 0;
+          box-shadow: none;
+          overflow: visible;
+          transform: translate(-50%, -50%);
+          pointer-events: none;
         }
         .hero-dogs {
           position: absolute;
@@ -3333,8 +3484,8 @@ function CenterCard({
           position: absolute;
           inset: 0;
           background:
-            radial-gradient(circle at 18% 18%, rgba(255, 213, 220, 0.28), transparent 8rem),
-            linear-gradient(90deg, rgba(18, 13, 10, 0.66), rgba(18, 13, 10, 0.1) 50%, rgba(18, 13, 10, 0.38));
+            radial-gradient(circle at 18% 18%, rgba(255, 233, 202, 0.34), transparent 10rem),
+            linear-gradient(180deg, rgba(255, 247, 232, 0.46), transparent 34%, rgba(34, 24, 17, 0.08));
         }
         .hero-dogs :global(img) { object-fit: cover; }
         .intro .hero-dogs {
@@ -3342,9 +3493,12 @@ function CenterCard({
           height: 100%;
           z-index: -1;
           filter: none;
+          display: none;
         }
         .intro .hero-dogs::after {
           display: block;
+          background:
+            linear-gradient(180deg, rgba(255, 249, 238, 0.2) 0%, rgba(255, 249, 238, 0.06) 22%, transparent 52%);
         }
         .intro .hero-dogs :global(img) {
           object-fit: cover;
@@ -3353,6 +3507,7 @@ function CenterCard({
           position: relative;
           z-index: 1;
           margin: 0 0 10px;
+          font-family: 'Jua', 'Poor Story', 'Pretendard', sans-serif;
           font-size: clamp(2.4rem, 7vw, 5rem);
           line-height: 0.92;
           white-space: pre-line;
@@ -3370,9 +3525,100 @@ function CenterCard({
           line-height: 1.6;
           text-shadow: 0 2px 6px rgba(0,0,0,0.4);
         }
+        .intro h2 {
+          width: auto;
+          max-width: min(620px, calc(100% - 32px));
+          margin: 0;
+          padding: 8px 20px 10px;
+          border-radius: 999px;
+          background: rgba(255, 248, 235, 0.76);
+          font-size: clamp(1.9rem, 4.3vw, 3.35rem);
+          line-height: 0.9;
+          color: #3d2b20;
+          text-shadow:
+            0 3px 0 rgba(255, 255, 255, 0.92),
+            0 10px 22px rgba(82, 54, 33, 0.24);
+          box-shadow: 0 12px 28px rgba(57, 38, 24, 0.12);
+          pointer-events: auto;
+        }
+        .intro-home {
+          position: relative;
+          z-index: 1;
+          display: flex;
+          flex-wrap: wrap;
+          justify-items: center;
+          justify-content: center;
+          gap: 8px;
+          width: min(520px, calc(100% - 32px));
+          max-width: 520px;
+          margin: auto auto 12px;
+          padding: 0;
+          border-radius: 0;
+          background: transparent;
+          box-shadow: none;
+          pointer-events: auto;
+        }
+        .profile-row {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 16px;
+          width: 100%;
+        }
+        .profile-row article {
+          padding: 16px;
+          border-radius: 24px;
+          background: rgba(255, 248, 235, 0.86);
+          color: #4b3322;
+          border: 1px solid rgba(255, 255, 255, 0.44);
+          box-shadow: 0 12px 28px rgba(34, 23, 16, 0.18);
+          text-align: left;
+          backdrop-filter: blur(10px);
+        }
+        .profile-photo {
+          position: relative;
+          height: 190px;
+          margin-bottom: 10px;
+          border-radius: 20px;
+          overflow: hidden;
+          background: linear-gradient(180deg, #f8ead5, #e8cfac);
+        }
+        .profile-photo :global(img) {
+          object-fit: contain;
+          padding: 10px;
+        }
+        .profile-row article span {
+          display: inline-block;
+          margin-bottom: 2px;
+          color: #b1744a;
+          font-family: 'Jua', 'Poor Story', 'Pretendard', sans-serif;
+          font-size: 0.9rem;
+        }
+        .profile-row article b {
+          display: block;
+          font-family: 'Jua', 'Poor Story', 'Pretendard', sans-serif;
+          font-size: 1.45rem;
+          color: #3f2c20;
+        }
+        .profile-row article p {
+          margin: 4px 0 0;
+          color: #5c4535;
+          font-size: 1rem;
+          line-height: 1.35;
+          text-shadow: none;
+        }
+        .home-button {
+          min-width: 132px;
+          padding: 9px 12px;
+          border-radius: 999px;
+          background: linear-gradient(180deg, rgba(255,250,241,0.96), rgba(243,214,173,0.94));
+          color: #5b3927;
+          box-shadow: 0 12px 26px rgba(37, 24, 17, 0.2);
+          font-size: 1rem;
+        }
         button {
           position: relative;
           z-index: 1;
+          font-family: 'Jua', 'Poor Story', 'Pretendard', sans-serif;
           background: linear-gradient(180deg, #fff3d7, #dfbf8c);
           color: #4b3322;
           border: 2px solid rgba(255, 255, 255, 0.35);
@@ -3380,6 +3626,120 @@ function CenterCard({
           padding: 18px 26px;
           border-radius: 22px;
           font-size: clamp(1.25rem, 3vw, 1.8rem);
+        }
+        .intro > button {
+          min-width: min(320px, calc(100% - 48px));
+          margin: 0 0 24px;
+          padding: 18px 28px;
+          font-size: clamp(1.35rem, 3vw, 2rem);
+          box-shadow: 0 16px 34px rgba(61, 39, 24, 0.24);
+          pointer-events: auto;
+        }
+        .home-overlay {
+          position: fixed;
+          z-index: 80;
+          inset: 0;
+          display: grid;
+          place-items: center;
+          padding: 24px;
+          background: rgba(32, 22, 16, 0.58);
+          backdrop-filter: blur(8px);
+        }
+        .home-modal {
+          width: min(980px, 100%);
+          max-height: min(760px, calc(100vh - 48px));
+          overflow: auto;
+          padding: 20px;
+          border-radius: 28px;
+          background: linear-gradient(180deg, #fffaf1, #f6dfbe);
+          color: #4b3322;
+          box-shadow: 0 32px 90px rgba(0,0,0,0.36);
+        }
+        .profile-modal {
+          width: min(760px, 100%);
+        }
+        .modal-head {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 14px;
+          margin-bottom: 16px;
+        }
+        .modal-head b {
+          display: block;
+          font-family: 'Jua', 'Poor Story', 'Pretendard', sans-serif;
+          font-size: 2rem;
+        }
+        .modal-head span {
+          color: #7b5b45;
+          font-weight: 850;
+        }
+        .modal-head button {
+          min-width: auto;
+          padding: 10px 16px;
+          border-radius: 999px;
+          font-size: 1.05rem;
+        }
+        .album-grid {
+          display: grid;
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+          gap: 12px;
+        }
+        figure {
+          margin: 0;
+          overflow: hidden;
+          border-radius: 20px;
+          background: rgba(255,255,255,0.72);
+          border: 1px solid rgba(119, 82, 54, 0.16);
+          box-shadow: 0 10px 24px rgba(82, 56, 35, 0.12);
+        }
+        figure > div {
+          position: relative;
+          height: 150px;
+          background: #efe1cf;
+        }
+        figure :global(img) {
+          object-fit: cover;
+        }
+        figcaption {
+          display: grid;
+          gap: 2px;
+          padding: 10px 12px 12px;
+          text-align: left;
+        }
+        figcaption b {
+          font-family: 'Jua', 'Poor Story', 'Pretendard', sans-serif;
+          font-size: 1.1rem;
+        }
+        figcaption span {
+          color: #775942;
+          font-size: 0.95rem;
+          line-height: 1.25;
+        }
+        @media (max-width: 820px) {
+          .center-card.intro {
+            min-height: 620px;
+            padding: 16px;
+          }
+          .intro h2 {
+            max-width: calc(100% - 20px);
+            font-size: clamp(1.8rem, 9vw, 3rem);
+          }
+          .intro-home {
+            width: calc(100% - 18px);
+            max-width: 360px;
+          }
+          .intro > button {
+            margin-bottom: 18px;
+          }
+          .profile-row,
+          .album-grid {
+            grid-template-columns: 1fr;
+          }
+          .album-grid {
+            max-height: 58vh;
+            overflow: auto;
+          }
         }
       `}</style>
     </div>
