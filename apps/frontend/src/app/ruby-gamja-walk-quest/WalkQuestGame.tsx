@@ -79,6 +79,9 @@ const animal = {
   bossDog: "/ruby-gamja/custom/boss-dog.png",
   bossDogAudio: "/ruby-gamja/custom/boss-dog-bark.mp3",
   cat: "/ruby-gamja/custom/cat.png",
+  catAudio: "/ruby-gamja/custom/cat-meow.mp3",
+  gamjaGateBarkAudio: "/ruby-gamja/custom/gamja-gate-bark.mp3",
+  walkingStepsAudio: "/ruby-gamja/custom/walking-steps.mp3",
 };
 
 type SoundName = "bark" | "happy" | "leash" | "success" | "fall" | "car" | "poop" | "step";
@@ -183,6 +186,8 @@ export default function WalkQuestGame() {
   const [carGuide, setCarGuide] = useState(false);
   const [hearts, setHearts] = useState(false);
   const walkForwardRef = useRef(0);
+  const gateBarkAudioRef = useRef<HTMLAudioElement | null>(null);
+  const catAudioRef = useRef<HTMLAudioElement | null>(null);
 
   const info = phaseInfo[phase];
   const needsInput = ["living", "leashPrep", "pull", "car", "barkingDog", "cat", "catFood"].includes(phase);
@@ -657,7 +662,6 @@ export default function WalkQuestGame() {
   }
 
   useEffect(() => {
-    if (phase === "gate") playSound("bark");
     if (phase === "car") playSound("car");
     if (phase === "poop") playSound("poop");
     if (phase === "run") playSound("happy");
@@ -685,10 +689,46 @@ export default function WalkQuestGame() {
   }, [carGuide, phase]);
 
   useEffect(() => {
+    gateBarkAudioRef.current?.pause();
+    gateBarkAudioRef.current = null;
     if (phase !== "gate" || gamjaQuiet) return;
-    const barkTimer = window.setInterval(() => playSound("bark"), 1300);
-    return () => window.clearInterval(barkTimer);
+
+    const audio = new Audio(animal.gamjaGateBarkAudio);
+    audio.loop = true;
+    audio.volume = 0.78;
+    gateBarkAudioRef.current = audio;
+    void audio.play().catch(() => {
+      playSound("bark");
+    });
+
+    return () => {
+      audio.pause();
+      audio.currentTime = 0;
+      if (gateBarkAudioRef.current === audio) {
+        gateBarkAudioRef.current = null;
+      }
+    };
   }, [gamjaQuiet, phase]);
+
+  useEffect(() => {
+    catAudioRef.current?.pause();
+    catAudioRef.current = null;
+    if (phase !== "cat") return;
+
+    const audio = new Audio(animal.catAudio);
+    audio.loop = true;
+    audio.volume = 0.64;
+    catAudioRef.current = audio;
+    void audio.play().catch(() => {});
+
+    return () => {
+      audio.pause();
+      audio.currentTime = 0;
+      if (catAudioRef.current === audio) {
+        catAudioRef.current = null;
+      }
+    };
+  }, [phase]);
 
   const dogPose = useMemo(() => {
     if (phase === "intro" || phase === "clear") return "heart";
@@ -1177,6 +1217,7 @@ function ThreeWalkWorld({
   const mountRef = useRef<HTMLDivElement | null>(null);
   const positionRef = useRef({ x: 0, z: 5.5, yaw: 0 });
   const keysRef = useRef(new Set<string>());
+  const stepAudioRef = useRef<HTMLAudioElement | null>(null);
   const reachedEntryRef = useRef(false);
   const rubyCalmRef = useRef(rubyCalm);
   const gamjaQuietRef = useRef(gamjaQuiet);
@@ -1283,6 +1324,29 @@ function ThreeWalkWorld({
 
     const clock = new THREE.Clock();
     let frame = 0;
+    const movementKeys = ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"];
+    const stopStepAudio = () => {
+      const audio = stepAudioRef.current;
+      if (!audio) return;
+      audio.pause();
+      audio.currentTime = 0;
+      stepAudioRef.current = null;
+    };
+    const syncStepAudio = () => {
+      if (phase !== "upstairs" || keysRef.current.size === 0) {
+        stopStepAudio();
+        return;
+      }
+      if (stepAudioRef.current) return;
+
+      const audio = new Audio(animal.walkingStepsAudio);
+      audio.loop = true;
+      audio.volume = 0.62;
+      stepAudioRef.current = audio;
+      void audio.play().catch(() => {
+        stopStepAudio();
+      });
+    };
     const animate = () => {
       const delta = Math.min(clock.getDelta(), 0.04);
       const pos = positionRef.current;
@@ -1392,13 +1456,17 @@ function ThreeWalkWorld({
     };
 
     const onKeyDown = (event: KeyboardEvent) => {
-      if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(event.code)) {
+      if (movementKeys.includes(event.code)) {
         event.preventDefault();
         keysRef.current.add(event.code);
+        syncStepAudio();
       }
     };
     const onKeyUp = (event: KeyboardEvent) => {
-      keysRef.current.delete(event.code);
+      if (movementKeys.includes(event.code)) {
+        keysRef.current.delete(event.code);
+        syncStepAudio();
+      }
     };
     const onResize = () => {
       const nextWidth = Math.max(1, mount.clientWidth);
@@ -1418,6 +1486,7 @@ function ThreeWalkWorld({
       window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("keyup", onKeyUp);
       window.removeEventListener("resize", onResize);
+      stopStepAudio();
       renderer.dispose();
       scene.traverse((object) => {
         if (object instanceof THREE.Mesh) {
@@ -2237,7 +2306,7 @@ function SceneContent(props: {
     return (
       <ActionDock>
         <button className={p.rubyCalm ? "gate-action sit done" : "gate-action sit"} onClick={() => { playSound("success"); p.setRubyCalm(true); p.setMessage("루비가 빙글빙글 돌다가 앉았어요."); }}>{"앉아"}</button>
-        <button className={p.gamjaQuiet ? "gate-action hush done" : "gate-action hush"} onClick={() => { playSound("bark"); p.setGamjaQuiet(true); p.setMessage("감자가 짖음을 멈추고 차분해졌어요."); }}>{"조용히 해"}</button>
+        <button className={p.gamjaQuiet ? "gate-action hush done" : "gate-action hush"} onClick={() => { playSound("success"); p.setGamjaQuiet(true); p.setMessage("감자가 짖음을 멈추고 차분해졌어요."); }}>{"조용히 해"}</button>
         <button className="gate-action open" onClick={p.openGate}>{"대문 열기"}</button>
       </ActionDock>
     );
