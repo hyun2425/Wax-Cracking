@@ -185,7 +185,9 @@ export default function WalkQuestGame() {
   const [bossBlocks, setBossBlocks] = useState(0);
   const [carGuide, setCarGuide] = useState(false);
   const [hearts, setHearts] = useState(false);
+  const [successToast, setSuccessToast] = useState<string | null>(null);
   const walkForwardRef = useRef(0);
+  const successToastTimerRef = useRef<number | null>(null);
   const gateBarkAudioRef = useRef<HTMLAudioElement | null>(null);
   const catAudioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -194,10 +196,39 @@ export default function WalkQuestGame() {
   const showDogs = false;
   const useEmptyHome = (phase === "living" && calledDogs) || phase === "excited";
 
+  const showSuccessToast = useCallback((mission = "미션") => {
+    const lines = [
+      `${mission} 성공! 루감이 산책력 +1`,
+      `${mission} 성공! 보호자 센스가 반짝였어요.`,
+      `${mission} 성공! 루비와 감자가 꼬리로 박수치는 중!`,
+      `${mission} 성공! 오늘 산책 아주 순조로워요.`,
+    ];
+    const nextLine = lines[Math.floor(Math.random() * lines.length)];
+
+    if (successToastTimerRef.current !== null) {
+      window.clearTimeout(successToastTimerRef.current);
+    }
+
+    setSuccessToast(nextLine);
+    successToastTimerRef.current = window.setTimeout(() => {
+      setSuccessToast(null);
+      successToastTimerRef.current = null;
+    }, 2200);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (successToastTimerRef.current !== null) {
+        window.clearTimeout(successToastTimerRef.current);
+      }
+    };
+  }, []);
+
   function showHearts(text: string) {
     setMessage(text);
     setHearts(true);
     playSound("success");
+    showSuccessToast();
     window.setTimeout(() => setHearts(false), 1300);
   }
 
@@ -227,6 +258,11 @@ export default function WalkQuestGame() {
     setBossBlocks(0);
     setCarGuide(false);
     setHearts(false);
+    setSuccessToast(null);
+    if (successToastTimerRef.current !== null) {
+      window.clearTimeout(successToastTimerRef.current);
+      successToastTimerRef.current = null;
+    }
     walkForwardRef.current = 0;
   }
 
@@ -838,7 +874,13 @@ export default function WalkQuestGame() {
             blockBoss={blockBoss}
             clickBossDog={clickBossDog}
             carGuide={carGuide}
+            showSuccessToast={showSuccessToast}
           />
+          {successToast && (
+            <div className="success-toast" role="status" aria-live="polite">
+              {successToast}
+            </div>
+          )}
           {phase !== "intro" && (
             <div className="scene-caption">
               <b>{info.scene}</b>
@@ -958,6 +1000,43 @@ export default function WalkQuestGame() {
           background: #f2eee8;
           border-top: 1px solid rgba(255,255,255,0.12);
           border-bottom: 1px solid rgba(255,255,255,0.12);
+        }
+
+        .success-toast {
+          position: absolute;
+          z-index: 80;
+          left: 50%;
+          top: 18%;
+          max-width: min(520px, calc(100% - 48px));
+          transform: translateX(-50%);
+          padding: 16px 24px 18px;
+          border: 2px solid rgba(102, 161, 67, 0.42);
+          border-radius: 24px;
+          background: linear-gradient(180deg, rgba(234, 255, 214, 0.98), rgba(199, 239, 165, 0.96));
+          box-shadow: 0 22px 58px rgba(59, 110, 41, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.72);
+          color: #31551f;
+          font-family: 'Jua', 'Poor Story', 'Pretendard', sans-serif;
+          font-size: clamp(1.15rem, 2.4vw, 1.65rem);
+          font-weight: 900;
+          text-align: center;
+          pointer-events: none;
+          animation: success-pop 2.2s ease both;
+        }
+
+        @keyframes success-pop {
+          0% {
+            opacity: 0;
+            transform: translate(-50%, 10px) scale(0.92);
+          }
+          12%,
+          78% {
+            opacity: 1;
+            transform: translate(-50%, 0) scale(1);
+          }
+          100% {
+            opacity: 0;
+            transform: translate(-50%, -8px) scale(0.98);
+          }
         }
 
         .scene::before {
@@ -2285,6 +2364,7 @@ function SceneContent(props: {
   blockBoss: () => void;
   clickBossDog: () => void;
   carGuide: boolean;
+  showSuccessToast: (mission?: string) => void;
 }) {
   const p = props;
   if (p.phase === "intro") {
