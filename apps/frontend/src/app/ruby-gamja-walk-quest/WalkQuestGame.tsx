@@ -988,6 +988,10 @@ export default function WalkQuestGame() {
           transform: translateX(-50%);
         }
 
+        .bg-stairs .first-person {
+          display: none;
+        }
+
         .command {
           position: absolute;
           z-index: 20;
@@ -1530,7 +1534,7 @@ function addInterior(scene: THREE.Scene) {
     upperRail.add(bar);
   }
   scene.add(upperRail);
-  const lowerVoid = new THREE.Mesh(new THREE.PlaneGeometry(3.6, 2.3), new THREE.MeshBasicMaterial({ color: "#3f332a", transparent: true, opacity: 0.28 }));
+  const lowerVoid = new THREE.Mesh(new THREE.PlaneGeometry(3.6, 2.3), new THREE.MeshBasicMaterial({ color: "#f5ebdc", transparent: true, opacity: 0.06 }));
   lowerVoid.rotation.x = -Math.PI / 2;
   lowerVoid.position.set(-3.6, 1.31, 4.0);
   scene.add(lowerVoid);
@@ -3330,15 +3334,104 @@ function ActionDock({ children }: { children: ReactNode }) {
   );
 }
 
-const albumItems = [
-  { src: "/ruby-gamja/custom/opening-ruby-gamja.jpg", title: "루비&감자", caption: "산책 전부터 벌써 기대 중" },
-  { src: "/ruby-gamja/custom/home-sleep-dogs.png", title: "낮잠 시간", caption: "1층 거실에서 조용히 쉬는 중" },
-  { src: "/ruby-gamja/custom/ruby-come.png", title: "루비", caption: "부르면 바로 달려오는 산책 대장" },
-  { src: "/ruby-gamja/custom/gamja-come.png", title: "감자", caption: "작지만 존재감 확실한 감시반장" },
-  { src: "/ruby-gamja/custom/ruby-hop-new.png", title: "신난 루비", caption: "산책이라는 말에 콩콩" },
-  { src: "/ruby-gamja/custom/gamja-hop-new.png", title: "신난 감자", caption: "꼬리부터 먼저 출발" },
-  { src: "/ruby-gamja/custom/ruby-back-walk.png", title: "루비 산책", caption: "앞장서서 길 안내 중" },
-  { src: "/ruby-gamja/custom/gamja-back-walk.png", title: "감자 산책", caption: "루비 옆에서 씩씩하게 걷기" },
+const rubyAlbumPhotos = [
+  "KakaoTalk_20260623_101106536_02.jpg",
+  "KakaoTalk_20260623_101106536_03.jpg",
+  "KakaoTalk_20260623_101106536_05.jpg",
+  "KakaoTalk_20260623_101106536_06.jpg",
+  "KakaoTalk_20260623_101106536_07.jpg",
+  "KakaoTalk_20260623_101106536_08.jpg",
+  "KakaoTalk_20260623_101106536_09.jpg",
+  "KakaoTalk_20260623_101106536_10.jpg",
+  "KakaoTalk_20260623_101106536_11.jpg",
+  "KakaoTalk_20260623_101106536_12.jpg",
+  "KakaoTalk_20260623_101106536_16.jpg",
+  "KakaoTalk_20260623_101106536_17.jpg",
+  "KakaoTalk_20260623_101106536_18.jpg",
+  "KakaoTalk_20260623_101106536_19.jpg",
+  "KakaoTalk_20260623_101106536_20.jpg",
+  "KakaoTalk_20260623_101106536_21.jpg",
+  "KakaoTalk_20260623_101106536_22.jpg",
+  "KakaoTalk_20260623_101106536_23.jpg",
+  "KakaoTalk_20260623_101106536_24.jpg",
+  "KakaoTalk_20260623_101106536_25.jpg",
+  "KakaoTalk_20260623_101106536_28.jpg",
+  "KakaoTalk_20260623_101106536_29.jpg",
+  "KakaoTalk_20260623_101109566_02.jpg",
+  "KakaoTalk_20260623_101109566.jpg",
+];
+
+const gamjaAlbumPhotos = [
+  "KakaoTalk_20260623_104936603_01.jpg",
+  "KakaoTalk_20260623_104936603_02.jpg",
+  "KakaoTalk_20260623_104936603_03.jpg",
+  "KakaoTalk_20260623_104936603_04.jpg",
+  "KakaoTalk_20260623_104936603_05.jpg",
+  "KakaoTalk_20260623_104936603_06.jpg",
+  "KakaoTalk_20260623_104936603_07.jpg",
+  "KakaoTalk_20260623_104936603_08.jpg",
+  "KakaoTalk_20260623_104936603_09.jpg",
+  "KakaoTalk_20260623_104936603_10.jpg",
+  "KakaoTalk_20260623_104936603_11.jpg",
+  "KakaoTalk_20260623_104936603_12.jpg",
+  "KakaoTalk_20260623_104936603_13.jpg",
+  "KakaoTalk_20260623_104936603_14.jpg",
+  "KakaoTalk_20260623_104936603_15.jpg",
+  "KakaoTalk_20260623_104936603_16.jpg",
+  "KakaoTalk_20260623_104936603_17.jpg",
+  "KakaoTalk_20260623_104936603_18.jpg",
+  "KakaoTalk_20260623_104936603_20.jpg",
+  "KakaoTalk_20260623_104936603_21.jpg",
+  "KakaoTalk_20260623_104936603_22.jpg",
+  "KakaoTalk_20260623_104936603_23.jpg",
+  "KakaoTalk_20260623_104936603.jpg",
+  "KakaoTalk_20260623_105048528_02.jpg",
+  "KakaoTalk_20260623_105048528_03.jpg",
+  "KakaoTalk_20260623_105048528_04.jpg",
+  "KakaoTalk_20260623_105048528_05.jpg",
+  "KakaoTalk_20260623_105048528_06.jpg",
+  "KakaoTalk_20260623_105048528_08.jpg",
+  "KakaoTalk_20260623_105048528_09.jpg",
+  "KakaoTalk_20260623_105048528.jpg",
+];
+
+const togetherAlbumPhotos = [
+  "KakaoTalk_20260623_101106536_14.jpg",
+  "KakaoTalk_20260623_101106536_15.jpg",
+  "KakaoTalk_20260623_101109566_01.jpg",
+  "KakaoTalk_20260623_105048528_07.jpg",
+];
+
+type AlbumItem = {
+  src: string;
+  title: string;
+  caption: string;
+};
+
+type AlbumTab = "ruby" | "gamja" | "together";
+
+const togetherAlbumItems: AlbumItem[] = togetherAlbumPhotos.map((fileName, index) => ({
+    src: `/ruby-gamja/루비감자앨범/${fileName}`,
+    title: "루비&감자",
+    caption: `함께한 순간 ${index + 1}`,
+  }));
+
+const rubyAlbumItems: AlbumItem[] = rubyAlbumPhotos.map((fileName, index) => ({
+    src: `/ruby-gamja/루비앨범/${fileName}`,
+    title: "루비 앨범",
+    caption: `루비 사진 ${index + 1}`,
+  }));
+
+const gamjaAlbumItems: AlbumItem[] = gamjaAlbumPhotos.map((fileName, index) => ({
+    src: `/ruby-gamja/감자앨범/${fileName}`,
+    title: "감자 앨범",
+    caption: `감자 사진 ${index + 1}`,
+  }));
+
+const albumTabs: Array<{ id: AlbumTab; label: string; items: AlbumItem[] }> = [
+  { id: "ruby", label: "루비", items: rubyAlbumItems },
+  { id: "gamja", label: "감자", items: gamjaAlbumItems },
+  { id: "together", label: "루감", items: togetherAlbumItems },
 ];
 
 function IntroStyles() {
@@ -3782,6 +3875,93 @@ function IntroStyles() {
         gap: 12px;
       }
 
+      .album-tabs {
+        display: flex;
+        gap: 8px;
+        margin: -4px 0 14px;
+      }
+
+      .album-tabs button {
+        min-width: 0;
+        padding: 9px 18px;
+        border-radius: 999px;
+        font-family: 'Jua', 'Poor Story', sans-serif;
+        font-size: 1.1rem;
+        color: #67452e;
+        background: rgba(255, 250, 241, 0.8);
+        border: 1px solid rgba(119, 82, 54, 0.16);
+        box-shadow: none;
+      }
+
+      .album-tabs button.active {
+        color: #fffaf1;
+        background: linear-gradient(180deg, #89b65d, #5f963e);
+        border-color: rgba(255, 255, 255, 0.56);
+        box-shadow: 0 8px 18px rgba(70, 108, 39, 0.22);
+      }
+
+      .album-photo {
+        position: relative;
+        display: block;
+        min-width: 0;
+        height: 158px;
+        padding: 0;
+        overflow: hidden;
+        border-radius: 18px;
+        background: #efe1cf;
+        border: 1px solid rgba(119, 82, 54, 0.16);
+        box-shadow: 0 10px 24px rgba(82, 56, 35, 0.12);
+        cursor: zoom-in;
+      }
+
+      .album-photo :global(img) {
+        object-fit: cover;
+        transition: transform 180ms ease;
+      }
+
+      .album-photo:hover :global(img) {
+        transform: scale(1.04);
+      }
+
+      .photo-lightbox {
+        position: fixed;
+        z-index: 90;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        padding: 52px 22px 24px;
+        background: rgba(31, 22, 16, 0.76);
+      }
+
+      .lightbox-photo {
+        position: relative;
+        width: min(920px, 92vw);
+        height: min(720px, 78vh);
+        border-radius: 24px;
+        overflow: hidden;
+        background: #140f0c;
+        box-shadow: 0 28px 80px rgba(0,0,0,0.42);
+      }
+
+      .lightbox-photo :global(img) {
+        object-fit: contain;
+      }
+
+      .lightbox-close {
+        position: absolute;
+        z-index: 2;
+        top: 18px;
+        right: 22px;
+        min-width: 0;
+        padding: 10px 16px;
+        border-radius: 999px;
+        font-family: 'Jua', 'Poor Story', sans-serif;
+        font-size: 1.05rem;
+        color: #4b3322;
+        background: #fffaf1;
+        box-shadow: 0 12px 28px rgba(0,0,0,0.2);
+      }
+
       figure {
         margin: 0;
         overflow: hidden;
@@ -3853,6 +4033,10 @@ function IntroStyles() {
         .profile-row {
           grid-template-columns: 1fr;
         }
+
+        .album-photo {
+          height: 220px;
+        }
       }
     `}</style>
   );
@@ -3875,7 +4059,10 @@ function CenterCard({
 }) {
   const [albumOpen, setAlbumOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [albumTab, setAlbumTab] = useState<AlbumTab>("ruby");
+  const [selectedAlbumPhoto, setSelectedAlbumPhoto] = useState<AlbumItem | null>(null);
   const isIntro = variant === "intro";
+  const activeAlbumItems = albumTabs.find((tab) => tab.id === albumTab)?.items ?? rubyAlbumItems;
 
   if (isIntro) {
     return (
@@ -3945,20 +4132,42 @@ function CenterCard({
                 </div>
                 <button type="button" onClick={() => setAlbumOpen(false)}>닫기</button>
               </div>
+              <div className="album-tabs" role="tablist" aria-label="앨범 선택">
+                {albumTabs.map((tab) => (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    className={albumTab === tab.id ? "active" : ""}
+                    onClick={() => setAlbumTab(tab.id)}
+                    role="tab"
+                    aria-selected={albumTab === tab.id}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
               <div className="album-grid">
-                {albumItems.map((item) => (
-                  <figure key={item.src}>
-                    <div>
-                      <Image src={item.src} alt={item.title} fill sizes="220px" />
-                    </div>
-                    <figcaption>
-                      <b>{item.title}</b>
-                      <span>{item.caption}</span>
-                    </figcaption>
-                  </figure>
+                {activeAlbumItems.map((item) => (
+                  <button
+                    key={item.src}
+                    type="button"
+                    className="album-photo"
+                    onClick={() => setSelectedAlbumPhoto(item)}
+                    aria-label={`${item.title} 크게 보기`}
+                  >
+                    <Image src={item.src} alt={item.title} fill sizes="220px" />
+                  </button>
                 ))}
               </div>
             </div>
+            {selectedAlbumPhoto && (
+              <div className="photo-lightbox" role="dialog" aria-modal="true" aria-label="앨범 사진 크게 보기">
+                <button type="button" className="lightbox-close" onClick={() => setSelectedAlbumPhoto(null)}>닫기</button>
+                <div className="lightbox-photo">
+                  <Image src={selectedAlbumPhoto.src} alt={selectedAlbumPhoto.title} fill sizes="90vw" />
+                </div>
+              </div>
+            )}
           </div>
         )}
         <IntroStyles />
@@ -4015,20 +4224,42 @@ function CenterCard({
               </div>
               <button type="button" onClick={() => setAlbumOpen(false)}>닫기</button>
             </div>
+            <div className="album-tabs" role="tablist" aria-label="앨범 선택">
+              {albumTabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  className={albumTab === tab.id ? "active" : ""}
+                  onClick={() => setAlbumTab(tab.id)}
+                  role="tab"
+                  aria-selected={albumTab === tab.id}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
             <div className="album-grid">
-              {albumItems.map((item) => (
-                <figure key={item.src}>
-                  <div>
-                    <Image src={item.src} alt={item.title} fill sizes="220px" />
-                  </div>
-                  <figcaption>
-                    <b>{item.title}</b>
-                    <span>{item.caption}</span>
-                  </figcaption>
-                </figure>
+              {activeAlbumItems.map((item) => (
+                <button
+                  key={item.src}
+                  type="button"
+                  className="album-photo"
+                  onClick={() => setSelectedAlbumPhoto(item)}
+                  aria-label={`${item.title} 크게 보기`}
+                >
+                  <Image src={item.src} alt={item.title} fill sizes="220px" />
+                </button>
               ))}
             </div>
           </div>
+          {selectedAlbumPhoto && (
+            <div className="photo-lightbox" role="dialog" aria-modal="true" aria-label="앨범 사진 크게 보기">
+              <button type="button" className="lightbox-close" onClick={() => setSelectedAlbumPhoto(null)}>닫기</button>
+              <div className="lightbox-photo">
+                <Image src={selectedAlbumPhoto.src} alt={selectedAlbumPhoto.title} fill sizes="90vw" />
+              </div>
+            </div>
+          )}
         </div>
       )}
       <style jsx>{`
@@ -4283,6 +4514,81 @@ function CenterCard({
           grid-template-columns: repeat(4, minmax(0, 1fr));
           gap: 12px;
         }
+        .album-tabs {
+          display: flex;
+          gap: 8px;
+          margin: -4px 0 14px;
+        }
+        .album-tabs button {
+          min-width: 0;
+          padding: 9px 18px;
+          border-radius: 999px;
+          font-size: 1.1rem;
+          color: #67452e;
+          background: rgba(255, 250, 241, 0.8);
+          border: 1px solid rgba(119, 82, 54, 0.16);
+          box-shadow: none;
+        }
+        .album-tabs button.active {
+          color: #fffaf1;
+          background: linear-gradient(180deg, #89b65d, #5f963e);
+          border-color: rgba(255, 255, 255, 0.56);
+          box-shadow: 0 8px 18px rgba(70, 108, 39, 0.22);
+        }
+        .album-photo {
+          position: relative;
+          display: block;
+          min-width: 0;
+          height: 158px;
+          padding: 0;
+          overflow: hidden;
+          border-radius: 18px;
+          background: #efe1cf;
+          border: 1px solid rgba(119, 82, 54, 0.16);
+          box-shadow: 0 10px 24px rgba(82, 56, 35, 0.12);
+          cursor: zoom-in;
+        }
+        .album-photo :global(img) {
+          object-fit: cover;
+          transition: transform 180ms ease;
+        }
+        .album-photo:hover :global(img) {
+          transform: scale(1.04);
+        }
+        .photo-lightbox {
+          position: fixed;
+          z-index: 90;
+          inset: 0;
+          display: grid;
+          place-items: center;
+          padding: 52px 22px 24px;
+          background: rgba(31, 22, 16, 0.76);
+        }
+        .lightbox-photo {
+          position: relative;
+          width: min(920px, 92vw);
+          height: min(720px, 78vh);
+          border-radius: 24px;
+          overflow: hidden;
+          background: #140f0c;
+          box-shadow: 0 28px 80px rgba(0,0,0,0.42);
+        }
+        .lightbox-photo :global(img) {
+          object-fit: contain;
+        }
+        .lightbox-close {
+          position: absolute;
+          z-index: 2;
+          top: 18px;
+          right: 22px;
+          min-width: 0;
+          padding: 10px 16px;
+          border-radius: 999px;
+          font-size: 1.05rem;
+          color: #4b3322;
+          background: #fffaf1;
+          box-shadow: 0 12px 28px rgba(0,0,0,0.2);
+        }
         figure {
           margin: 0;
           overflow: hidden;
@@ -4337,6 +4643,9 @@ function CenterCard({
           .album-grid {
             max-height: 58vh;
             overflow: auto;
+          }
+          .album-photo {
+            height: 220px;
           }
         }
       `}</style>
