@@ -3962,6 +3962,49 @@ function IntroStyles() {
         box-shadow: 0 12px 28px rgba(0,0,0,0.2);
       }
 
+      .lightbox-nav {
+        position: absolute;
+        z-index: 2;
+        top: 50%;
+        display: grid;
+        place-items: center;
+        width: 54px;
+        height: 54px;
+        min-width: 0;
+        padding: 0 0 5px;
+        border-radius: 50%;
+        font-family: 'Jua', 'Poor Story', sans-serif;
+        font-size: 3rem;
+        line-height: 1;
+        color: #4b3322;
+        background: rgba(255, 250, 241, 0.92);
+        box-shadow: 0 14px 32px rgba(0,0,0,0.26);
+        transform: translateY(-50%);
+      }
+
+      .lightbox-prev {
+        left: 22px;
+      }
+
+      .lightbox-next {
+        right: 22px;
+      }
+
+      .lightbox-count {
+        position: absolute;
+        z-index: 2;
+        left: 50%;
+        bottom: 18px;
+        padding: 8px 14px;
+        border-radius: 999px;
+        font-family: 'Jua', 'Poor Story', sans-serif;
+        font-size: 1rem;
+        color: #4b3322;
+        background: rgba(255, 250, 241, 0.92);
+        box-shadow: 0 10px 24px rgba(0,0,0,0.22);
+        transform: translateX(-50%);
+      }
+
       figure {
         margin: 0;
         overflow: hidden;
@@ -4063,6 +4106,43 @@ function CenterCard({
   const [selectedAlbumPhoto, setSelectedAlbumPhoto] = useState<AlbumItem | null>(null);
   const isIntro = variant === "intro";
   const activeAlbumItems = albumTabs.find((tab) => tab.id === albumTab)?.items ?? rubyAlbumItems;
+  const selectedAlbumIndex = selectedAlbumPhoto
+    ? activeAlbumItems.findIndex((item) => item.src === selectedAlbumPhoto.src)
+    : -1;
+
+  const showAlbumPhoto = useCallback((direction: -1 | 1) => {
+    if (!selectedAlbumPhoto || activeAlbumItems.length === 0) {
+      return;
+    }
+    const currentIndex = activeAlbumItems.findIndex((item) => item.src === selectedAlbumPhoto.src);
+    const safeIndex = currentIndex >= 0 ? currentIndex : 0;
+    const nextIndex = (safeIndex + direction + activeAlbumItems.length) % activeAlbumItems.length;
+    setSelectedAlbumPhoto(activeAlbumItems[nextIndex]);
+  }, [activeAlbumItems, selectedAlbumPhoto]);
+
+  useEffect(() => {
+    if (!selectedAlbumPhoto) {
+      return;
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        showAlbumPhoto(-1);
+      }
+      if (event.key === "ArrowRight") {
+        event.preventDefault();
+        showAlbumPhoto(1);
+      }
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setSelectedAlbumPhoto(null);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedAlbumPhoto, showAlbumPhoto]);
 
   if (isIntro) {
     return (
@@ -4163,9 +4243,12 @@ function CenterCard({
             {selectedAlbumPhoto && (
               <div className="photo-lightbox" role="dialog" aria-modal="true" aria-label="앨범 사진 크게 보기">
                 <button type="button" className="lightbox-close" onClick={() => setSelectedAlbumPhoto(null)}>닫기</button>
+                                <button type="button" className="lightbox-nav lightbox-prev" onClick={() => showAlbumPhoto(-1)} aria-label="?? ??">?</button>
                 <div className="lightbox-photo">
                   <Image src={selectedAlbumPhoto.src} alt={selectedAlbumPhoto.title} fill sizes="90vw" />
-                </div>
+                                </div>
+                <button type="button" className="lightbox-nav lightbox-next" onClick={() => showAlbumPhoto(1)} aria-label="?? ??">?</button>
+                <div className="lightbox-count">{selectedAlbumIndex + 1} / {activeAlbumItems.length}</div>
               </div>
             )}
           </div>
@@ -4255,9 +4338,12 @@ function CenterCard({
           {selectedAlbumPhoto && (
             <div className="photo-lightbox" role="dialog" aria-modal="true" aria-label="앨범 사진 크게 보기">
               <button type="button" className="lightbox-close" onClick={() => setSelectedAlbumPhoto(null)}>닫기</button>
+                            <button type="button" className="lightbox-nav lightbox-prev" onClick={() => showAlbumPhoto(-1)} aria-label="?? ??">?</button>
               <div className="lightbox-photo">
                 <Image src={selectedAlbumPhoto.src} alt={selectedAlbumPhoto.title} fill sizes="90vw" />
-              </div>
+                            </div>
+              <button type="button" className="lightbox-nav lightbox-next" onClick={() => showAlbumPhoto(1)} aria-label="?? ??">?</button>
+              <div className="lightbox-count">{selectedAlbumIndex + 1} / {activeAlbumItems.length}</div>
             </div>
           )}
         </div>
@@ -4588,6 +4674,49 @@ function CenterCard({
           color: #4b3322;
           background: #fffaf1;
           box-shadow: 0 12px 28px rgba(0,0,0,0.2);
+        }
+
+        .lightbox-nav {
+          position: absolute;
+          z-index: 2;
+          top: 50%;
+          display: grid;
+          place-items: center;
+          width: 54px;
+          height: 54px;
+          min-width: 0;
+          padding: 0 0 5px;
+          border-radius: 50%;
+          font-family: 'Jua', 'Poor Story', sans-serif;
+          font-size: 3rem;
+          line-height: 1;
+          color: #4b3322;
+          background: rgba(255, 250, 241, 0.92);
+          box-shadow: 0 14px 32px rgba(0,0,0,0.26);
+          transform: translateY(-50%);
+        }
+
+        .lightbox-prev {
+          left: 22px;
+        }
+
+        .lightbox-next {
+          right: 22px;
+        }
+
+        .lightbox-count {
+          position: absolute;
+          z-index: 2;
+          left: 50%;
+          bottom: 18px;
+          padding: 8px 14px;
+          border-radius: 999px;
+          font-family: 'Jua', 'Poor Story', sans-serif;
+          font-size: 1rem;
+          color: #4b3322;
+          background: rgba(255, 250, 241, 0.92);
+          box-shadow: 0 10px 24px rgba(0,0,0,0.22);
+          transform: translateX(-50%);
         }
         figure {
           margin: 0;
