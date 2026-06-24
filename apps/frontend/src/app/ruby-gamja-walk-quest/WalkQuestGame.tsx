@@ -1375,12 +1375,18 @@ function ThreeWalkWorld({
     const gamjaGateQuietMap = textureLoader.load(dog.gamja.gateQuiet);
     const ruby = makeDogBillboard(rubyMap, isSleepingScene ? 2.6 : 1.55, isSleepingScene ? 1.25 : 2.15);
     ruby.position.set(isSleepingScene ? -1.2 : -1.0, isSleepingScene ? 0.55 : 1.08, isSleepingScene ? -4.2 : -1.6);
-    const gamja = makeDogBillboard(gamjaMap, isSleepingScene ? 2.08 : 1.24, isSleepingScene ? 1.0 : 1.72);
-    gamja.position.set(isSleepingScene ? 1.05 : 1.0, isSleepingScene ? 0.48 : 0.86, isSleepingScene ? -3.95 : -1.25);
+    const gamjaWidth = isSleepingScene ? 2.08 : phase === "poop" ? 1.72 : 1.24;
+    const gamjaHeight = isSleepingScene ? 1.0 : phase === "poop" ? 2.25 : 1.72;
+    const gamja = makeDogBillboard(gamjaMap, gamjaWidth, gamjaHeight);
+    gamja.position.set(
+      isSleepingScene ? 1.05 : phase === "poop" ? 0.85 : 1.0,
+      isSleepingScene ? 0.48 : phase === "poop" ? 1.08 : 0.86,
+      isSleepingScene ? -3.95 : phase === "poop" ? -1.28 : -1.25
+    );
     const dogGroup = new THREE.Group();
     dogGroup.add(ruby, gamja);
     const poopPile = makePoopPile();
-    poopPile.position.set(1.02, 0.08, -1.72);
+    poopPile.position.set(phase === "poop" ? 1.05 : 1.02, 0.08, phase === "poop" ? -1.62 : -1.72);
     poopPile.visible = phase === "poop";
     dogGroup.add(poopPile);
     dogGroup.visible = phase !== "leashMission";
@@ -1629,27 +1635,28 @@ function makePoopPile() {
   const group = new THREE.Group();
   const poopMat = new THREE.MeshStandardMaterial({ color: "#6a3d1f", roughness: 0.72, metalness: 0.02 });
   const highlightMat = new THREE.MeshStandardMaterial({ color: "#8c5a31", roughness: 0.68, metalness: 0.02 });
-  [
-    { x: -0.12, z: 0.02, r: 0.17, y: 0.13, mat: poopMat },
-    { x: 0.12, z: -0.02, r: 0.18, y: 0.14, mat: highlightMat },
-    { x: 0.0, z: -0.08, r: 0.15, y: 0.29, mat: poopMat },
-    { x: 0.03, z: -0.1, r: 0.09, y: 0.45, mat: highlightMat },
-  ].forEach((piece) => {
-    const mesh = new THREE.Mesh(new THREE.SphereGeometry(piece.r, 18, 12), piece.mat);
-    mesh.scale.y = 0.55;
-    mesh.position.set(piece.x, piece.y, piece.z);
-    mesh.castShadow = true;
-    mesh.receiveShadow = true;
-    group.add(mesh);
-  });
+  const base = new THREE.Mesh(new THREE.SphereGeometry(0.24, 24, 14), poopMat);
+  base.scale.set(1.25, 0.52, 0.86);
+  base.position.set(0, 0.13, 0);
+  base.castShadow = true;
+  base.receiveShadow = true;
+  group.add(base);
+
+  const top = new THREE.Mesh(new THREE.SphereGeometry(0.13, 20, 12), highlightMat);
+  top.scale.set(0.9, 0.58, 0.76);
+  top.position.set(0.04, 0.28, -0.02);
+  top.castShadow = true;
+  top.receiveShadow = true;
+  group.add(top);
+
   const shadow = new THREE.Mesh(
-    new THREE.CircleGeometry(0.34, 28),
+    new THREE.CircleGeometry(0.28, 28),
     new THREE.MeshBasicMaterial({ color: "#2d1d12", transparent: true, opacity: 0.2 })
   );
   shadow.rotation.x = -Math.PI / 2;
   shadow.position.y = 0.015;
   group.add(shadow);
-  group.scale.setScalar(0.72);
+  group.scale.setScalar(0.78);
   return group;
 }
 
@@ -3159,8 +3166,8 @@ function PoopTools({
       </div>
       <style jsx>{`
         .poop-ui { position: absolute; z-index: 24; inset: 0; pointer-events: none; }
-        .poop-hotspot { position: absolute; left: 57%; bottom: 148px; width: 82px; height: 62px; display: grid; place-items: center; pointer-events: auto; }
-        .poop-pile { display: block; width: 46px; height: 36px; border-radius: 50% 50% 46% 46%; background: radial-gradient(circle at 50% 16%, #7a4a24 0 9px, transparent 10px), radial-gradient(circle at 34% 56%, #6a3b1d 0 14px, transparent 15px), radial-gradient(circle at 62% 60%, #8a562b 0 15px, transparent 16px); filter: drop-shadow(0 5px 5px rgba(0,0,0,0.18)); }
+        .poop-hotspot { position: absolute; left: 56%; bottom: 140px; width: 96px; height: 76px; display: grid; place-items: center; pointer-events: auto; }
+        .poop-pile { display: none; }
         .leaf-grass { position: absolute; right: 82px; bottom: 136px; width: 78px; height: 54px; display: grid; place-items: center; pointer-events: auto; }
         .guard-warning { position: absolute; left: 18px; bottom: 122px; width: min(270px, 34vw); aspect-ratio: 1; filter: drop-shadow(0 16px 24px rgba(48, 28, 18, 0.24)); pointer-events: none; }
         .guard-warning :global(img), .poop-flash :global(img) { object-fit: contain; }
