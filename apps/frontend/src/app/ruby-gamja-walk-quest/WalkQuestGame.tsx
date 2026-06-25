@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { type DragEvent as ReactDragEvent, FormEvent, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { type DragEvent as ReactDragEvent, FormEvent, type MouseEvent as ReactMouseEvent, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 
 type Phase =
@@ -84,7 +84,7 @@ const animal = {
   walkingStepsAudio: "/ruby-gamja/custom/walking-steps.mp3",
 };
 
-type SoundName = "bark" | "happy" | "leash" | "success" | "fall" | "car" | "poop" | "step";
+type SoundName = "bark" | "happy" | "leash" | "success" | "fall" | "car" | "poop" | "step" | "click";
 
 function playSound(name: SoundName) {
   if (typeof window === "undefined") return;
@@ -95,8 +95,8 @@ function playSound(name: SoundName) {
   const gain = ctx.createGain();
   gain.connect(ctx.destination);
   gain.gain.setValueAtTime(0.0001, now);
-  gain.gain.exponentialRampToValueAtTime(name === "car" ? 0.18 : 0.08, now + 0.015);
-  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.42);
+  gain.gain.exponentialRampToValueAtTime(name === "car" ? 0.18 : name === "click" ? 0.045 : 0.08, now + 0.015);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + (name === "click" ? 0.16 : 0.42));
 
   const playTone = (frequency: number, start: number, duration: number, type: OscillatorType = "sine") => {
     const osc = ctx.createOscillator();
@@ -107,7 +107,10 @@ function playSound(name: SoundName) {
     osc.stop(now + start + duration);
   };
 
-  if (name === "bark") {
+  if (name === "click") {
+    playTone(620, 0, 0.045, "triangle");
+    playTone(420, 0.035, 0.055, "sine");
+  } else if (name === "bark") {
     playTone(240, 0, 0.12, "square");
     playTone(190, 0.14, 0.14, "square");
   } else if (name === "car") {
@@ -128,7 +131,7 @@ function playSound(name: SoundName) {
     playTone(760, 0.09, 0.1, "triangle");
   }
 
-  window.setTimeout(() => void ctx.close(), 520);
+  window.setTimeout(() => void ctx.close(), name === "click" ? 220 : 520);
 }
 
 const callWords = ["\uB8E8\uBE44", "\uAC10\uC790", "\uB8E8\uAC10"];
@@ -186,8 +189,10 @@ export default function WalkQuestGame() {
   const [carGuide, setCarGuide] = useState(false);
   const [hearts, setHearts] = useState(false);
   const [successToast, setSuccessToast] = useState<string | null>(null);
+  const [dangerToast, setDangerToast] = useState<string | null>(null);
   const walkForwardRef = useRef(0);
   const successToastTimerRef = useRef<number | null>(null);
+  const dangerToastTimerRef = useRef<number | null>(null);
   const gateBarkAudioRef = useRef<HTMLAudioElement | null>(null);
   const catAudioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -216,10 +221,25 @@ export default function WalkQuestGame() {
     }, 2200);
   }, []);
 
+  const showDangerToast = useCallback((text: string) => {
+    if (dangerToastTimerRef.current !== null) {
+      window.clearTimeout(dangerToastTimerRef.current);
+    }
+
+    setDangerToast(text);
+    dangerToastTimerRef.current = window.setTimeout(() => {
+      setDangerToast(null);
+      dangerToastTimerRef.current = null;
+    }, 2200);
+  }, []);
+
   useEffect(() => {
     return () => {
       if (successToastTimerRef.current !== null) {
         window.clearTimeout(successToastTimerRef.current);
+      }
+      if (dangerToastTimerRef.current !== null) {
+        window.clearTimeout(dangerToastTimerRef.current);
       }
     };
   }, []);
@@ -602,6 +622,7 @@ export default function WalkQuestGame() {
 
   function openGate() {
     if (!rubyCalm || !gamjaQuiet) {
+      showDangerToast("앉아 / 조용히 해를 하지 않고 대문을 열어서 넘어졌어요!");
       fall("대문을 그냥 열자 루비가 뛰고 감자가 짖어서 넘어졌어요.");
       setPhase("gate");
       return;
@@ -794,10 +815,16 @@ export default function WalkQuestGame() {
               ? calledDogs ? "산책가자" : "루비와 감자를 불러보세요"
               : "입력";
 
+  const handleGameClick = useCallback((event: ReactMouseEvent<HTMLElement>) => {
+    const button = (event.target as HTMLElement).closest("button");
+    if (!button || button.disabled) return;
+    playSound("click");
+  }, []);
+
   return (
     <main className="walk-page">
       <Link href="/" className="back-link">{"메인으로"}</Link>
-      <section className={`game ${phase === "intro" ? "intro-mode" : ""}`}>
+      <section className={`game ${phase === "intro" ? "intro-mode" : ""}`} onClickCapture={handleGameClick}>
         {phase !== "intro" && (
         <header className="topbar">
           <div>
@@ -879,6 +906,11 @@ export default function WalkQuestGame() {
           {successToast && (
             <div className="success-toast" role="status" aria-live="polite">
               {successToast}
+            </div>
+          )}
+          {dangerToast && (
+            <div className="danger-toast" role="alert" aria-live="assertive">
+              {dangerToast}
             </div>
           )}
           {phase !== "intro" && (
@@ -1018,6 +1050,27 @@ export default function WalkQuestGame() {
           font-family: 'Jua', 'Poor Story', 'Pretendard', sans-serif;
           font-size: clamp(1.15rem, 2.4vw, 1.65rem);
           font-weight: 900;
+          text-align: center;
+          pointer-events: none;
+          animation: success-pop 2.2s ease both;
+        }
+
+        .danger-toast {
+          position: absolute;
+          z-index: 82;
+          left: 50%;
+          top: 22%;
+          max-width: min(560px, calc(100% - 48px));
+          transform: translateX(-50%);
+          padding: 17px 24px 19px;
+          border: 2px solid rgba(213, 91, 99, 0.45);
+          border-radius: 24px;
+          background: linear-gradient(180deg, rgba(255, 232, 232, 0.99), rgba(255, 185, 194, 0.96));
+          box-shadow: 0 24px 60px rgba(122, 42, 48, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+          color: #682d33;
+          font-family: 'Jua', 'Poor Story', 'Pretendard', sans-serif;
+          font-size: clamp(1.18rem, 2.5vw, 1.7rem);
+          font-weight: 950;
           text-align: center;
           pointer-events: none;
           animation: success-pop 2.2s ease both;
