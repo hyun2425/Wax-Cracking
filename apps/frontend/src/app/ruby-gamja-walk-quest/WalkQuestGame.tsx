@@ -162,6 +162,16 @@ const phaseInfo: Record<Phase, { scene: string; mission: string; bg: string }> =
   fail: { scene: "\uC0B0\uCC45 \uC2E4\uD328", mission: "\uC0B0\uCC45 \uC2E4\uD328... \uB2E4\uC2DC \uB3C4\uC804\uD574\uBCFC\uAE4C\uC694?", bg: "home" },
 };
 
+const progressSteps: { label: string; phases: Phase[] }[] = [
+  { label: "집 안", phases: ["upstairs", "living", "excited"] },
+  { label: "준비", phases: ["leashPrep", "leashMission", "leashZoom", "poopBag"] },
+  { label: "대문", phases: ["garden", "gate"] },
+  { label: "산책길", phases: ["walk", "pull", "run"] },
+  { label: "펫티켓", phases: ["poop"] },
+  { label: "위험 회피", phases: ["car", "barkingDog", "boss", "cat", "catFood"] },
+  { label: "귀가", phases: ["home", "clear"] },
+];
+
 export default function WalkQuestGame() {
   const [phase, setPhase] = useState<Phase>("intro");
   const [message, setMessage] = useState("\uB8E8\uBE44\uC640 \uAC10\uC790\uAC00 \uC0B0\uCC45\uC744 \uAE30\uB2E4\uB9AC\uACE0 \uC788\uC5B4\uC694.");
@@ -815,6 +825,37 @@ export default function WalkQuestGame() {
               ? calledDogs ? "산책가자" : "루비와 감자를 불러보세요"
               : "입력";
 
+  const activeProgressIndex = Math.max(0, progressSteps.findIndex((step) => step.phases.includes(phase)));
+  const currentAction = useMemo(() => {
+    if (phase === "upstairs") return "방향키 위를 눌러 1층으로 내려가세요.";
+    if (phase === "living") return calledDogs ? "입력창에 산책가자, 나가자, 나갈까 중 하나를 말해보세요." : "입력창에 루비, 감자, 루감 중 하나를 불러보세요.";
+    if (phase === "excited") return "방향키로 현관 쪽으로 걸어가세요. 루비와 감자가 따라와요.";
+    if (phase === "leashPrep") return "입력창에 앉아라고 말해 강아지들을 차분하게 해주세요.";
+    if (phase === "leashMission") return "선반의 루비 목줄과 감자 목줄을 각각 강아지에게 드래그하세요.";
+    if (phase === "poopBag") return "필요하면 똥봉투를 가방에 넣고, 나가기 버튼으로 정원으로 이동하세요.";
+    if (phase === "garden") return "방향키로 대문 앞까지 이동하세요.";
+    if (phase === "gate") {
+      if (!rubyCalm) return "루비가 빙글빙글 돌아요. 앉아 버튼을 눌러주세요.";
+      if (!gamjaQuiet) return "감자가 짖고 있어요. 조용히 해 버튼을 눌러주세요.";
+      return "이제 대문 열기 버튼으로 산책길에 나갈 수 있어요.";
+    }
+    if (phase === "walk") return "방향키 위를 눌러 산책길을 앞으로 걸어가세요.";
+    if (phase === "pull") return "7초 안에 천천히라고 입력하세요.";
+    if (phase === "poop") return "펫티켓 선택지를 고르고, 도구를 똥 아이콘으로 옮겨 치워주세요.";
+    if (phase === "run") return "스페이스바를 빠르게 눌러 루비와 감자를 따라가세요.";
+    if (phase === "car") {
+      if (!carStopped) return "먼저 멈춰라고 입력하세요.";
+      if (!dogsRoadside) return "루비와 감자를 풀숲 쪽으로 드래그하세요.";
+      return "기다려라고 입력해 차가 지나갈 때까지 기다리세요.";
+    }
+    if (phase === "barkingDog") return "5초 안에 무시해라고 입력하세요.";
+    if (phase === "boss") return "사나운 강아지가 나타나면 3초 안에 직접 클릭하세요.";
+    if (phase === "cat") return "감자가 고양이를 쫓기 전에 안돼라고 입력하세요.";
+    if (phase === "catFood") return "루비가 고양이 밥을 먹기 전에 먹지마라고 입력하세요.";
+    if (phase === "home") return "집 문 열기 버튼을 눌러 산책을 마무리하세요.";
+    return phaseInfo[phase].mission;
+  }, [calledDogs, carStopped, dogsRoadside, gamjaQuiet, phase, rubyCalm]);
+
   const handleGameClick = useCallback((event: ReactMouseEvent<HTMLElement>) => {
     const button = (event.target as HTMLElement).closest("button");
     if (!button || button.disabled) return;
@@ -838,10 +879,26 @@ export default function WalkQuestGame() {
             <Pill label="감자 목줄" value={gamjaLeashed ? "착용" : "미착용"} />
             <Pill label="봉투" value={hasPoopBag ? "있음" : "없음"} alert={!hasPoopBag && phase === "poop"} />
           </div>
+          <div className="progress-trail" aria-label="산책 진행도">
+            {progressSteps.map((step, index) => (
+              <span
+                key={step.label}
+                className={index < activeProgressIndex ? "done" : index === activeProgressIndex ? "active" : ""}
+              >
+                {step.label}
+              </span>
+            ))}
+          </div>
         </header>
         )}
 
         <section className={`scene bg-${info.bg} ${useEmptyHome ? "called-dogs" : ""} ${needsInput ? "input-open" : ""}`}>
+          {phase !== "intro" && phase !== "clear" && phase !== "fail" && (
+            <div className="action-guide">
+              <b>지금 할 일</b>
+              <span>{currentAction}</span>
+            </div>
+          )}
           {phase !== "intro" && phase !== "clear" && phase !== "fail" && (
             <ThreeWalkWorld
               phase={phase}
@@ -990,6 +1047,7 @@ export default function WalkQuestGame() {
         .topbar {
           display: flex;
           flex: 0 0 auto;
+          flex-wrap: wrap;
           justify-content: space-between;
           align-items: end;
           gap: 18px;
@@ -1024,6 +1082,41 @@ export default function WalkQuestGame() {
           gap: 8px;
         }
 
+        .progress-trail {
+          display: flex;
+          flex: 1 0 100%;
+          gap: 6px;
+          align-items: center;
+          padding-top: 2px;
+        }
+
+        .progress-trail span {
+          flex: 1;
+          min-width: 0;
+          padding: 6px 8px 7px;
+          border-radius: 999px;
+          background: rgba(255, 255, 255, 0.58);
+          border: 1px solid rgba(111, 82, 53, 0.14);
+          color: rgba(78, 57, 39, 0.62);
+          font-family: 'Poor Story', 'Pretendard', sans-serif;
+          font-size: 0.92rem;
+          font-weight: 900;
+          line-height: 1;
+          text-align: center;
+          white-space: nowrap;
+        }
+
+        .progress-trail span.done {
+          background: rgba(214, 237, 168, 0.82);
+          color: #4c7228;
+        }
+
+        .progress-trail span.active {
+          background: linear-gradient(180deg, #fff9df, #bde178);
+          color: #31551f;
+          box-shadow: 0 8px 20px rgba(95, 141, 55, 0.2);
+        }
+
         .scene {
           position: relative;
           flex: 1 1 auto;
@@ -1032,6 +1125,41 @@ export default function WalkQuestGame() {
           background: #f2eee8;
           border-top: 1px solid rgba(255,255,255,0.12);
           border-bottom: 1px solid rgba(255,255,255,0.12);
+        }
+
+        .action-guide {
+          position: absolute;
+          z-index: 52;
+          top: 18px;
+          left: 22px;
+          width: min(430px, calc(100% - 44px));
+          padding: 14px 18px 16px;
+          border-radius: 22px;
+          border: 1px solid rgba(116, 84, 56, 0.16);
+          background: rgba(255, 250, 238, 0.92);
+          box-shadow: 0 16px 42px rgba(64, 44, 28, 0.18);
+          color: #4d3828;
+          backdrop-filter: blur(8px);
+        }
+
+        .action-guide b {
+          display: inline-flex;
+          margin-bottom: 6px;
+          padding: 4px 10px 5px;
+          border-radius: 999px;
+          background: #6fa640;
+          color: #fffdf4;
+          font-family: 'Jua', 'Poor Story', sans-serif;
+          font-size: 0.95rem;
+          letter-spacing: 0;
+        }
+
+        .action-guide span {
+          display: block;
+          font-family: 'Poor Story', 'Pretendard', sans-serif;
+          font-size: clamp(1.1rem, 2vw, 1.38rem);
+          font-weight: 900;
+          line-height: 1.18;
         }
 
         .success-toast {
@@ -1275,6 +1403,24 @@ export default function WalkQuestGame() {
             flex-direction: column;
             align-items: stretch;
             gap: 8px;
+          }
+
+          .progress-trail {
+            overflow-x: auto;
+            padding-bottom: 2px;
+          }
+
+          .progress-trail span {
+            flex: 0 0 auto;
+            min-width: 74px;
+            font-size: 0.85rem;
+          }
+
+          .action-guide {
+            top: 12px;
+            left: 12px;
+            width: calc(100% - 24px);
+            padding: 11px 14px 13px;
           }
         }
       `}</style>
