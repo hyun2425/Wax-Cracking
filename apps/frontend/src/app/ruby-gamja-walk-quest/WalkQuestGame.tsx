@@ -162,16 +162,6 @@ const phaseInfo: Record<Phase, { scene: string; mission: string; bg: string }> =
   fail: { scene: "\uC0B0\uCC45 \uC2E4\uD328", mission: "\uC0B0\uCC45 \uC2E4\uD328... \uB2E4\uC2DC \uB3C4\uC804\uD574\uBCFC\uAE4C\uC694?", bg: "home" },
 };
 
-const progressSteps: { label: string; phases: Phase[] }[] = [
-  { label: "집 안", phases: ["upstairs", "living", "excited"] },
-  { label: "준비", phases: ["leashPrep", "leashMission", "leashZoom", "poopBag"] },
-  { label: "대문", phases: ["garden", "gate"] },
-  { label: "산책길", phases: ["walk", "pull", "run"] },
-  { label: "펫티켓", phases: ["poop"] },
-  { label: "위험 회피", phases: ["car", "barkingDog", "boss", "cat", "catFood"] },
-  { label: "귀가", phases: ["home", "clear"] },
-];
-
 export default function WalkQuestGame() {
   const [phase, setPhase] = useState<Phase>("intro");
   const [message, setMessage] = useState("\uB8E8\uBE44\uC640 \uAC10\uC790\uAC00 \uC0B0\uCC45\uC744 \uAE30\uB2E4\uB9AC\uACE0 \uC788\uC5B4\uC694.");
@@ -825,8 +815,6 @@ export default function WalkQuestGame() {
               ? calledDogs ? "산책가자" : "루비와 감자를 불러보세요"
               : "입력";
 
-  const activeProgressIndex = Math.max(0, progressSteps.findIndex((step) => step.phases.includes(phase)));
-
   const handleGameClick = useCallback((event: ReactMouseEvent<HTMLElement>) => {
     const button = (event.target as HTMLElement).closest("button");
     if (!button || button.disabled) return;
@@ -849,16 +837,6 @@ export default function WalkQuestGame() {
             <Pill label="루비 목줄" value={rubyLeashed ? "착용" : "미착용"} />
             <Pill label="감자 목줄" value={gamjaLeashed ? "착용" : "미착용"} />
             <Pill label="봉투" value={hasPoopBag ? "있음" : "없음"} alert={!hasPoopBag && phase === "poop"} />
-          </div>
-          <div className="progress-trail" aria-label="산책 진행도">
-            {progressSteps.map((step, index) => (
-              <span
-                key={step.label}
-                className={index < activeProgressIndex ? "done" : index === activeProgressIndex ? "active" : ""}
-              >
-                {step.label}
-              </span>
-            ))}
           </div>
         </header>
         )}
@@ -1045,41 +1023,6 @@ export default function WalkQuestGame() {
           flex-wrap: wrap;
           justify-content: flex-end;
           gap: 8px;
-        }
-
-        .progress-trail {
-          display: flex;
-          flex: 1 0 100%;
-          gap: 6px;
-          align-items: center;
-          padding-top: 2px;
-        }
-
-        .progress-trail span {
-          flex: 1;
-          min-width: 0;
-          padding: 6px 8px 7px;
-          border-radius: 999px;
-          background: rgba(255, 255, 255, 0.58);
-          border: 1px solid rgba(111, 82, 53, 0.14);
-          color: rgba(78, 57, 39, 0.62);
-          font-family: 'Poor Story', 'Pretendard', sans-serif;
-          font-size: 0.92rem;
-          font-weight: 900;
-          line-height: 1;
-          text-align: center;
-          white-space: nowrap;
-        }
-
-        .progress-trail span.done {
-          background: rgba(214, 237, 168, 0.82);
-          color: #4c7228;
-        }
-
-        .progress-trail span.active {
-          background: linear-gradient(180deg, #fff9df, #bde178);
-          color: #31551f;
-          box-shadow: 0 8px 20px rgba(95, 141, 55, 0.2);
         }
 
         .scene {
@@ -1338,12 +1281,6 @@ export default function WalkQuestGame() {
           .progress-trail {
             overflow-x: auto;
             padding-bottom: 2px;
-          }
-
-          .progress-trail span {
-            flex: 0 0 auto;
-            min-width: 74px;
-            font-size: 0.85rem;
           }
 
         }
