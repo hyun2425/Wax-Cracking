@@ -1498,18 +1498,18 @@ function ThreeWalkWorld({
     const gamjaGateQuietMap = textureLoader.load(dog.gamja.gateQuiet);
     const ruby = makeDogBillboard(rubyMap, isSleepingScene ? 2.6 : 1.55, isSleepingScene ? 1.25 : 2.15);
     ruby.position.set(isSleepingScene ? -1.2 : -1.0, isSleepingScene ? 0.55 : 1.08, isSleepingScene ? -4.2 : -1.6);
-    const gamjaWidth = isSleepingScene ? 2.08 : phase === "poop" ? 1.72 : 1.24;
-    const gamjaHeight = isSleepingScene ? 1.0 : phase === "poop" ? 2.25 : 1.72;
+    const gamjaWidth = isSleepingScene ? 2.08 : phase === "poop" ? 2.28 : 1.24;
+    const gamjaHeight = isSleepingScene ? 1.0 : phase === "poop" ? 2.98 : 1.72;
     const gamja = makeDogBillboard(gamjaMap, gamjaWidth, gamjaHeight);
     gamja.position.set(
-      isSleepingScene ? 1.05 : phase === "poop" ? 0.85 : 1.0,
-      isSleepingScene ? 0.48 : phase === "poop" ? 1.08 : 0.86,
-      isSleepingScene ? -3.95 : phase === "poop" ? -1.28 : -1.25
+      isSleepingScene ? 1.05 : phase === "poop" ? 0.72 : 1.0,
+      isSleepingScene ? 0.48 : phase === "poop" ? 1.42 : 0.86,
+      isSleepingScene ? -3.95 : phase === "poop" ? -1.34 : -1.25
     );
     const dogGroup = new THREE.Group();
     dogGroup.add(ruby, gamja);
     const poopPile = makePoopPile();
-    poopPile.position.set(phase === "poop" ? 1.05 : 1.02, 0.08, phase === "poop" ? -1.62 : -1.72);
+    poopPile.position.set(phase === "poop" ? 1.52 : 1.02, 0.08, phase === "poop" ? -1.56 : -1.72);
     poopPile.visible = phase === "poop";
     dogGroup.add(poopPile);
     dogGroup.visible = phase !== "leashMission";
