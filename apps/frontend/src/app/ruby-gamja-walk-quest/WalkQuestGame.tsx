@@ -524,14 +524,14 @@ export default function WalkQuestGame() {
       return;
     }
     if (phase === "car") {
-      if (carGuide) {
-        setMessage("안내가 끝난 뒤 움직여주세요. 차가 다가오고 있어요.");
-        return;
-      }
       if (!carStopped && command.includes("멈춰")) {
         playSound("car");
+        setCarGuide(false);
         setCarStopped(true);
+        setTimeLeft(10);
         setMessage("멈췄어요. 루비와 감자를 길가 쪽으로 옮긴 뒤 기다려라고 입력하세요.");
+      } else if (carGuide) {
+        setMessage("차가 다가오고 있어요. 멈춰라고 입력해도 괜찮아요.");
       } else if (carStopped && dogsRoadside && command.includes("기다려")) {
         finishCar();
       } else if (carStopped && !dogsRoadside) {
