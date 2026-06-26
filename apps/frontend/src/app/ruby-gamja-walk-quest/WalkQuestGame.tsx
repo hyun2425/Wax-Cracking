@@ -139,7 +139,7 @@ const walkWords = ["\uC0B0\uCC45", "\uB098\uAC00\uC790", "\uB098\uAC08\uAE4C"];
 
 const phaseInfo: Record<Phase, { scene: string; mission: string; bg: string }> = {
   intro: { scene: "\uC624\uD504\uB2DD", mission: "\uC0B0\uCC45 START \uBC84\uD2BC\uC744 \uB20C\uB7EC \uC2DC\uC791\uD558\uC138\uC694.", bg: "home" },
-  upstairs: { scene: "2\uCE35 \uACC4\uB2E8", mission: "1\uCE35\uC73C\uB85C \uB0B4\uB824\uAC00 \uBCFC\uAE4C\uC694? \uBC29\uD5A5\uD0A4 \uC704\uB97C \uB20C\uB7EC \uACC4\uB2E8\uC744 \uB0B4\uB824\uAC00\uC138\uC694.", bg: "stairs" },
+  upstairs: { scene: "2\uCE35 \uACC4\uB2E8", mission: "1\uCE35\uC73C\uB85C \uB0B4\uB824\uAC00 \uBCFC\uAE4C\uC694? W\uB97C \uB20C\uB7EC \uACC4\uB2E8\uC744 \uB0B4\uB824\uAC00\uC138\uC694.", bg: "stairs" },
   living: { scene: "1\uCE35 \uAC70\uC2E4", mission: "\uB8E8\uBE44, \uAC10\uC790, \uB8E8\uAC10\uC774\uB97C \uBD88\uB7EC\uBCF4\uC138\uC694.", bg: "living" },
   excited: { scene: "\uD604\uAD00 \uC774\uB3D9", mission: "\uAC15\uC544\uC9C0\uB4E4\uC774 \uC2E0\uB098\uAC8C \uCF69\uCF69 \uB6F0\uC5B4\uC694. \uD604\uAD00 \uCABD\uC73C\uB85C \uAC00\uBCFC\uAE4C\uC694?", bg: "living" },
   leashPrep: { scene: "\uD604\uAD00", mission: "\uD604\uAD00\uC5D0 \uB3C4\uCC29\uD588\uC5B4\uC694. \uC0B0\uCC45\uC774\uB77C\uB294 \uB9D0\uC5D0 \uD765\uBD84\uD55C \uAC15\uC544\uC9C0\uB4E4\uC744 \uC549\uD600\uBCFC\uAE4C\uC694?", bg: "entry" },
@@ -1469,7 +1469,7 @@ function ThreeWalkWorld({
 
     const clock = new THREE.Clock();
     let frame = 0;
-    const movementKeys = ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"];
+    const movementKeys = ["KeyW", "KeyA", "KeyS", "KeyD"];
     const stopStepAudio = () => {
       const audio = stepAudioRef.current;
       if (!audio) return;
@@ -1496,17 +1496,23 @@ function ThreeWalkWorld({
       const delta = Math.min(clock.getDelta(), 0.04);
       const pos = positionRef.current;
       const speed = 3.4 * delta;
-      const movingForward = keysRef.current.has("ArrowUp");
-      if (keysRef.current.has("ArrowLeft")) pos.x -= speed;
-      if (keysRef.current.has("ArrowRight")) pos.x += speed;
+      const movingForward = keysRef.current.has("KeyW");
+      if (keysRef.current.has("KeyA")) pos.x -= speed;
+      if (keysRef.current.has("KeyD")) pos.x += speed;
       if (movingForward) {
         pos.z -= speed;
         if (phase === "walk") onWalkForward?.(delta);
       }
-      if (keysRef.current.has("ArrowDown")) pos.z += speed;
+      if (keysRef.current.has("KeyS")) pos.z += speed;
       pos.x = THREE.MathUtils.clamp(pos.x, -6.2, 6.2);
       const minZ = isOutdoor && !["garden", "gate"].includes(phase) ? -58 : -10.5;
       pos.z = THREE.MathUtils.clamp(pos.z, minZ, 8.5);
+      if (phase === "upstairs") {
+        const stairCenterX = -3.6;
+        const stairHalfWidth = 1.35;
+        pos.x = THREE.MathUtils.clamp(pos.x, stairCenterX - stairHalfWidth, stairCenterX + stairHalfWidth);
+        pos.z = THREE.MathUtils.clamp(pos.z, -2.95, 8.2);
+      }
       if (["leashPrep", "leashMission", "poopBag"].includes(phase)) {
         pos.x = THREE.MathUtils.clamp(pos.x, -5.35, 5.35);
         pos.z = THREE.MathUtils.clamp(pos.z, -6.35, 7.6);
@@ -1650,7 +1656,7 @@ function ThreeWalkWorld({
 
   return (
     <div className="three-world" ref={mountRef} aria-label="3D 산책길">
-      <div className="move-help">방향키 ↑ 앞으로 · ↓ 뒤로 · ← 왼쪽 · → 오른쪽</div>
+      <div className="move-help">W 앞으로 · S 뒤로 · A 왼쪽 · D 오른쪽</div>
       <style jsx>{`
         .three-world {
           position: absolute;
