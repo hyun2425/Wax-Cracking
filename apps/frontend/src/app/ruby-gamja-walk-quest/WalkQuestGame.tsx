@@ -26,6 +26,7 @@ type Phase =
   | "cat"
   | "catFood"
   | "home"
+  | "enterHome"
   | "clear"
   | "fail";
 
@@ -157,7 +158,8 @@ const phaseInfo: Record<Phase, { scene: string; mission: string; bg: string }> =
   boss: { scene: "\uC0AC\uB098\uC6B4 \uAC15\uC544\uC9C0", mission: "\uC0AC\uB098\uC6B4 \uAC15\uC544\uC9C0\uAC00 \uB2EC\uB824\uC640\uC694. \uB098\uD0C0\uB098\uBA74 3\uCD08 \uC548\uC5D0 \uD074\uB9AD\uD558\uC138\uC694.", bg: "fence" },
   cat: { scene: "\uACE0\uC591\uC774 \uB4F1\uC7A5", mission: "\uACE0\uC591\uC774\uAC00 \uC67C\uCABD\uC5D0 \uB098\uD0C0\uB0AC\uC5B4\uC694. 5\uCD08 \uC548\uC5D0 \uC548\uB3FC\uB77C\uACE0 \uC785\uB825\uD558\uC138\uC694.", bg: "street" },
   catFood: { scene: "길고양이 밥", mission: "왼쪽에 길고양이 밥이 있어요. 루비가 달려들기 전에 3초 안에 먹지마를 입력하세요.", bg: "street" },
-  home: { scene: "\uC9D1 \uC55E", mission: "\uC9D1\uC5D0 \uAC70\uC758 \uB3C4\uCC29\uD588\uC5B4\uC694.", bg: "gate" },
+  home: { scene: "\uC9D1 \uC55E", mission: "\uC9D1\uC5D0 \uAC70\uC758 \uB3C4\uCC29\uD588\uC5B4\uC694. \uD604\uAD00\uBB38\uC73C\uB85C \uB4E4\uC5B4\uAC00\uBCFC\uAE4C\uC694?", bg: "gate" },
+  enterHome: { scene: "\uADC0\uAC00", mission: "\uD604\uAD00\uBB38\uC774 \uC5F4\uB9AC\uACE0 \uB8E8\uBE44\uC640 \uAC10\uC790\uAC00 \uC9D1\uC73C\uB85C \uC3D9 \uB4E4\uC5B4\uAC00\uC694.", bg: "gate" },
   clear: { scene: "\uC0B0\uCC45 \uC644\uB8CC", mission: "\uC0B0\uCC45 \uC644\uB8CC! \uB8E8\uBE44\uC640 \uAC10\uC790\uAC00 \uD589\uBCF5\uD574 \uBCF4\uC5EC\uC694.", bg: "home" },
   fail: { scene: "\uC0B0\uCC45 \uC2E4\uD328", mission: "\uC0B0\uCC45 \uC2E4\uD328... \uB2E4\uC2DC \uB3C4\uC804\uD574\uBCFC\uAE4C\uC694?", bg: "home" },
 };
@@ -475,6 +477,16 @@ export default function WalkQuestGame() {
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
+  }, [phase]);
+
+  useEffect(() => {
+    if (phase !== "enterHome") return;
+    playSound("success");
+    const timer = window.setTimeout(() => {
+      setPhase("clear");
+      setMessage("산책 완료! 루비와 감자가 행복해 보여요.");
+    }, 2200);
+    return () => window.clearTimeout(timer);
   }, [phase]);
 
   function submitCommand(event: FormEvent<HTMLFormElement>) {
@@ -1371,7 +1383,7 @@ function ThreeWalkWorld({
   const rubyCalmRef = useRef(rubyCalm);
   const gamjaQuietRef = useRef(gamjaQuiet);
   const dogsRoadsideRef = useRef(dogsRoadside);
-  const outdoorPhases: Phase[] = ["garden", "gate", "walk", "pull", "poop", "run", "car", "barkingDog", "boss", "cat", "catFood", "home"];
+  const outdoorPhases: Phase[] = ["garden", "gate", "walk", "pull", "poop", "run", "car", "barkingDog", "boss", "cat", "catFood", "home", "enterHome"];
   const isOutdoor = outdoorPhases.includes(phase);
 
   useEffect(() => {
@@ -1387,7 +1399,7 @@ function ThreeWalkWorld({
     if (phase === "upstairs") positionRef.current = { x: -3.6, z: 8.2, yaw: 0 };
     if (phase === "garden") positionRef.current = { x: 0, z: 6.8, yaw: 0 };
     if (phase === "gate") positionRef.current = { x: 0, z: -5.2, yaw: 0 };
-    if (["walk", "pull", "poop", "run", "car", "barkingDog", "boss", "cat", "catFood", "home"].includes(phase)) positionRef.current = { x: 0, z: 7.2, yaw: 0 };
+    if (["walk", "pull", "poop", "run", "car", "barkingDog", "boss", "cat", "catFood", "home", "enterHome"].includes(phase)) positionRef.current = { x: 0, z: 7.2, yaw: 0 };
 
     const width = Math.max(1, mount.clientWidth);
     const height = Math.max(1, mount.clientHeight);
@@ -1434,7 +1446,7 @@ function ThreeWalkWorld({
 
     const textureLoader = new THREE.TextureLoader();
     const isSleepingScene = phase === "upstairs" || (phase === "living" && !calledDogs);
-    const walkingBackScene = ["walk", "pull", "run", "car", "barkingDog", "boss", "cat", "catFood", "home"].includes(phase);
+    const walkingBackScene = ["walk", "pull", "run", "car", "barkingDog", "boss", "cat", "catFood", "home", "enterHome"].includes(phase);
     const rubySrc = isSleepingScene ? dog.ruby.sleep : walkingBackScene ? dog.ruby.back : phase === "excited" ? dog.ruby.hop : dog.ruby.call;
     const gamjaSrc = isSleepingScene ? dog.gamja.sleep : phase === "poop" ? dog.gamja.poop : walkingBackScene ? dog.gamja.back : phase === "excited" || phase === "gate" ? dog.gamja.hop : dog.gamja.call;
     const rubyMap = textureLoader.load(rubySrc);
@@ -1456,7 +1468,7 @@ function ThreeWalkWorld({
     const dogGroup = new THREE.Group();
     dogGroup.add(ruby, gamja);
     const poopPile = makePoopPile();
-    poopPile.position.set(phase === "poop" ? 1.52 : 1.02, 0.08, phase === "poop" ? -1.56 : -1.72);
+    poopPile.position.set(phase === "poop" ? 1.16 : 1.02, 0.08, phase === "poop" ? -1.18 : -1.72);
     poopPile.visible = phase === "poop";
     dogGroup.add(poopPile);
     dogGroup.visible = phase !== "leashMission";
@@ -1882,14 +1894,13 @@ function addOutdoor(scene: THREE.Scene, phase: Phase) {
     scene.add(house);
   }
 
-  if (phase === "home") {
-    const home = makeRoadsideHouse();
-    home.position.set(-4.6, 0, -4.4);
-    home.rotation.y = 0.42;
+  if (phase === "home" || phase === "enterHome") {
+    const home = makeReturnHome(phase === "enterHome");
+    home.position.set(0, 0, -6.8);
     scene.add(home);
     const welcomeMat = new THREE.MeshStandardMaterial({ color: "#f4dfb9", roughness: 0.72 });
-    const mat = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.035, 0.9), welcomeMat);
-    mat.position.set(-2.8, 0.06, -2.7);
+    const mat = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.035, 1.0), welcomeMat);
+    mat.position.set(0, 0.06, -3.45);
     scene.add(mat);
   }
 
@@ -1927,6 +1938,104 @@ function makeRoadsideHouse() {
   rail.position.set(0, 0.5, -0.95);
   group.add(rail);
   group.rotation.y = -0.45;
+  return group;
+}
+
+function makeReturnHome(openDoor: boolean) {
+  const group = new THREE.Group();
+  const wallMat = new THREE.MeshStandardMaterial({ color: "#f5eadc", roughness: 0.68 });
+  const sideMat = new THREE.MeshStandardMaterial({ color: "#ead7c3", roughness: 0.72 });
+  const roofMat = new THREE.MeshStandardMaterial({ color: "#6d3f2a", roughness: 0.58 });
+  const trimMat = new THREE.MeshStandardMaterial({ color: "#fff8ec", roughness: 0.5 });
+  const doorMat = new THREE.MeshStandardMaterial({ color: "#8b5a38", roughness: 0.5 });
+  const glassMat = new THREE.MeshStandardMaterial({ color: "#bfe1ef", roughness: 0.15, metalness: 0.05, transparent: true, opacity: 0.72 });
+  const flowerMat = new THREE.MeshStandardMaterial({ color: "#f28aa5", roughness: 0.82 });
+  const leafMat = new THREE.MeshStandardMaterial({ color: "#5f9b4f", roughness: 0.86 });
+
+  const wall = new THREE.Mesh(new THREE.BoxGeometry(5.7, 2.8, 1.25), wallMat);
+  wall.position.set(0, 1.42, 0);
+  wall.castShadow = true;
+  wall.receiveShadow = true;
+  group.add(wall);
+
+  const sideWing = new THREE.Mesh(new THREE.BoxGeometry(1.7, 2.35, 1.1), sideMat);
+  sideWing.position.set(-3.3, 1.18, 0.1);
+  sideWing.castShadow = true;
+  group.add(sideWing);
+
+  const roof = new THREE.Mesh(new THREE.ConeGeometry(4.15, 1.05, 4), roofMat);
+  roof.rotation.y = Math.PI / 4;
+  roof.scale.z = 0.42;
+  roof.position.set(-0.25, 3.18, 0);
+  roof.castShadow = true;
+  group.add(roof);
+
+  const porch = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.16, 1.08), new THREE.MeshStandardMaterial({ color: "#d7c2a1", roughness: 0.78 }));
+  porch.position.set(0, 0.12, -0.82);
+  porch.receiveShadow = true;
+  group.add(porch);
+
+  const doorFrame = new THREE.Mesh(new THREE.BoxGeometry(1.25, 2.08, 0.12), trimMat);
+  doorFrame.position.set(0, 1.18, -0.69);
+  group.add(doorFrame);
+
+  const door = new THREE.Mesh(new THREE.BoxGeometry(0.92, 1.82, 0.09), doorMat);
+  door.position.set(openDoor ? -0.42 : 0, 1.09, openDoor ? -0.9 : -0.76);
+  door.rotation.y = openDoor ? -0.82 : 0;
+  door.castShadow = true;
+  group.add(door);
+
+  const knob = new THREE.Mesh(new THREE.SphereGeometry(0.055, 18, 10), new THREE.MeshStandardMaterial({ color: "#d9b36a", roughness: 0.28, metalness: 0.35 }));
+  knob.position.set(openDoor ? -0.72 : 0.32, 1.08, openDoor ? -0.88 : -0.83);
+  group.add(knob);
+
+  [-1.85, 1.85].forEach((x) => {
+    const windowFrame = new THREE.Mesh(new THREE.BoxGeometry(0.95, 0.86, 0.1), trimMat);
+    windowFrame.position.set(x, 1.55, -0.7);
+    group.add(windowFrame);
+    const glass = new THREE.Mesh(new THREE.BoxGeometry(0.74, 0.62, 0.08), glassMat);
+    glass.position.set(x, 1.55, -0.76);
+    group.add(glass);
+    const crossV = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.66, 0.09), trimMat);
+    crossV.position.set(x, 1.55, -0.82);
+    group.add(crossV);
+    const crossH = new THREE.Mesh(new THREE.BoxGeometry(0.78, 0.05, 0.09), trimMat);
+    crossH.position.set(x, 1.55, -0.82);
+    group.add(crossH);
+  });
+
+  [-1.65, 1.65].forEach((x) => {
+    const planter = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.25, 0.34), new THREE.MeshStandardMaterial({ color: "#a97950", roughness: 0.82 }));
+    planter.position.set(x, 0.36, -0.92);
+    group.add(planter);
+    for (let i = 0; i < 5; i += 1) {
+      const leaf = new THREE.Mesh(new THREE.SphereGeometry(0.13, 12, 8), i % 2 ? flowerMat : leafMat);
+      leaf.position.set(x - 0.42 + i * 0.2, 0.58 + (i % 2) * 0.08, -1.02);
+      group.add(leaf);
+    }
+  });
+
+  const lampMat = new THREE.MeshStandardMaterial({ color: "#ffe1a0", roughness: 0.2, emissive: "#ffd27a", emissiveIntensity: openDoor ? 0.75 : 0.42 });
+  [-0.86, 0.86].forEach((x) => {
+    const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.11, 18, 10), lampMat);
+    lamp.position.set(x, 2.02, -0.86);
+    group.add(lamp);
+  });
+
+  const pathMat = new THREE.MeshStandardMaterial({ color: "#d9ceb8", roughness: 0.82 });
+  for (let i = 0; i < 4; i += 1) {
+    const step = new THREE.Mesh(new THREE.CylinderGeometry(0.5 + i * 0.08, 0.5 + i * 0.08, 0.035, 24), pathMat);
+    step.rotation.y = i * 0.34;
+    step.position.set(Math.sin(i * 0.6) * 0.22, 0.08, -1.55 - i * 0.72);
+    group.add(step);
+  }
+
+  if (openDoor) {
+    const glow = new THREE.PointLight("#ffe6bd", 1.15, 5);
+    glow.position.set(0, 1.35, -1.25);
+    group.add(glow);
+  }
+
   return group;
 }
 
@@ -2477,7 +2586,10 @@ function SceneContent(props: {
   if (p.phase === "poop") return <PoopTools hasPoopBag={p.hasPoopBag} tool={p.poopTool} step={p.poopStep} setStep={p.setPoopStep} setMessage={p.setMessage} choose={p.choosePoopTool} drop={p.dropPoopTool} />;
   if (p.phase === "run") return <ActionDock><span className="counter">Space {p.runTaps}/18</span></ActionDock>;
   if (p.phase === "car") return <CarSafetyDock carGuide={p.carGuide} carStopped={p.carStopped} dogsRoadside={p.dogsRoadside} setDogsRoadside={p.setDogsRoadside} setMessage={p.setMessage} />;
-  if (p.phase === "home") return <ActionDock><button onClick={() => p.setPhase("clear")}>{"집 문 열기"}</button></ActionDock>;
+  if (p.phase === "home") {
+    return <ActionDock><button onClick={() => { p.setPhase("enterHome"); p.setMessage("현관문이 열렸어요. 루비와 감자가 먼저 집으로 쏙 들어가요."); }}>{"집 안으로 들어가기"}</button></ActionDock>;
+  }
+  if (p.phase === "enterHome") return <ActionDock><span className="counter">집으로 들어가는 중...</span></ActionDock>;
   if (p.phase === "clear") return <CenterCard title="산책 완료!" body="산책 완료! 루비와 감자가 행복해 보여요." button="다시 하기" onClick={p.reset} image={dog.duo} />;
   if (p.phase === "fail") return <CenterCard title="산책 실패..." body="다시 도전해볼까요?" button="Restart" onClick={p.reset} image={dog.duo} />;
   return null;
@@ -3307,7 +3419,7 @@ function PoopTools({
       </div>
       <style jsx>{`
         .poop-ui { position: absolute; z-index: 24; inset: 0; pointer-events: none; }
-        .poop-hotspot { position: absolute; left: 56%; bottom: 140px; width: 96px; height: 76px; display: grid; place-items: center; pointer-events: auto; }
+        .poop-hotspot { position: absolute; left: 53%; bottom: 196px; width: 104px; height: 88px; display: grid; place-items: center; pointer-events: auto; }
         .poop-pile { display: none; }
         .leaf-grass { position: absolute; right: 82px; bottom: 136px; width: 78px; height: 54px; display: grid; place-items: center; pointer-events: auto; }
         .guard-warning { position: absolute; left: 18px; bottom: 122px; width: min(270px, 34vw); aspect-ratio: 1; filter: drop-shadow(0 16px 24px rgba(48, 28, 18, 0.24)); pointer-events: none; }
@@ -4268,15 +4380,28 @@ function IntroStyles() {
         width: 54px;
         height: 54px;
         min-width: 0;
-        padding: 0 0 5px;
+        padding: 0;
         border-radius: 50%;
-        font-family: 'Jua', 'Poor Story', sans-serif;
-        font-size: 3rem;
-        line-height: 1;
         color: #4b3322;
         background: rgba(255, 250, 241, 0.92);
         box-shadow: 0 14px 32px rgba(0,0,0,0.26);
         transform: translateY(-50%);
+      }
+
+      .lightbox-arrow {
+        display: block;
+        width: 18px;
+        height: 18px;
+        border-top: 5px solid #4b3322;
+        border-left: 5px solid #4b3322;
+      }
+
+      .lightbox-arrow.prev-icon {
+        transform: translateX(4px) rotate(-45deg);
+      }
+
+      .lightbox-arrow.next-icon {
+        transform: translateX(-4px) rotate(135deg);
       }
 
       .lightbox-prev {
@@ -4540,11 +4665,15 @@ function CenterCard({
             {selectedAlbumPhoto && (
               <div className="photo-lightbox" role="dialog" aria-modal="true" aria-label="앨범 사진 크게 보기">
                 <button type="button" className="lightbox-close" onClick={() => setSelectedAlbumPhoto(null)}>닫기</button>
-                                <button type="button" className="lightbox-nav lightbox-prev" onClick={() => showAlbumPhoto(-1)} aria-label="?? ??">?</button>
+                <button type="button" className="lightbox-nav lightbox-prev" onClick={() => showAlbumPhoto(-1)} aria-label="이전 사진">
+                  <span className="lightbox-arrow prev-icon" aria-hidden="true" />
+                </button>
                 <div className="lightbox-photo">
                   <Image src={selectedAlbumPhoto.src} alt={selectedAlbumPhoto.title} fill sizes="90vw" />
                                 </div>
-                <button type="button" className="lightbox-nav lightbox-next" onClick={() => showAlbumPhoto(1)} aria-label="?? ??">?</button>
+                <button type="button" className="lightbox-nav lightbox-next" onClick={() => showAlbumPhoto(1)} aria-label="다음 사진">
+                  <span className="lightbox-arrow next-icon" aria-hidden="true" />
+                </button>
                 <div className="lightbox-count">{selectedAlbumIndex + 1} / {activeAlbumItems.length}</div>
               </div>
             )}
@@ -4635,11 +4764,15 @@ function CenterCard({
           {selectedAlbumPhoto && (
             <div className="photo-lightbox" role="dialog" aria-modal="true" aria-label="앨범 사진 크게 보기">
               <button type="button" className="lightbox-close" onClick={() => setSelectedAlbumPhoto(null)}>닫기</button>
-                            <button type="button" className="lightbox-nav lightbox-prev" onClick={() => showAlbumPhoto(-1)} aria-label="?? ??">?</button>
+              <button type="button" className="lightbox-nav lightbox-prev" onClick={() => showAlbumPhoto(-1)} aria-label="이전 사진">
+                <span className="lightbox-arrow prev-icon" aria-hidden="true" />
+              </button>
               <div className="lightbox-photo">
                 <Image src={selectedAlbumPhoto.src} alt={selectedAlbumPhoto.title} fill sizes="90vw" />
                             </div>
-              <button type="button" className="lightbox-nav lightbox-next" onClick={() => showAlbumPhoto(1)} aria-label="?? ??">?</button>
+              <button type="button" className="lightbox-nav lightbox-next" onClick={() => showAlbumPhoto(1)} aria-label="다음 사진">
+                <span className="lightbox-arrow next-icon" aria-hidden="true" />
+              </button>
               <div className="lightbox-count">{selectedAlbumIndex + 1} / {activeAlbumItems.length}</div>
             </div>
           )}
@@ -4982,15 +5115,28 @@ function CenterCard({
           width: 54px;
           height: 54px;
           min-width: 0;
-          padding: 0 0 5px;
+          padding: 0;
           border-radius: 50%;
-          font-family: 'Jua', 'Poor Story', sans-serif;
-          font-size: 3rem;
-          line-height: 1;
           color: #4b3322;
           background: rgba(255, 250, 241, 0.92);
           box-shadow: 0 14px 32px rgba(0,0,0,0.26);
           transform: translateY(-50%);
+        }
+
+        .lightbox-arrow {
+          display: block;
+          width: 18px;
+          height: 18px;
+          border-top: 5px solid #4b3322;
+          border-left: 5px solid #4b3322;
+        }
+
+        .lightbox-arrow.prev-icon {
+          transform: translateX(4px) rotate(-45deg);
+        }
+
+        .lightbox-arrow.next-icon {
+          transform: translateX(-4px) rotate(135deg);
         }
 
         .lightbox-prev {
