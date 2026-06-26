@@ -1467,6 +1467,9 @@ function ThreeWalkWorld({
     );
     const dogGroup = new THREE.Group();
     dogGroup.add(ruby, gamja);
+    const rubyPaws = makeWalkPaws(1);
+    const gamjaPaws = makeWalkPaws(0.82);
+    dogGroup.add(rubyPaws, gamjaPaws);
     const poopPile = makePoopPile();
     poopPile.position.set(phase === "poop" ? 1.16 : 1.02, 0.08, phase === "poop" ? -1.18 : -1.72);
     poopPile.visible = phase === "poop";
@@ -1564,7 +1567,8 @@ function ThreeWalkWorld({
       camera.rotation.set(phase === "upstairs" ? -0.18 : 0, pos.yaw, 0);
       camera.fov = phase === "pull" || phase === "run" ? 72 + Math.sin(clock.elapsedTime * 13) * 1.8 : 64;
       camera.updateProjectionMatrix();
-      dogGroup.children.forEach((child) => child.lookAt(camera.position));
+      ruby.lookAt(camera.position);
+      gamja.lookAt(camera.position);
       const rubyMaterial = ruby.material as THREE.MeshBasicMaterial;
       const gamjaMaterial = gamja.material as THREE.MeshBasicMaterial;
       if (phase === "gate" && rubyCalmRef.current && rubyMaterial.map !== rubyGateSitMap) {
@@ -1616,6 +1620,10 @@ function ThreeWalkWorld({
         dogGroup.position.z = pos.z - 3.05;
         gamja.position.x = 0.55 - Math.abs(Math.sin(clock.elapsedTime * 6.5)) * 0.42;
       }
+      const walkLike = ["walk", "pull", "run", "car", "barkingDog", "boss", "cat", "catFood", "home", "enterHome"].includes(phase);
+      const activelyWalking = walkLike && (keysRef.current.has("KeyW") || ["pull", "run", "cat", "catFood"].includes(phase));
+      animateDogWalk(ruby, rubyPaws, clock.elapsedTime, activelyWalking, 0);
+      animateDogWalk(gamja, gamjaPaws, clock.elapsedTime, activelyWalking, Math.PI * 0.68);
       if (phase === "car") {
         car.position.x = 0.15;
         car.position.z = -12 + Math.min(clock.elapsedTime * 1.15, 9.8);
@@ -1717,6 +1725,55 @@ function makeDogBillboard(map: THREE.Texture, width: number, height: number) {
   const mesh = new THREE.Mesh(new THREE.PlaneGeometry(width, height), material);
   mesh.position.y = height / 2;
   return mesh;
+}
+
+function makeWalkPaws(scale: number) {
+  const group = new THREE.Group();
+  const pawMat = new THREE.MeshBasicMaterial({
+    color: "#25170f",
+    transparent: true,
+    opacity: 0,
+    depthWrite: false,
+  });
+  const pawOffsets = [
+    [-0.31, 0.08],
+    [0.31, 0.08],
+    [-0.24, -0.24],
+    [0.24, -0.24],
+  ];
+
+  pawOffsets.forEach(([x, z], index) => {
+    const paw = new THREE.Mesh(new THREE.CircleGeometry(0.115 * scale, 18), pawMat.clone());
+    paw.rotation.x = -Math.PI / 2;
+    paw.scale.set(1.35, 0.58, 1);
+    paw.position.set(x * scale, 0.028, z * scale);
+    paw.userData.stepPhase = index % 2 === 0 ? 0 : Math.PI;
+    group.add(paw);
+  });
+
+  group.visible = false;
+  return group;
+}
+
+function animateDogWalk(dogMesh: THREE.Mesh, paws: THREE.Group, time: number, active: boolean, phaseOffset: number) {
+  paws.position.set(dogMesh.position.x, 0.02, dogMesh.position.z + 0.24);
+  paws.visible = active;
+
+  const stride = time * 9.5 + phaseOffset;
+  const baseY = dogMesh.userData.baseY ?? dogMesh.position.y;
+  dogMesh.userData.baseY = baseY;
+  dogMesh.position.y = baseY + (active ? Math.abs(Math.sin(stride)) * 0.045 : 0);
+  dogMesh.rotation.z += active ? Math.sin(stride * 0.5) * 0.002 : 0;
+
+  paws.children.forEach((child, index) => {
+    const paw = child as THREE.Mesh<THREE.CircleGeometry, THREE.MeshBasicMaterial>;
+    const stepPhase = (paw.userData.stepPhase as number) ?? 0;
+    const pulse = (Math.sin(stride + stepPhase) + 1) / 2;
+    paw.material.opacity = active ? 0.12 + pulse * 0.26 : 0;
+    paw.position.z = ((index < 2 ? 0.08 : -0.24) + (pulse - 0.5) * 0.22) * paws.scale.z;
+    paw.scale.x = 1.15 + pulse * 0.36;
+    paw.scale.y = 0.5 + pulse * 0.12;
+  });
 }
 
 function makePoopPile() {
