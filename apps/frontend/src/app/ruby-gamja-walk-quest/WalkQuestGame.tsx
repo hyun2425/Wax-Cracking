@@ -351,10 +351,10 @@ export default function WalkQuestGame() {
     if (walkStep === 4 && walkForwardRef.current >= 3) {
       walkForwardRef.current = 0;
       setPhase("boss");
-      setBossBlocks(-1);
+      setBossBlocks(-4);
       setBossLane(randomLane());
       setTimeLeft(null);
-      setMessage("\uC0AC\uB098\uC6B4 \uAC15\uC544\uC9C0\uAC00 \uACE7 \uB098\uD0C0\uB0A0 \uAC70\uC608\uC694. \uB098\uD0C0\uB098\uBA74 3\uCD08 \uC548\uC5D0 \uD074\uB9AD\uD574\uC11C \uBE14\uB85C\uD0B9\uD558\uC138\uC694!");
+      setMessage("멀리서 낮게 짖는 소리가 들려요...");
       return;
     }
 
@@ -725,13 +725,23 @@ export default function WalkQuestGame() {
   }, [phase]);
 
   useEffect(() => {
-    if (phase !== "boss" || bossBlocks !== -1) return;
+    if (phase !== "boss" || bossBlocks >= 0) return;
+    const bossIntro: Record<number, { next: number; delay: number; message: string }> = {
+      [-4]: { next: -3, delay: 1400, message: "루비가 귀를 쫑긋 세웠어요. 뭔가 다가오는 것 같아요." },
+      [-3]: { next: -2, delay: 1400, message: "감자가 몸을 낮추고 긴장했어요. 목줄을 꽉 잡아야 해요." },
+      [-2]: { next: -1, delay: 1400, message: "땅이 울리는 것처럼 화면이 흔들려요. 곧 튀어나올 것 같아요!" },
+      [-1]: { next: 0, delay: 1600, message: "사나운 강아지가 나타났어요! 3초 안에 강아지를 클릭하세요." },
+    };
+    const intro = bossIntro[bossBlocks];
+    if (!intro) return;
     const guideTimer = window.setTimeout(() => {
-      setBossBlocks(0);
-      setBossLane(randomLane());
-      setTimeLeft(3);
-      setMessage("사나운 강아지가 나타났어요! 3초 안에 강아지를 클릭하세요.");
-    }, 2000);
+      setBossBlocks(intro.next);
+      setMessage(intro.message);
+      if (intro.next === 0) {
+        setBossLane(randomLane());
+        setTimeLeft(3);
+      }
+    }, intro.delay);
     return () => window.clearTimeout(guideTimer);
   }, [bossBlocks, phase]);
 
@@ -2645,6 +2655,14 @@ function BossClickGame({
 }) {
   const laneClass = `lane-${lane}`;
   const guideMode = blocks < 0;
+  const introCopy =
+    blocks === -4
+      ? { title: "멀리서 으르렁... 짖는 소리가 들려요", body: "아직 모습은 보이지 않지만 공기가 갑자기 조용해졌어요." }
+      : blocks === -3
+        ? { title: "루비 귀 쫑긋!", body: "루비가 발걸음을 멈추고 소리 나는 쪽을 바라봐요." }
+        : blocks === -2
+          ? { title: "감자가 긴장했어요", body: "감자가 몸을 낮추고 루비 옆에 바짝 붙었어요." }
+          : { title: "화면이 흔들려요!", body: "사나운 강아지가 튀어나오면 3초 안에 직접 클릭해서 블로킹하세요." };
 
   useEffect(() => {
     const audio = new Audio(animal.bossDogAudio);
@@ -2660,27 +2678,70 @@ function BossClickGame({
   }, []);
 
   return (
-    <div className="boss-event">
+    <div className={`boss-event ${blocks === -1 ? "shake" : ""}`}>
       {!guideMode && (
         <button className={`boss-dog ${laneClass}`} onClick={clickBossDog} aria-label="\uC0AC\uB098\uC6B4 \uAC15\uC544\uC9C0 \uD074\uB9AD">
           <Image src={animal.bossDog} alt="\uC0AC\uB098\uC6B4 \uAC15\uC544\uC9C0" fill sizes="260px" priority />
         </button>
       )}
+      {guideMode && (
+        <div className={`boss-omen omen-${Math.abs(blocks)}`}>
+          <span className="sound-wave" />
+          {blocks <= -3 && <span className="ear-alert">루비 귀 쫑긋</span>}
+          {blocks <= -2 && <span className="tense-alert">감자 긴장</span>}
+        </div>
+      )}
       <div className="boss-warning">
         {guideMode ? (
           <>
-      <b>{"\uC0AC\uB098\uC6B4 \uAC15\uC544\uC9C0\uAC00 \uB098\uD0C0\uB0A0 \uAC70\uC608\uC694!"}</b>
-            <span>{"\uB098\uD0C0\uB098\uBA74 \uC0AC\uB098\uC6B4 \uAC15\uC544\uC9C0\uB97C \uC9C1\uC811 \uD074\uB9AD\uD574 \uC8FC\uC138\uC694. "}<strong>{"3\uCD08 \uC548\uC5D0 \uD074\uB9AD"}</strong>{"\uD558\uBA74 \uBE14\uB85C\uD0B9\uD569\uB2C8\uB2E4."}</span>
+            <b>{introCopy.title}</b>
+            <span>{introCopy.body}</span>
           </>
         ) : (
           <>
       <b>{"\uC0AC\uB098\uC6B4 \uAC15\uC544\uC9C0\uAC00 \uB098\uD0C0\uB0A0 \uAC70\uC608\uC694!"}</b>
-            <span>{blocks}/3 {"\uBE14\uB85C\uD0B9"}{timeLeft !== null ? ` ? ${timeLeft}s` : ""}</span>
+            <span>{blocks}/3 {"\uBE14\uB85C\uD0B9"}{timeLeft !== null ? ` · ${timeLeft}s` : ""}</span>
           </>
         )}
       </div>
       <style jsx>{`
         .boss-event { position: absolute; z-index: 25; inset: 0; pointer-events: none; }
+        .boss-event.shake { animation: boss-screen-shake 0.18s linear infinite; }
+        .boss-omen {
+          position: absolute;
+          left: 50%;
+          bottom: 168px;
+          width: min(520px, 72vw);
+          height: 220px;
+          transform: translateX(-50%);
+          pointer-events: none;
+        }
+        .sound-wave {
+          position: absolute;
+          left: 50%;
+          bottom: 24px;
+          width: 88px;
+          height: 88px;
+          transform: translateX(-50%);
+          border: 4px solid rgba(178, 55, 66, 0.36);
+          border-radius: 50%;
+          box-shadow: 0 0 0 24px rgba(178, 55, 66, 0.12), 0 0 0 52px rgba(178, 55, 66, 0.07);
+          animation: omen-pulse 0.9s ease-out infinite;
+        }
+        .ear-alert,
+        .tense-alert {
+          position: absolute;
+          padding: 10px 14px;
+          border-radius: 999px;
+          background: rgba(255, 248, 235, 0.94);
+          border: 2px solid rgba(150, 95, 65, 0.2);
+          color: #603225;
+          font-weight: 950;
+          box-shadow: 0 12px 22px rgba(0, 0, 0, 0.18);
+          animation: omen-pop 0.4s ease-out both;
+        }
+        .ear-alert { left: 12%; top: 28px; }
+        .tense-alert { right: 10%; top: 78px; }
         .boss-dog {
           position: absolute;
           bottom: 120px;
@@ -2718,6 +2779,20 @@ function BossClickGame({
         @keyframes boss-run {
           from { translate: 0 8px; scale: 0.96; }
           to { translate: 0 -4px; scale: 1.02; }
+        }
+        @keyframes omen-pulse {
+          from { opacity: 0.9; transform: translateX(-50%) scale(0.78); }
+          to { opacity: 0.18; transform: translateX(-50%) scale(1.28); }
+        }
+        @keyframes omen-pop {
+          from { opacity: 0; transform: translateY(10px) scale(0.9); }
+          to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        @keyframes boss-screen-shake {
+          0%, 100% { transform: translate(0, 0); }
+          25% { transform: translate(5px, -3px); }
+          50% { transform: translate(-4px, 4px); }
+          75% { transform: translate(3px, 3px); }
         }
       `}</style>
     </div>
