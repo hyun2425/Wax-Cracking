@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { type DragEvent as ReactDragEvent, FormEvent, type MouseEvent as ReactMouseEvent, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { type DragEvent as ReactDragEvent, FormEvent, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent as ReactMouseEvent, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 
 type Phase =
@@ -34,6 +34,8 @@ type Dog = "ruby" | "gamja";
 type Lane = "left" | "center" | "right";
 type PoopTool = "bag" | "leaf" | "sock" | null;
 type PoopStep = "ask" | "bagCheck" | "leafAsk" | "leafReady" | "sockAsk" | "sockReady";
+
+const movementKeyCodes = ["KeyW", "KeyA", "KeyS", "KeyD"];
 
 function randomLane(): Lane {
   const lanes: Lane[] = ["left", "center", "right"];
@@ -197,11 +199,40 @@ export default function WalkQuestGame() {
   const dangerToastTimerRef = useRef<number | null>(null);
   const gateBarkAudioRef = useRef<HTMLAudioElement | null>(null);
   const catAudioRef = useRef<HTMLAudioElement | null>(null);
+  const heldMovementKeysRef = useRef(new Set<string>());
+  const ignoredCommandKeysRef = useRef(new Set<string>());
 
   const info = phaseInfo[phase];
   const needsInput = ["living", "leashPrep", "pull", "car", "barkingDog", "cat", "catFood"].includes(phase);
   const showDogs = false;
   const useEmptyHome = (phase === "living" && calledDogs) || phase === "excited";
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (movementKeyCodes.includes(event.code)) heldMovementKeysRef.current.add(event.code);
+    };
+    const onKeyUp = (event: KeyboardEvent) => {
+      if (!movementKeyCodes.includes(event.code)) return;
+      heldMovementKeysRef.current.delete(event.code);
+      ignoredCommandKeysRef.current.delete(event.code);
+    };
+
+    window.addEventListener("keydown", onKeyDown, true);
+    window.addEventListener("keyup", onKeyUp, true);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown, true);
+      window.removeEventListener("keyup", onKeyUp, true);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!needsInput) {
+      ignoredCommandKeysRef.current.clear();
+      return;
+    }
+
+    ignoredCommandKeysRef.current = new Set(heldMovementKeysRef.current);
+  }, [needsInput, phase]);
 
   const showSuccessToast = useCallback((mission = "미션") => {
     const lines = [
@@ -495,6 +526,11 @@ export default function WalkQuestGame() {
     if (!command) return;
     runCommand(command);
     setInput("");
+  }
+
+  function handleCommandKeyDown(event: ReactKeyboardEvent<HTMLInputElement>) {
+    if (!ignoredCommandKeysRef.current.has(event.code)) return;
+    event.preventDefault();
   }
 
   function runCommand(command: string) {
@@ -876,6 +912,7 @@ export default function WalkQuestGame() {
               onReachEntry={reachEntry}
               onReachGate={reachGate}
               onWalkForward={handleWalkForward}
+              movementLocked={needsInput}
             />
           )}
           <div className="first-person" />
@@ -946,6 +983,7 @@ export default function WalkQuestGame() {
               <input
                 value={input}
                 onChange={(event) => setInput(event.target.value)}
+                onKeyDown={handleCommandKeyDown}
                 placeholder={commandPlaceholder}
                 autoFocus
               />
@@ -1363,6 +1401,7 @@ function ThreeWalkWorld({
   onReachEntry,
   onReachGate,
   onWalkForward,
+  movementLocked = false,
 }: {
   phase: Phase;
   calledDogs: boolean;
@@ -1374,6 +1413,7 @@ function ThreeWalkWorld({
   onReachEntry?: () => void;
   onReachGate?: () => void;
   onWalkForward?: (delta: number) => void;
+  movementLocked?: boolean;
 }) {
   const mountRef = useRef<HTMLDivElement | null>(null);
   const positionRef = useRef({ x: 0, z: 5.5, yaw: 0 });
@@ -1385,6 +1425,16 @@ function ThreeWalkWorld({
   const dogsRoadsideRef = useRef(dogsRoadside);
   const outdoorPhases: Phase[] = ["garden", "gate", "walk", "pull", "poop", "run", "car", "barkingDog", "boss", "cat", "catFood", "home", "enterHome"];
   const isOutdoor = outdoorPhases.includes(phase);
+
+  useEffect(() => {
+    if (!movementLocked) return;
+    keysRef.current.clear();
+    const audio = stepAudioRef.current;
+    if (!audio) return;
+    audio.pause();
+    audio.currentTime = 0;
+    stepAudioRef.current = null;
+  }, [movementLocked]);
 
   useEffect(() => {
     rubyCalmRef.current = rubyCalm;
@@ -1471,7 +1521,7 @@ function ThreeWalkWorld({
     const gamjaPaws = makeWalkPaws(0.82);
     dogGroup.add(rubyPaws, gamjaPaws);
     const poopPile = makePoopPile();
-    poopPile.position.set(phase === "poop" ? 1.16 : 1.02, 0.08, phase === "poop" ? -1.18 : -1.72);
+    poopPile.position.set(phase === "poop" ? 0.96 : 1.02, 0.07, phase === "poop" ? -1.54 : -1.72);
     poopPile.visible = phase === "poop";
     dogGroup.add(poopPile);
     dogGroup.visible = phase !== "leashMission";
@@ -1521,14 +1571,14 @@ function ThreeWalkWorld({
       const delta = Math.min(clock.getDelta(), 0.04);
       const pos = positionRef.current;
       const speed = 3.4 * delta;
-      const movingForward = keysRef.current.has("KeyW");
-      if (keysRef.current.has("KeyA")) pos.x -= speed;
-      if (keysRef.current.has("KeyD")) pos.x += speed;
+      const movingForward = !movementLocked && keysRef.current.has("KeyW");
+      if (!movementLocked && keysRef.current.has("KeyA")) pos.x -= speed;
+      if (!movementLocked && keysRef.current.has("KeyD")) pos.x += speed;
       if (movingForward) {
         pos.z -= speed;
         if (phase === "walk") onWalkForward?.(delta);
       }
-      if (keysRef.current.has("KeyS")) pos.z += speed;
+      if (!movementLocked && keysRef.current.has("KeyS")) pos.z += speed;
       pos.x = THREE.MathUtils.clamp(pos.x, -6.2, 6.2);
       const minZ = isOutdoor && !["garden", "gate"].includes(phase) ? -58 : -10.5;
       pos.z = THREE.MathUtils.clamp(pos.z, minZ, 8.5);
@@ -1621,7 +1671,8 @@ function ThreeWalkWorld({
         gamja.position.x = 0.55 - Math.abs(Math.sin(clock.elapsedTime * 6.5)) * 0.42;
       }
       const walkLike = ["walk", "pull", "run", "car", "barkingDog", "boss", "cat", "catFood", "home", "enterHome"].includes(phase);
-      const activelyWalking = walkLike && (keysRef.current.has("KeyW") || ["pull", "run", "cat", "catFood"].includes(phase));
+      const autoWalkingPhase = ["pull", "run", "cat", "catFood"].includes(phase);
+      const activelyWalking = walkLike && ((!movementLocked && keysRef.current.has("KeyW")) || autoWalkingPhase);
       animateDogWalk(ruby, rubyPaws, clock.elapsedTime, activelyWalking, 0);
       animateDogWalk(gamja, gamjaPaws, clock.elapsedTime, activelyWalking, Math.PI * 0.68);
       if (phase === "car") {
@@ -1637,6 +1688,12 @@ function ThreeWalkWorld({
     };
 
     const onKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (movementLocked || target?.closest("input, textarea, select, [contenteditable='true']")) {
+        keysRef.current.clear();
+        stopStepAudio();
+        return;
+      }
       if (movementKeys.includes(event.code)) {
         event.preventDefault();
         keysRef.current.add(event.code);
@@ -1644,6 +1701,11 @@ function ThreeWalkWorld({
       }
     };
     const onKeyUp = (event: KeyboardEvent) => {
+      if (movementLocked) {
+        keysRef.current.clear();
+        stopStepAudio();
+        return;
+      }
       if (movementKeys.includes(event.code)) {
         keysRef.current.delete(event.code);
         syncStepAudio();
@@ -1682,7 +1744,7 @@ function ThreeWalkWorld({
       gamjaSitMap.dispose();
       mount.removeChild(renderer.domElement);
     };
-  }, [calledDogs, canReachEntry, dogsRoadside, isOutdoor, onReachEntry, onReachGate, onReachLiving, onWalkForward, phase]);
+  }, [calledDogs, canReachEntry, dogsRoadside, isOutdoor, movementLocked, onReachEntry, onReachGate, onReachLiving, onWalkForward, phase]);
 
   return (
     <div className="three-world" ref={mountRef} aria-label="3D 산책길">
@@ -3476,7 +3538,7 @@ function PoopTools({
       </div>
       <style jsx>{`
         .poop-ui { position: absolute; z-index: 24; inset: 0; pointer-events: none; }
-        .poop-hotspot { position: absolute; left: 53%; bottom: 196px; width: 104px; height: 88px; display: grid; place-items: center; pointer-events: auto; }
+        .poop-hotspot { position: absolute; left: 55%; bottom: 238px; width: 128px; height: 108px; transform: translateX(-50%); display: grid; place-items: center; pointer-events: auto; }
         .poop-pile { display: none; }
         .leaf-grass { position: absolute; right: 82px; bottom: 136px; width: 78px; height: 54px; display: grid; place-items: center; pointer-events: auto; }
         .guard-warning { position: absolute; left: 18px; bottom: 122px; width: min(270px, 34vw); aspect-ratio: 1; filter: drop-shadow(0 16px 24px rgba(48, 28, 18, 0.24)); pointer-events: none; }
