@@ -1521,7 +1521,7 @@ function ThreeWalkWorld({
     const gamjaPaws = makeWalkPaws(0.82);
     dogGroup.add(rubyPaws, gamjaPaws);
     const poopPile = makePoopPile();
-    poopPile.position.set(phase === "poop" ? 2.58 : 1.02, 0.08, phase === "poop" ? -3.06 : -1.72);
+    poopPile.position.set(phase === "poop" ? 2.44 : 1.02, 0.08, phase === "poop" ? -3.28 : -1.72);
     poopPile.visible = phase === "poop";
     dogGroup.add(poopPile);
     dogGroup.visible = phase !== "leashMission";
@@ -3538,7 +3538,7 @@ function PoopTools({
       </div>
       <style jsx>{`
         .poop-ui { position: absolute; z-index: 24; inset: 0; pointer-events: none; }
-        .poop-hotspot { position: absolute; left: 69%; bottom: 282px; width: 188px; height: 144px; transform: translateX(-50%); display: grid; place-items: center; pointer-events: auto; }
+        .poop-hotspot { position: absolute; left: 67.5%; bottom: 306px; width: 188px; height: 144px; transform: translateX(-50%); display: grid; place-items: center; pointer-events: auto; }
         .poop-pile { display: none; }
         .leaf-grass { position: absolute; right: 82px; bottom: 136px; width: 78px; height: 54px; display: grid; place-items: center; pointer-events: auto; }
         .guard-warning { position: absolute; left: 18px; bottom: 122px; width: min(270px, 34vw); aspect-ratio: 1; filter: drop-shadow(0 16px 24px rgba(48, 28, 18, 0.24)); pointer-events: none; }
