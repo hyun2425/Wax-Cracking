@@ -3560,7 +3560,7 @@ function PoopTools({
       </div>
       <style jsx>{`
         .poop-ui { position: absolute; z-index: 24; inset: 0; pointer-events: none; }
-        .poop-hotspot { position: absolute; left: 65.5%; bottom: 190px; width: 132px; height: 104px; transform: translateX(-50%); display: grid; place-items: center; pointer-events: auto; }
+        .poop-hotspot { position: absolute; left: 65.5%; bottom: 145px; width: 132px; height: 104px; transform: translateX(-50%); display: grid; place-items: center; pointer-events: auto; }
         .poop-pile { display: none; }
         .leaf-grass { position: absolute; right: 82px; bottom: 136px; width: 78px; height: 54px; display: grid; place-items: center; pointer-events: auto; }
         .guard-warning { position: absolute; left: 18px; bottom: 122px; width: min(270px, 34vw); aspect-ratio: 1; filter: drop-shadow(0 16px 24px rgba(48, 28, 18, 0.24)); pointer-events: none; }
