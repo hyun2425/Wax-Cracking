@@ -201,11 +201,24 @@ export default function WalkQuestGame() {
   const catAudioRef = useRef<HTMLAudioElement | null>(null);
   const heldMovementKeysRef = useRef(new Set<string>());
   const ignoredCommandKeysRef = useRef(new Set<string>());
+  const commandInputRef = useRef<HTMLInputElement | null>(null);
+  const commandInputUnlockAtRef = useRef(0);
 
   const info = phaseInfo[phase];
   const needsInput = ["living", "leashPrep", "pull", "car", "barkingDog", "cat", "catFood"].includes(phase);
   const showDogs = false;
   const useEmptyHome = (phase === "living" && calledDogs) || phase === "excited";
+
+  useEffect(() => {
+    commandInputUnlockAtRef.current = needsInput ? Date.now() + 500 : Number.POSITIVE_INFINITY;
+    if (!needsInput) return;
+
+    const timer = window.setTimeout(() => {
+      commandInputRef.current?.focus();
+    }, 500);
+
+    return () => window.clearTimeout(timer);
+  }, [needsInput, phase]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -522,6 +535,7 @@ export default function WalkQuestGame() {
 
   function submitCommand(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (Date.now() < commandInputUnlockAtRef.current) return;
     const command = input.trim();
     if (!command) return;
     runCommand(command);
@@ -529,6 +543,10 @@ export default function WalkQuestGame() {
   }
 
   function handleCommandKeyDown(event: ReactKeyboardEvent<HTMLInputElement>) {
+    if (Date.now() < commandInputUnlockAtRef.current) {
+      event.preventDefault();
+      return;
+    }
     if (!ignoredCommandKeysRef.current.has(event.code)) return;
     event.preventDefault();
   }
@@ -981,8 +999,12 @@ export default function WalkQuestGame() {
           {needsInput && (
             <form className="command" onSubmit={submitCommand}>
               <input
+                ref={commandInputRef}
                 value={input}
-                onChange={(event) => setInput(event.target.value)}
+                onChange={(event) => {
+                  if (Date.now() < commandInputUnlockAtRef.current) return;
+                  setInput(event.target.value);
+                }}
                 onKeyDown={handleCommandKeyDown}
                 placeholder={commandPlaceholder}
                 autoFocus
@@ -1521,7 +1543,7 @@ function ThreeWalkWorld({
     const gamjaPaws = makeWalkPaws(0.82);
     dogGroup.add(rubyPaws, gamjaPaws);
     const poopPile = makePoopPile();
-    poopPile.position.set(phase === "poop" ? 2.26 : 1.02, 0.08, phase === "poop" ? -3.54 : -1.72);
+    poopPile.position.set(phase === "poop" ? 2.26 : 1.02, 0.08, phase === "poop" ? -3.82 : -1.72);
     poopPile.visible = phase === "poop";
     dogGroup.add(poopPile);
     dogGroup.visible = phase !== "leashMission";
@@ -3538,7 +3560,7 @@ function PoopTools({
       </div>
       <style jsx>{`
         .poop-ui { position: absolute; z-index: 24; inset: 0; pointer-events: none; }
-        .poop-hotspot { position: absolute; left: 65.5%; bottom: 334px; width: 188px; height: 144px; transform: translateX(-50%); display: grid; place-items: center; pointer-events: auto; }
+        .poop-hotspot { position: absolute; left: 65.5%; bottom: 366px; width: 188px; height: 144px; transform: translateX(-50%); display: grid; place-items: center; pointer-events: auto; }
         .poop-pile { display: none; }
         .leaf-grass { position: absolute; right: 82px; bottom: 136px; width: 78px; height: 54px; display: grid; place-items: center; pointer-events: auto; }
         .guard-warning { position: absolute; left: 18px; bottom: 122px; width: min(270px, 34vw); aspect-ratio: 1; filter: drop-shadow(0 16px 24px rgba(48, 28, 18, 0.24)); pointer-events: none; }
