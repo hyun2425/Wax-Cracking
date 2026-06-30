@@ -139,6 +139,10 @@ function playSound(name: SoundName) {
 
 const callWords = ["\uB8E8\uBE44", "\uAC10\uC790", "\uB8E8\uAC10"];
 const walkWords = ["\uC0B0\uCC45", "\uB098\uAC00\uC790", "\uB098\uAC08\uAE4C"];
+const commandWords = {
+  stop: "\uBA48\uCDB0",
+  wait: "\uAE30\uB2E4\uB824",
+};
 
 const phaseInfo: Record<Phase, { scene: string; mission: string; bg: string }> = {
   intro: { scene: "\uC624\uD504\uB2DD", mission: "\uC0B0\uCC45 START \uBC84\uD2BC\uC744 \uB20C\uB7EC \uC2DC\uC791\uD558\uC138\uC694.", bg: "home" },
@@ -547,8 +551,6 @@ export default function WalkQuestGame() {
       event.preventDefault();
       return;
     }
-    if (!ignoredCommandKeysRef.current.has(event.code)) return;
-    event.preventDefault();
   }
 
   function runCommand(command: string) {
@@ -590,7 +592,7 @@ export default function WalkQuestGame() {
       return;
     }
     if (phase === "car") {
-      if (!carStopped && command.includes("멈춰")) {
+      if (!carStopped && command.includes(commandWords.stop)) {
         playSound("car");
         setCarGuide(false);
         setCarStopped(true);
@@ -598,7 +600,7 @@ export default function WalkQuestGame() {
         setMessage("멈췄어요. 루비와 감자를 길가 쪽으로 옮긴 뒤 기다려라고 입력하세요.");
       } else if (carGuide) {
         setMessage("차가 다가오고 있어요. 멈춰라고 입력해도 괜찮아요.");
-      } else if (carStopped && dogsRoadside && command.includes("기다려")) {
+      } else if (carStopped && dogsRoadside && command.includes(commandWords.wait)) {
         finishCar();
       } else if (carStopped && !dogsRoadside) {
         setMessage("루비와 감자를 길가로 옮겨주세요.");
@@ -880,7 +882,7 @@ export default function WalkQuestGame() {
   const commandPlaceholder = phase === "pull"
     ? "천천히"
     : phase === "car"
-      ? carStopped ? "기다려" : "멈춰"
+      ? carStopped ? commandWords.wait : commandWords.stop
       : phase === "barkingDog"
         ? "무시해"
         : phase === "cat"
@@ -2084,97 +2086,174 @@ function makeRoadsideHouse() {
 
 function makeReturnHome(openDoor: boolean) {
   const group = new THREE.Group();
-  const wallMat = new THREE.MeshStandardMaterial({ color: "#f5eadc", roughness: 0.68 });
-  const sideMat = new THREE.MeshStandardMaterial({ color: "#ead7c3", roughness: 0.72 });
-  const roofMat = new THREE.MeshStandardMaterial({ color: "#6d3f2a", roughness: 0.58 });
-  const trimMat = new THREE.MeshStandardMaterial({ color: "#fff8ec", roughness: 0.5 });
-  const doorMat = new THREE.MeshStandardMaterial({ color: "#8b5a38", roughness: 0.5 });
-  const glassMat = new THREE.MeshStandardMaterial({ color: "#bfe1ef", roughness: 0.15, metalness: 0.05, transparent: true, opacity: 0.72 });
-  const flowerMat = new THREE.MeshStandardMaterial({ color: "#f28aa5", roughness: 0.82 });
+  const wallMat = new THREE.MeshStandardMaterial({ color: "#f4e6d4", roughness: 0.66 });
+  const wallSideMat = new THREE.MeshStandardMaterial({ color: "#e8d2bd", roughness: 0.72 });
+  const roofMat = new THREE.MeshStandardMaterial({ color: "#774731", roughness: 0.55 });
+  const roofEdgeMat = new THREE.MeshStandardMaterial({ color: "#55311f", roughness: 0.62 });
+  const trimMat = new THREE.MeshStandardMaterial({ color: "#fff8ea", roughness: 0.5 });
+  const doorMat = new THREE.MeshStandardMaterial({ color: "#7d4e34", roughness: 0.47 });
+  const glassMat = new THREE.MeshStandardMaterial({
+    color: "#a9d7e7",
+    roughness: 0.12,
+    metalness: 0.04,
+    transparent: true,
+    opacity: 0.78,
+    emissive: "#2f6a7d",
+    emissiveIntensity: 0.05,
+  });
+  const warmGlassMat = new THREE.MeshStandardMaterial({
+    color: "#ffe3a8",
+    roughness: 0.18,
+    transparent: true,
+    opacity: 0.84,
+    emissive: "#ffc66c",
+    emissiveIntensity: openDoor ? 0.32 : 0.14,
+  });
+  const stoneMat = new THREE.MeshStandardMaterial({ color: "#d8cab3", roughness: 0.86 });
   const leafMat = new THREE.MeshStandardMaterial({ color: "#5f9b4f", roughness: 0.86 });
+  const flowerMats = ["#f28aa5", "#fff0a8", "#f7b6d2"].map((color) => new THREE.MeshStandardMaterial({ color, roughness: 0.82 }));
 
-  const wall = new THREE.Mesh(new THREE.BoxGeometry(5.7, 2.8, 1.25), wallMat);
-  wall.position.set(0, 1.42, 0);
-  wall.castShadow = true;
-  wall.receiveShadow = true;
-  group.add(wall);
+  const frontShape = new THREE.Shape();
+  frontShape.moveTo(-3.1, 0);
+  frontShape.lineTo(3.1, 0);
+  frontShape.lineTo(3.1, 2.55);
+  frontShape.lineTo(0, 3.55);
+  frontShape.lineTo(-3.1, 2.55);
+  frontShape.lineTo(-3.1, 0);
+  const front = new THREE.Mesh(new THREE.ExtrudeGeometry(frontShape, { depth: 0.34, bevelEnabled: false }), wallMat);
+  front.position.set(0, 0, -0.82);
+  front.castShadow = true;
+  front.receiveShadow = true;
+  group.add(front);
 
-  const sideWing = new THREE.Mesh(new THREE.BoxGeometry(1.7, 2.35, 1.1), sideMat);
-  sideWing.position.set(-3.3, 1.18, 0.1);
-  sideWing.castShadow = true;
-  group.add(sideWing);
+  const bodyDepth = new THREE.Mesh(new THREE.BoxGeometry(6.12, 2.5, 1.22), wallSideMat);
+  bodyDepth.position.set(0, 1.26, -0.18);
+  bodyDepth.castShadow = true;
+  bodyDepth.receiveShadow = true;
+  group.add(bodyDepth);
 
-  const roof = new THREE.Mesh(new THREE.ConeGeometry(4.15, 1.05, 4), roofMat);
-  roof.rotation.y = Math.PI / 4;
-  roof.scale.z = 0.42;
-  roof.position.set(-0.25, 3.18, 0);
-  roof.castShadow = true;
-  group.add(roof);
+  const leftRoof = new THREE.Mesh(new THREE.BoxGeometry(3.62, 0.18, 1.62), roofMat);
+  leftRoof.position.set(-1.34, 3.08, -0.38);
+  leftRoof.rotation.z = 0.36;
+  leftRoof.castShadow = true;
+  group.add(leftRoof);
 
-  const porch = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.16, 1.08), new THREE.MeshStandardMaterial({ color: "#d7c2a1", roughness: 0.78 }));
-  porch.position.set(0, 0.12, -0.82);
+  const rightRoof = new THREE.Mesh(new THREE.BoxGeometry(3.62, 0.18, 1.62), roofMat);
+  rightRoof.position.set(1.34, 3.08, -0.38);
+  rightRoof.rotation.z = -0.36;
+  rightRoof.castShadow = true;
+  group.add(rightRoof);
+
+  const ridge = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.16, 1.72), roofEdgeMat);
+  ridge.position.set(0, 3.66, -0.38);
+  ridge.castShadow = true;
+  group.add(ridge);
+
+  const chimney = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.92, 0.36), new THREE.MeshStandardMaterial({ color: "#b98b6f", roughness: 0.72 }));
+  chimney.position.set(1.95, 3.34, -0.02);
+  chimney.castShadow = true;
+  group.add(chimney);
+
+  const porch = new THREE.Mesh(new THREE.BoxGeometry(2.55, 0.18, 1.22), stoneMat);
+  porch.position.set(0, 0.1, -1.42);
   porch.receiveShadow = true;
   group.add(porch);
 
-  const doorFrame = new THREE.Mesh(new THREE.BoxGeometry(1.25, 2.08, 0.12), trimMat);
-  doorFrame.position.set(0, 1.18, -0.69);
+  const porchRoof = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.16, 1.08), roofMat);
+  porchRoof.position.set(0, 2.32, -1.38);
+  porchRoof.castShadow = true;
+  group.add(porchRoof);
+
+  [-1.02, 1.02].forEach((x) => {
+    const column = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.085, 1.62, 16), trimMat);
+    column.position.set(x, 1.16, -1.52);
+    column.castShadow = true;
+    group.add(column);
+  });
+
+  const doorFrame = new THREE.Mesh(new THREE.BoxGeometry(1.18, 2.02, 0.13), trimMat);
+  doorFrame.position.set(0, 1.12, -1.02);
   group.add(doorFrame);
 
-  const door = new THREE.Mesh(new THREE.BoxGeometry(0.92, 1.82, 0.09), doorMat);
-  door.position.set(openDoor ? -0.42 : 0, 1.09, openDoor ? -0.9 : -0.76);
-  door.rotation.y = openDoor ? -0.82 : 0;
+  const door = new THREE.Mesh(new THREE.BoxGeometry(0.88, 1.78, 0.095), doorMat);
+  door.position.set(openDoor ? -0.46 : 0, 1.04, openDoor ? -1.18 : -1.1);
+  door.rotation.y = openDoor ? -0.92 : 0;
   door.castShadow = true;
   group.add(door);
 
-  const knob = new THREE.Mesh(new THREE.SphereGeometry(0.055, 18, 10), new THREE.MeshStandardMaterial({ color: "#d9b36a", roughness: 0.28, metalness: 0.35 }));
-  knob.position.set(openDoor ? -0.72 : 0.32, 1.08, openDoor ? -0.88 : -0.83);
+  const doorWindow = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.52, 0.105), warmGlassMat);
+  doorWindow.position.set(openDoor ? -0.56 : 0, 1.47, openDoor ? -1.23 : -1.16);
+  doorWindow.rotation.y = openDoor ? -0.92 : 0;
+  group.add(doorWindow);
+
+  const knob = new THREE.Mesh(new THREE.SphereGeometry(0.06, 18, 10), new THREE.MeshStandardMaterial({ color: "#d9b36a", roughness: 0.28, metalness: 0.35 }));
+  knob.position.set(openDoor ? -0.78 : 0.31, 1.02, openDoor ? -1.16 : -1.18);
   group.add(knob);
 
-  [-1.85, 1.85].forEach((x) => {
-    const windowFrame = new THREE.Mesh(new THREE.BoxGeometry(0.95, 0.86, 0.1), trimMat);
-    windowFrame.position.set(x, 1.55, -0.7);
-    group.add(windowFrame);
-    const glass = new THREE.Mesh(new THREE.BoxGeometry(0.74, 0.62, 0.08), glassMat);
-    glass.position.set(x, 1.55, -0.76);
+  const makeWindow = (x: number, y: number, wide = 0.92) => {
+    const frame = new THREE.Mesh(new THREE.BoxGeometry(wide, 0.78, 0.11), trimMat);
+    frame.position.set(x, y, -1.03);
+    group.add(frame);
+    const glass = new THREE.Mesh(new THREE.BoxGeometry(wide - 0.18, 0.56, 0.09), glassMat);
+    glass.position.set(x, y, -1.1);
     group.add(glass);
-    const crossV = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.66, 0.09), trimMat);
-    crossV.position.set(x, 1.55, -0.82);
+    const crossV = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.6, 0.1), trimMat);
+    crossV.position.set(x, y, -1.16);
     group.add(crossV);
-    const crossH = new THREE.Mesh(new THREE.BoxGeometry(0.78, 0.05, 0.09), trimMat);
-    crossH.position.set(x, 1.55, -0.82);
+    const crossH = new THREE.Mesh(new THREE.BoxGeometry(wide - 0.12, 0.045, 0.1), trimMat);
+    crossH.position.set(x, y, -1.16);
     group.add(crossH);
-  });
+  };
+  makeWindow(-2.0, 1.55, 0.98);
+  makeWindow(2.0, 1.55, 0.98);
+  makeWindow(0, 2.62, 0.82);
 
-  [-1.65, 1.65].forEach((x) => {
-    const planter = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.25, 0.34), new THREE.MeshStandardMaterial({ color: "#a97950", roughness: 0.82 }));
-    planter.position.set(x, 0.36, -0.92);
+  [-2.06, 2.06].forEach((x) => {
+    const planter = new THREE.Mesh(new THREE.BoxGeometry(1.18, 0.24, 0.34), new THREE.MeshStandardMaterial({ color: "#9b704e", roughness: 0.82 }));
+    planter.position.set(x, 0.42, -1.28);
+    planter.castShadow = true;
     group.add(planter);
-    for (let i = 0; i < 5; i += 1) {
-      const leaf = new THREE.Mesh(new THREE.SphereGeometry(0.13, 12, 8), i % 2 ? flowerMat : leafMat);
-      leaf.position.set(x - 0.42 + i * 0.2, 0.58 + (i % 2) * 0.08, -1.02);
+    for (let i = 0; i < 7; i += 1) {
+      const leaf = new THREE.Mesh(new THREE.SphereGeometry(0.11 + (i % 3) * 0.015, 12, 8), i % 3 === 0 ? flowerMats[i % flowerMats.length] : leafMat);
+      leaf.position.set(x - 0.48 + i * 0.16, 0.63 + (i % 2) * 0.08, -1.42 - (i % 2) * 0.06);
       group.add(leaf);
     }
   });
 
   const lampMat = new THREE.MeshStandardMaterial({ color: "#ffe1a0", roughness: 0.2, emissive: "#ffd27a", emissiveIntensity: openDoor ? 0.75 : 0.42 });
-  [-0.86, 0.86].forEach((x) => {
-    const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.11, 18, 10), lampMat);
-    lamp.position.set(x, 2.02, -0.86);
+  [-0.72, 0.72].forEach((x) => {
+    const lampBase = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.22, 0.07), roofEdgeMat);
+    lampBase.position.set(x, 1.92, -1.12);
+    group.add(lampBase);
+    const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.115, 18, 10), lampMat);
+    lamp.position.set(x, 2.08, -1.18);
     group.add(lamp);
   });
 
-  const pathMat = new THREE.MeshStandardMaterial({ color: "#d9ceb8", roughness: 0.82 });
-  for (let i = 0; i < 4; i += 1) {
-    const step = new THREE.Mesh(new THREE.CylinderGeometry(0.5 + i * 0.08, 0.5 + i * 0.08, 0.035, 24), pathMat);
-    step.rotation.y = i * 0.34;
-    step.position.set(Math.sin(i * 0.6) * 0.22, 0.08, -1.55 - i * 0.72);
-    group.add(step);
+  for (let i = 0; i < 6; i += 1) {
+    const stone = new THREE.Mesh(new THREE.CylinderGeometry(0.48 + i * 0.05, 0.5 + i * 0.05, 0.035, 28), stoneMat);
+    stone.rotation.y = i * 0.41;
+    stone.scale.x = 1.2;
+    stone.position.set(Math.sin(i * 0.75) * 0.34, 0.06, -2.06 - i * 0.68);
+    stone.receiveShadow = true;
+    group.add(stone);
   }
 
+  [-3.25, 3.25].forEach((x) => {
+    const shrub = new THREE.Mesh(new THREE.SphereGeometry(0.55, 18, 12), leafMat);
+    shrub.scale.set(1.25, 0.72, 0.72);
+    shrub.position.set(x, 0.47, -1.2);
+    shrub.castShadow = true;
+    group.add(shrub);
+  });
+
   if (openDoor) {
-    const glow = new THREE.PointLight("#ffe6bd", 1.15, 5);
-    glow.position.set(0, 1.35, -1.25);
+    const glow = new THREE.PointLight("#ffe6bd", 1.45, 5.2);
+    glow.position.set(0, 1.3, -1.55);
     group.add(glow);
+    const welcome = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.025, 0.46), new THREE.MeshStandardMaterial({ color: "#b68a5e", roughness: 0.9 }));
+    welcome.position.set(0, 0.13, -1.98);
+    group.add(welcome);
   }
 
   return group;
