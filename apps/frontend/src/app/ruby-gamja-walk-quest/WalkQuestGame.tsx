@@ -581,7 +581,7 @@ export default function WalkQuestGame() {
   }
 
   function handleCommandKeyDown(event: ReactKeyboardEvent<HTMLInputElement>) {
-    if (commandInputLocked && ["KeyW", "KeyR", "KeyF"].includes(event.code)) event.preventDefault();
+    if (commandInputLocked && event.key === "Enter" && !input.trim()) event.preventDefault();
   }
 
   function runCommand(command: string) {
@@ -1037,8 +1037,9 @@ export default function WalkQuestGame() {
                 value={input}
                 onChange={(event) => {
                   const nextInput = event.target.value;
-                  if (commandInputLocked && /^[ㅈㄹ\s]+$/.test(nextInput)) {
-                    setInput("");
+                  if (commandInputLocked) {
+                    const cleanedInput = nextInput.replace(/^[ㅈㄹ]{2,}/, "");
+                    setInput(cleanedInput);
                     return;
                   }
                   setInput(nextInput);
