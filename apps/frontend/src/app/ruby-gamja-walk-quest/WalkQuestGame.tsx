@@ -196,6 +196,7 @@ export default function WalkQuestGame() {
   const [runTaps, setRunTaps] = useState(0);
   const [carStopped, setCarStopped] = useState(false);
   const [dogsRoadside, setDogsRoadside] = useState(false);
+  const [returnGateOpen, setReturnGateOpen] = useState(false);
   const [bossLane, setBossLane] = useState<Lane>("center");
   const [bossBlocks, setBossBlocks] = useState(0);
   const [carGuide, setCarGuide] = useState(false);
@@ -351,6 +352,7 @@ export default function WalkQuestGame() {
     setRunTaps(0);
     setCarStopped(false);
     setDogsRoadside(false);
+    setReturnGateOpen(false);
     setBossLane("center");
     setBossBlocks(0);
     setCarGuide(false);
@@ -453,6 +455,7 @@ export default function WalkQuestGame() {
 
     if (walkStep >= 7 && walkForwardRef.current >= 3) {
       walkForwardRef.current = 0;
+      setReturnGateOpen(false);
       setPhase("home");
       setMessage("\uC9D1 \uC55E\uC5D0 \uAC70\uC758 \uB3C4\uCC29\uD588\uC5B4\uC694.");
     }
@@ -964,6 +967,7 @@ export default function WalkQuestGame() {
               rubyCalm={rubyCalm}
               gamjaQuiet={gamjaQuiet}
               dogsRoadside={dogsRoadside}
+              returnGateOpen={returnGateOpen}
               onReachLiving={reachLiving}
               onReachEntry={reachEntry}
               onReachGate={reachGate}
@@ -991,6 +995,7 @@ export default function WalkQuestGame() {
             dogsRoadside={dogsRoadside}
             bossLane={bossLane}
             bossBlocks={bossBlocks}
+            returnGateOpen={returnGateOpen}
             start={start}
             reset={reset}
             setPhase={setPhase}
@@ -1011,6 +1016,7 @@ export default function WalkQuestGame() {
             dropPoopTool={dropPoopTool}
             setCarStopped={setCarStopped}
             setDogsRoadside={setDogsRoadside}
+            setReturnGateOpen={setReturnGateOpen}
             finishCar={finishCar}
             ignoreDog={ignoreDog}
             blockBoss={blockBoss}
@@ -1458,6 +1464,7 @@ function ThreeWalkWorld({
   rubyCalm,
   gamjaQuiet,
   dogsRoadside,
+  returnGateOpen,
   onReachLiving,
   onReachEntry,
   onReachGate,
@@ -1470,6 +1477,7 @@ function ThreeWalkWorld({
   rubyCalm: boolean;
   gamjaQuiet: boolean;
   dogsRoadside: boolean;
+  returnGateOpen: boolean;
   onReachLiving?: () => void;
   onReachEntry?: () => void;
   onReachGate?: () => void;
@@ -1550,7 +1558,7 @@ function ThreeWalkWorld({
     scene.add(grid);
 
     if (isOutdoor) {
-      addOutdoor(scene, phase);
+      addOutdoor(scene, phase, returnGateOpen);
     } else {
       addInterior(scene);
     }
@@ -1805,7 +1813,7 @@ function ThreeWalkWorld({
       gamjaSitMap.dispose();
       mount.removeChild(renderer.domElement);
     };
-  }, [calledDogs, canReachEntry, dogsRoadside, isOutdoor, movementLocked, onReachEntry, onReachGate, onReachLiving, onWalkForward, phase]);
+  }, [calledDogs, canReachEntry, dogsRoadside, isOutdoor, movementLocked, onReachEntry, onReachGate, onReachLiving, onWalkForward, phase, returnGateOpen]);
 
   return (
     <div className="three-world" ref={mountRef} aria-label="3D 산책길">
@@ -2002,7 +2010,7 @@ function addInterior(scene: THREE.Scene) {
   scene.add(plant);
 }
 
-function addOutdoor(scene: THREE.Scene, phase: Phase) {
+function addOutdoor(scene: THREE.Scene, phase: Phase, returnGateOpen = false) {
   const isBeforeGate = phase === "garden" || phase === "gate";
   const pathMat = new THREE.MeshStandardMaterial({ color: "#cfc6b5", roughness: 0.82 });
   const parkPathMat = new THREE.MeshStandardMaterial({ color: "#d3c7b0", roughness: 0.86 });
@@ -2075,7 +2083,7 @@ function addOutdoor(scene: THREE.Scene, phase: Phase) {
   }
 
   if (phase === "home" || phase === "enterHome") {
-    const home = makeReturnHome(phase === "enterHome");
+    const home = makeReturnHome(phase === "enterHome", returnGateOpen || phase === "enterHome");
     home.position.set(0, 0, -6.8);
     scene.add(home);
     const welcomeMat = new THREE.MeshStandardMaterial({ color: "#f4dfb9", roughness: 0.72 });
@@ -2121,7 +2129,7 @@ function makeRoadsideHouse() {
   return group;
 }
 
-function makeReturnHome(openDoor: boolean) {
+function makeReturnHome(openDoor: boolean, openGate: boolean) {
   const group = new THREE.Group();
   const wallMat = new THREE.MeshStandardMaterial({ color: "#f4e6d4", roughness: 0.66 });
   const wallSideMat = new THREE.MeshStandardMaterial({ color: "#e8d2bd", roughness: 0.72 });
@@ -2148,6 +2156,9 @@ function makeReturnHome(openDoor: boolean) {
   });
   const stoneMat = new THREE.MeshStandardMaterial({ color: "#d8cab3", roughness: 0.86 });
   const leafMat = new THREE.MeshStandardMaterial({ color: "#5f9b4f", roughness: 0.86 });
+  const wallFenceMat = new THREE.MeshStandardMaterial({ color: "#efe0c7", roughness: 0.78 });
+  const gateMat = new THREE.MeshStandardMaterial({ color: "#1f2524", roughness: 0.42, metalness: 0.18 });
+  const gateHandleMat = new THREE.MeshStandardMaterial({ color: "#d5b36c", roughness: 0.24, metalness: 0.45 });
   const flowerMats = ["#f28aa5", "#fff0a8", "#f7b6d2"].map((color) => new THREE.MeshStandardMaterial({ color, roughness: 0.82 }));
 
   const frontShape = new THREE.Shape();
@@ -2275,6 +2286,59 @@ function makeReturnHome(openDoor: boolean) {
     stone.receiveShadow = true;
     group.add(stone);
   }
+
+  const addFenceWall = (x: number, width: number) => {
+    const wall = new THREE.Mesh(new THREE.BoxGeometry(width, 1.0, 0.22), wallFenceMat);
+    wall.position.set(x, 0.5, -4.05);
+    wall.castShadow = true;
+    wall.receiveShadow = true;
+    group.add(wall);
+    const cap = new THREE.Mesh(new THREE.BoxGeometry(width + 0.16, 0.16, 0.34), trimMat);
+    cap.position.set(x, 1.08, -4.05);
+    cap.castShadow = true;
+    group.add(cap);
+  };
+  addFenceWall(-3.35, 2.35);
+  addFenceWall(3.35, 2.35);
+
+  [-1.92, 1.92].forEach((x) => {
+    const pillar = new THREE.Mesh(new THREE.BoxGeometry(0.38, 1.36, 0.36), wallFenceMat);
+    pillar.position.set(x, 0.68, -4.05);
+    pillar.castShadow = true;
+    pillar.receiveShadow = true;
+    group.add(pillar);
+    const cap = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.16, 0.48), trimMat);
+    cap.position.set(x, 1.44, -4.05);
+    cap.castShadow = true;
+    group.add(cap);
+  });
+
+  const makeGatePanel = (side: -1 | 1) => {
+    const panel = new THREE.Group();
+    const panelWidth = 1.68;
+    const hingeX = side * 1.78;
+    const centerX = side * 0.88;
+    panel.position.set(openGate ? hingeX : centerX, 0, -4.02);
+    panel.rotation.y = openGate ? side * 0.92 : 0;
+    const localCenterX = openGate ? -side * 0.84 : 0;
+    const railTop = new THREE.Mesh(new THREE.BoxGeometry(panelWidth, 0.08, 0.08), gateMat);
+    railTop.position.set(localCenterX, 1.14, 0);
+    const railBottom = new THREE.Mesh(new THREE.BoxGeometry(panelWidth, 0.08, 0.08), gateMat);
+    railBottom.position.set(localCenterX, 0.38, 0);
+    panel.add(railTop, railBottom);
+    for (let i = 0; i < 6; i += 1) {
+      const bar = new THREE.Mesh(new THREE.BoxGeometry(0.065, 1.26, 0.065), gateMat);
+      bar.position.set(localCenterX - 0.7 + i * 0.28, 0.75, 0);
+      bar.castShadow = true;
+      panel.add(bar);
+    }
+    const handle = new THREE.Mesh(new THREE.SphereGeometry(0.08, 16, 10), gateHandleMat);
+    handle.position.set(localCenterX - side * 0.58, 0.78, -0.08);
+    panel.add(handle);
+    group.add(panel);
+  };
+  makeGatePanel(-1);
+  makeGatePanel(1);
 
   [-3.25, 3.25].forEach((x) => {
     const shrub = new THREE.Mesh(new THREE.SphereGeometry(0.55, 18, 12), leafMat);
@@ -2786,6 +2850,7 @@ function SceneContent(props: {
   poopStep: PoopStep;
   carStopped: boolean;
   dogsRoadside: boolean;
+  returnGateOpen: boolean;
   bossLane: Lane;
   bossBlocks: number;
   start: () => void;
@@ -2808,6 +2873,7 @@ function SceneContent(props: {
   dropPoopTool: (tool?: PoopTool) => void;
   setCarStopped: (value: boolean) => void;
   setDogsRoadside: (value: boolean) => void;
+  setReturnGateOpen: (value: boolean) => void;
   finishCar: () => void;
   ignoreDog: () => void;
   blockBoss: () => void;
@@ -2843,6 +2909,35 @@ function SceneContent(props: {
   if (p.phase === "poop") return <PoopTools hasPoopBag={p.hasPoopBag} tool={p.poopTool} step={p.poopStep} setStep={p.setPoopStep} setMessage={p.setMessage} choose={p.choosePoopTool} drop={p.dropPoopTool} />;
   if (p.phase === "run") return <ActionDock><span className="counter">Space {p.runTaps}/18</span></ActionDock>;
   if (p.phase === "car") return <CarSafetyDock carGuide={p.carGuide} carStopped={p.carStopped} dogsRoadside={p.dogsRoadside} setDogsRoadside={p.setDogsRoadside} setMessage={p.setMessage} />;
+  if (p.phase === "home") {
+    return (
+      <ActionDock>
+        {!p.returnGateOpen ? (
+          <button
+            className="gate-action open"
+            onClick={() => {
+              playSound("success");
+              p.setReturnGateOpen(true);
+              p.setMessage("대문이 열렸어요. 이제 현관문을 열어 집으로 들어가볼까요?");
+            }}
+          >
+            대문 열기
+          </button>
+        ) : (
+          <button
+            className="gate-action open"
+            onClick={() => {
+              playSound("success");
+              p.setPhase("enterHome");
+              p.setMessage("현관문이 열렸어요. 루비와 감자가 먼저 집으로 들어가요.");
+            }}
+          >
+            현관문 열기
+          </button>
+        )}
+      </ActionDock>
+    );
+  }
   if (p.phase === "home") {
     return <ActionDock><button onClick={() => { p.setPhase("enterHome"); p.setMessage("현관문이 열렸어요. 루비와 감자가 먼저 집으로 쏙 들어가요."); }}>{"집 안으로 들어가기"}</button></ActionDock>;
   }
