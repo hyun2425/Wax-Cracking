@@ -1003,10 +1003,7 @@ export default function WalkQuestGame() {
               <input
                 ref={commandInputRef}
                 value={input}
-                onChange={(event) => {
-                  if (Date.now() < commandInputUnlockAtRef.current) return;
-                  setInput(event.target.value);
-                }}
+                onChange={(event) => setInput(event.target.value)}
                 onKeyDown={handleCommandKeyDown}
                 placeholder={commandPlaceholder}
                 autoFocus
