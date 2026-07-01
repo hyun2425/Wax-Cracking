@@ -227,7 +227,6 @@ export default function WalkQuestGame() {
     const releaseAt = Date.now() + 500;
     commandInputUnlockAtRef.current = releaseAt;
     const lockTimer = window.setTimeout(() => {
-      setInput("");
       setCommandInputLocked(true);
       commandInputRef.current?.focus();
     }, 0);
@@ -575,7 +574,6 @@ export default function WalkQuestGame() {
 
   function submitCommand(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (commandInputLocked || Date.now() < commandInputUnlockAtRef.current) return;
     const command = input.trim();
     if (!command) return;
     runCommand(command);
@@ -583,10 +581,7 @@ export default function WalkQuestGame() {
   }
 
   function handleCommandKeyDown(event: ReactKeyboardEvent<HTMLInputElement>) {
-    if (commandInputLocked || Date.now() < commandInputUnlockAtRef.current) {
-      event.preventDefault();
-      return;
-    }
+    if (commandInputLocked && ["KeyW", "KeyR", "KeyF"].includes(event.code)) event.preventDefault();
   }
 
   function runCommand(command: string) {
@@ -1041,13 +1036,15 @@ export default function WalkQuestGame() {
                 ref={commandInputRef}
                 value={input}
                 onChange={(event) => {
-                  if (commandInputLocked) return;
-                  setInput(event.target.value);
+                  const nextInput = event.target.value;
+                  if (commandInputLocked && /^[ㅈㄹ\s]+$/.test(nextInput)) {
+                    setInput("");
+                    return;
+                  }
+                  setInput(nextInput);
                 }}
                 onKeyDown={handleCommandKeyDown}
                 placeholder={commandPlaceholder}
-                readOnly={commandInputLocked}
-                aria-disabled={commandInputLocked}
                 autoFocus
               />
               <button type="submit">{"말하기"}</button>
