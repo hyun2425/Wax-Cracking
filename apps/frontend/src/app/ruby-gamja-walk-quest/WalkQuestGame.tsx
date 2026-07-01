@@ -2036,28 +2036,29 @@ function addOutdoor(scene: THREE.Scene, phase: Phase, returnGateOpen = false) {
       grassEdge.receiveShadow = true;
       scene.add(grassEdge);
     });
-    for (let i = 0; i < 42; i += 1) {
+    for (let i = 0; i < 72; i += 1) {
       const side = i % 2 === 0 ? -1 : 1;
-      const x = side * (2.9 + (i % 4) * 0.34);
-      const z = 5.8 - i * 1.35;
+      const x = side * (2.25 + (i % 4) * 0.22);
+      const z = 6.4 - i * 1.05;
       const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.018, 0.18, 6), stemMat);
       stem.position.set(x, 0.13, z);
       scene.add(stem);
-      const flower = new THREE.Mesh(new THREE.SphereGeometry(0.065 + (i % 3) * 0.012, 10, 8), flowerMats[i % flowerMats.length]);
-      flower.scale.set(1.15, 0.55, 1.15);
+      const flower = new THREE.Mesh(new THREE.SphereGeometry(0.09 + (i % 3) * 0.018, 10, 8), flowerMats[i % flowerMats.length]);
+      flower.scale.set(1.25, 0.58, 1.25);
       flower.position.set(x + Math.sin(i) * 0.08, 0.24, z + Math.cos(i * 0.7) * 0.08);
       flower.castShadow = true;
       scene.add(flower);
     }
-    for (let i = 0; i < 7; i += 1) {
+    for (let i = 0; i < 8; i += 1) {
       const shop = makeStreetShop(i % 3);
-      shop.position.set(i % 2 === 0 ? -7.2 : 7.2, 0, -6.5 - i * 12.5);
-      shop.rotation.y = i % 2 === 0 ? Math.PI / 2.7 : -Math.PI / 2.7;
+      shop.position.set(i % 2 === 0 ? -4.85 : 4.85, 0, -2.8 - i * 10.8);
+      shop.rotation.y = i % 2 === 0 ? Math.PI / 2.35 : -Math.PI / 2.35;
+      shop.scale.setScalar(1.18);
       scene.add(shop);
     }
-    for (let i = 0; i < 8; i += 1) {
+    for (let i = 0; i < 10; i += 1) {
       const person = makePedestrian(i % 4);
-      person.position.set(i % 2 === 0 ? -3.9 : 3.9, 0, 2 - i * 10.5);
+      person.position.set(i % 2 === 0 ? -2.95 : 2.95, 0, 3.8 - i * 8.2);
       person.rotation.y = i % 2 === 0 ? 0.25 : -0.25;
       scene.add(person);
     }
@@ -2182,13 +2183,13 @@ function makeStreetShop(seed: number) {
   roof.castShadow = true;
   group.add(roof);
 
-  const awning = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.14, 0.42), awningMat);
+  const awning = new THREE.Mesh(new THREE.BoxGeometry(2.05, 0.18, 0.5), awningMat);
   awning.position.set(0, 1.34, -0.72);
   awning.rotation.x = -0.16;
   awning.castShadow = true;
   group.add(awning);
 
-  const sign = new THREE.Mesh(new THREE.BoxGeometry(1.26, 0.38, 0.08), signMat);
+  const sign = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.42, 0.08), signMat);
   sign.position.set(0, 1.63, -0.61);
   group.add(sign);
 
