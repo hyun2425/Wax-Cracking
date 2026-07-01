@@ -177,6 +177,7 @@ export default function WalkQuestGame() {
   const [phase, setPhase] = useState<Phase>("intro");
   const [message, setMessage] = useState("\uB8E8\uBE44\uC640 \uAC10\uC790\uAC00 \uC0B0\uCC45\uC744 \uAE30\uB2E4\uB9AC\uACE0 \uC788\uC5B4\uC694.");
   const [input, setInput] = useState("");
+  const [commandInputLocked, setCommandInputLocked] = useState(false);
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const [falls, setFalls] = useState(0);
   const [calledDogs, setCalledDogs] = useState(false);
@@ -217,14 +218,38 @@ export default function WalkQuestGame() {
   const useEmptyHome = (phase === "living" && calledDogs) || phase === "excited";
 
   useEffect(() => {
-    commandInputUnlockAtRef.current = needsInput ? Date.now() + 500 : Number.POSITIVE_INFINITY;
-    if (!needsInput) return;
+    if (!needsInput) {
+      commandInputUnlockAtRef.current = Number.POSITIVE_INFINITY;
+      const releaseTimer = window.setTimeout(() => setCommandInputLocked(false), 0);
+      return () => window.clearTimeout(releaseTimer);
+    }
 
-    const timer = window.setTimeout(() => {
+    const releaseAt = Date.now() + 500;
+    commandInputUnlockAtRef.current = releaseAt;
+    const lockTimer = window.setTimeout(() => {
+      setInput("");
+      setCommandInputLocked(true);
       commandInputRef.current?.focus();
+    }, 0);
+    const unlockTimer = window.setTimeout(() => {
+      if (commandInputUnlockAtRef.current !== releaseAt) return;
+      commandInputUnlockAtRef.current = 0;
+      setCommandInputLocked(false);
     }, 500);
 
-    return () => window.clearTimeout(timer);
+    return () => {
+      window.clearTimeout(lockTimer);
+      window.clearTimeout(unlockTimer);
+    };
+  }, [needsInput, phase]);
+
+  useEffect(() => {
+    if (!needsInput) {
+      ignoredCommandKeysRef.current.clear();
+      return;
+    }
+
+    ignoredCommandKeysRef.current = new Set(heldMovementKeysRef.current);
   }, [needsInput, phase]);
 
   useEffect(() => {
@@ -457,6 +482,8 @@ export default function WalkQuestGame() {
 
   useEffect(() => {
     if (timeLeft === null) return;
+    const timedPhases: Phase[] = ["leashMission", "leashZoom", "pull", "run", "car", "barkingDog", "boss", "cat", "catFood"];
+    if (!timedPhases.includes(phase)) return;
     if (timeLeft <= 0) {
       const timeout = window.setTimeout(() => {
         if (phase === "leashMission" || phase === "leashZoom") {
@@ -494,8 +521,11 @@ export default function WalkQuestGame() {
       return () => window.clearTimeout(timeout);
     }
     const timer = window.setTimeout(() => {
-      playSound("timer");
-      setTimeLeft((current) => (current === null ? null : current - 1));
+      setTimeLeft((current) => {
+        if (current === null) return null;
+        playSound("timer");
+        return current - 1;
+      });
     }, 1000);
     return () => window.clearTimeout(timer);
     // Timeout handlers intentionally use the current phase snapshot.
@@ -545,7 +575,7 @@ export default function WalkQuestGame() {
 
   function submitCommand(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (Date.now() < commandInputUnlockAtRef.current) return;
+    if (commandInputLocked || Date.now() < commandInputUnlockAtRef.current) return;
     const command = input.trim();
     if (!command) return;
     runCommand(command);
@@ -553,7 +583,7 @@ export default function WalkQuestGame() {
   }
 
   function handleCommandKeyDown(event: ReactKeyboardEvent<HTMLInputElement>) {
-    if (Date.now() < commandInputUnlockAtRef.current) {
+    if (commandInputLocked || Date.now() < commandInputUnlockAtRef.current) {
       event.preventDefault();
       return;
     }
@@ -711,6 +741,7 @@ export default function WalkQuestGame() {
   function resumeWalk(text: string) {
     setWalkStep((current) => current + 1);
     walkForwardRef.current = 0;
+    setTimeLeft(null);
     setPoopTool(null);
     setPoopStep("ask");
     setCarGuide(false);
@@ -1009,9 +1040,14 @@ export default function WalkQuestGame() {
               <input
                 ref={commandInputRef}
                 value={input}
-                onChange={(event) => setInput(event.target.value)}
+                onChange={(event) => {
+                  if (commandInputLocked) return;
+                  setInput(event.target.value);
+                }}
                 onKeyDown={handleCommandKeyDown}
                 placeholder={commandPlaceholder}
+                readOnly={commandInputLocked}
+                aria-disabled={commandInputLocked}
                 autoFocus
               />
               <button type="submit">{"말하기"}</button>
