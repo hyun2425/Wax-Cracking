@@ -87,7 +87,7 @@ const animal = {
   walkingStepsAudio: "/ruby-gamja/custom/walking-steps.mp3",
 };
 
-type SoundName = "bark" | "happy" | "leash" | "success" | "fall" | "car" | "poop" | "step" | "click";
+type SoundName = "bark" | "happy" | "leash" | "success" | "fall" | "car" | "poop" | "step" | "click" | "timer";
 
 function playSound(name: SoundName) {
   if (typeof window === "undefined") return;
@@ -98,8 +98,8 @@ function playSound(name: SoundName) {
   const gain = ctx.createGain();
   gain.connect(ctx.destination);
   gain.gain.setValueAtTime(0.0001, now);
-  gain.gain.exponentialRampToValueAtTime(name === "car" ? 0.18 : name === "click" ? 0.045 : 0.08, now + 0.015);
-  gain.gain.exponentialRampToValueAtTime(0.0001, now + (name === "click" ? 0.16 : 0.42));
+  gain.gain.exponentialRampToValueAtTime(name === "car" ? 0.18 : name === "click" ? 0.045 : name === "timer" ? 0.055 : 0.08, now + 0.015);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + (name === "click" ? 0.16 : name === "timer" ? 0.18 : 0.42));
 
   const playTone = (frequency: number, start: number, duration: number, type: OscillatorType = "sine") => {
     const osc = ctx.createOscillator();
@@ -113,6 +113,9 @@ function playSound(name: SoundName) {
   if (name === "click") {
     playTone(620, 0, 0.045, "triangle");
     playTone(420, 0.035, 0.055, "sine");
+  } else if (name === "timer") {
+    playTone(880, 0, 0.045, "square");
+    playTone(1180, 0.055, 0.04, "triangle");
   } else if (name === "bark") {
     playTone(240, 0, 0.12, "square");
     playTone(190, 0.14, 0.14, "square");
@@ -134,7 +137,7 @@ function playSound(name: SoundName) {
     playTone(760, 0.09, 0.1, "triangle");
   }
 
-  window.setTimeout(() => void ctx.close(), name === "click" ? 220 : 520);
+  window.setTimeout(() => void ctx.close(), name === "click" || name === "timer" ? 220 : 520);
 }
 
 const callWords = ["\uB8E8\uBE44", "\uAC10\uC790", "\uB8E8\uAC10"];
@@ -490,7 +493,10 @@ export default function WalkQuestGame() {
       }, 0);
       return () => window.clearTimeout(timeout);
     }
-    const timer = window.setTimeout(() => setTimeLeft((current) => (current === null ? null : current - 1)), 1000);
+    const timer = window.setTimeout(() => {
+      playSound("timer");
+      setTimeLeft((current) => (current === null ? null : current - 1));
+    }, 1000);
     return () => window.clearTimeout(timer);
     // Timeout handlers intentionally use the current phase snapshot.
     // eslint-disable-next-line react-hooks/exhaustive-deps
