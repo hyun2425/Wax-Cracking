@@ -2026,6 +2026,9 @@ function addOutdoor(scene: THREE.Scene, phase: Phase, returnGateOpen = false) {
 
   if (!isBeforeGate) {
     const edgeMat = new THREE.MeshStandardMaterial({ color: "#a8c987", roughness: 0.92 });
+    const flowerColors = ["#f7a6bd", "#ffe17d", "#f5f6ff", "#bfe8ff", "#ffb36f"];
+    const flowerMats = flowerColors.map((color) => new THREE.MeshStandardMaterial({ color, roughness: 0.72 }));
+    const stemMat = new THREE.MeshStandardMaterial({ color: "#4f8b43", roughness: 0.88 });
     [-3.45, 3.45].forEach((x) => {
       const grassEdge = new THREE.Mesh(new THREE.PlaneGeometry(1.7, 112), edgeMat);
       grassEdge.rotation.x = -Math.PI / 2;
@@ -2033,6 +2036,31 @@ function addOutdoor(scene: THREE.Scene, phase: Phase, returnGateOpen = false) {
       grassEdge.receiveShadow = true;
       scene.add(grassEdge);
     });
+    for (let i = 0; i < 42; i += 1) {
+      const side = i % 2 === 0 ? -1 : 1;
+      const x = side * (2.9 + (i % 4) * 0.34);
+      const z = 5.8 - i * 1.35;
+      const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.018, 0.18, 6), stemMat);
+      stem.position.set(x, 0.13, z);
+      scene.add(stem);
+      const flower = new THREE.Mesh(new THREE.SphereGeometry(0.065 + (i % 3) * 0.012, 10, 8), flowerMats[i % flowerMats.length]);
+      flower.scale.set(1.15, 0.55, 1.15);
+      flower.position.set(x + Math.sin(i) * 0.08, 0.24, z + Math.cos(i * 0.7) * 0.08);
+      flower.castShadow = true;
+      scene.add(flower);
+    }
+    for (let i = 0; i < 7; i += 1) {
+      const shop = makeStreetShop(i % 3);
+      shop.position.set(i % 2 === 0 ? -7.2 : 7.2, 0, -6.5 - i * 12.5);
+      shop.rotation.y = i % 2 === 0 ? Math.PI / 2.7 : -Math.PI / 2.7;
+      scene.add(shop);
+    }
+    for (let i = 0; i < 8; i += 1) {
+      const person = makePedestrian(i % 4);
+      person.position.set(i % 2 === 0 ? -3.9 : 3.9, 0, 2 - i * 10.5);
+      person.rotation.y = i % 2 === 0 ? 0.25 : -0.25;
+      scene.add(person);
+    }
     for (let i = 0; i < 54; i += 1) {
       const pebble = new THREE.Mesh(new THREE.CylinderGeometry(0.08 + (i % 3) * 0.025, 0.08, 0.018, 10), new THREE.MeshStandardMaterial({ color: i % 2 ? "#b9ad98" : "#e5dcc8", roughness: 0.9 }));
       pebble.rotation.x = -Math.PI / 2;
@@ -2126,6 +2154,90 @@ function makeRoadsideHouse() {
   rail.position.set(0, 0.5, -0.95);
   group.add(rail);
   group.rotation.y = -0.45;
+  return group;
+}
+
+function makeStreetShop(seed: number) {
+  const group = new THREE.Group();
+  const palettes = [
+    { wall: "#f6dfc8", roof: "#d66f67", awning: "#fff2c4", sign: "#7a9c5a" },
+    { wall: "#dfeef4", roof: "#5c83a6", awning: "#f8b4c5", sign: "#b57d44" },
+    { wall: "#f4ead8", roof: "#8f6f54", awning: "#bfe5b8", sign: "#bf6f85" },
+  ];
+  const palette = palettes[seed % palettes.length];
+  const wallMat = new THREE.MeshStandardMaterial({ color: palette.wall, roughness: 0.74 });
+  const roofMat = new THREE.MeshStandardMaterial({ color: palette.roof, roughness: 0.58 });
+  const awningMat = new THREE.MeshStandardMaterial({ color: palette.awning, roughness: 0.62 });
+  const signMat = new THREE.MeshStandardMaterial({ color: palette.sign, roughness: 0.48 });
+  const glassMat = new THREE.MeshStandardMaterial({ color: "#d5f0f7", roughness: 0.18, transparent: true, opacity: 0.72 });
+
+  const body = new THREE.Mesh(new THREE.BoxGeometry(2.2, 1.8, 1.1), wallMat);
+  body.position.set(0, 0.9, 0);
+  body.castShadow = true;
+  body.receiveShadow = true;
+  group.add(body);
+
+  const roof = new THREE.Mesh(new THREE.BoxGeometry(2.45, 0.18, 1.28), roofMat);
+  roof.position.set(0, 1.9, 0);
+  roof.castShadow = true;
+  group.add(roof);
+
+  const awning = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.14, 0.42), awningMat);
+  awning.position.set(0, 1.34, -0.72);
+  awning.rotation.x = -0.16;
+  awning.castShadow = true;
+  group.add(awning);
+
+  const sign = new THREE.Mesh(new THREE.BoxGeometry(1.26, 0.38, 0.08), signMat);
+  sign.position.set(0, 1.63, -0.61);
+  group.add(sign);
+
+  [-0.48, 0.48].forEach((x) => {
+    const window = new THREE.Mesh(new THREE.BoxGeometry(0.54, 0.55, 0.06), glassMat);
+    window.position.set(x, 0.9, -0.58);
+    group.add(window);
+  });
+
+  const door = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.9, 0.08), new THREE.MeshStandardMaterial({ color: "#8b6a4f", roughness: 0.62 }));
+  door.position.set(0, 0.5, -0.59);
+  group.add(door);
+
+  return group;
+}
+
+function makePedestrian(seed: number) {
+  const group = new THREE.Group();
+  const shirtColors = ["#6f8fc9", "#d88b78", "#8ab879", "#c79bd9"];
+  const pantsColors = ["#4e4b46", "#38546b", "#6b5846", "#3f4c3f"];
+  const skinMat = new THREE.MeshStandardMaterial({ color: "#d8a77d", roughness: 0.72 });
+  const shirtMat = new THREE.MeshStandardMaterial({ color: shirtColors[seed % shirtColors.length], roughness: 0.78 });
+  const pantsMat = new THREE.MeshStandardMaterial({ color: pantsColors[seed % pantsColors.length], roughness: 0.82 });
+  const hairMat = new THREE.MeshStandardMaterial({ color: "#33251d", roughness: 0.86 });
+
+  const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.18, 0.58, 6, 12), shirtMat);
+  body.position.set(0, 0.9, 0);
+  body.castShadow = true;
+  group.add(body);
+
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.18, 14, 10), skinMat);
+  head.position.set(0, 1.38, 0);
+  head.castShadow = true;
+  group.add(head);
+
+  const hair = new THREE.Mesh(new THREE.SphereGeometry(0.19, 12, 8), hairMat);
+  hair.scale.set(1, 0.5, 1);
+  hair.position.set(0, 1.5, -0.01);
+  group.add(hair);
+
+  [-0.09, 0.09].forEach((x, index) => {
+    const leg = new THREE.Mesh(new THREE.CapsuleGeometry(0.055, 0.46, 5, 8), pantsMat);
+    leg.position.set(x, 0.36, index % 2 ? 0.04 : -0.04);
+    leg.rotation.x = index % 2 ? 0.12 : -0.12;
+    leg.castShadow = true;
+    group.add(leg);
+  });
+
+  group.scale.setScalar(0.9);
   return group;
 }
 
