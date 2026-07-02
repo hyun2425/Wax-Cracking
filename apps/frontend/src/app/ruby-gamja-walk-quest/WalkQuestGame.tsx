@@ -922,6 +922,7 @@ export default function WalkQuestGame() {
     if (phase === "barkingDog" || phase === "boss" || phase === "car") return "alert";
     return "walk";
   }, [calledDogs, dogsSitting, phase]);
+  const showWalkPathDecor = ["walk", "pull", "poop", "run", "car", "barkingDog", "boss", "cat", "catFood"].includes(phase);
 
   const commandPlaceholder = phase === "pull"
     ? "천천히"
@@ -982,6 +983,7 @@ export default function WalkQuestGame() {
           )}
           <div className="first-person" />
           <SceneFurniture phase={phase} />
+          {showWalkPathDecor && <WalkPathDecor />}
           {showDogs && <DogLayer pose={dogPose} phase={phase} rubyCalm={rubyCalm} gamjaQuiet={gamjaQuiet} hearts={hearts || phase === "clear"} peePulse={peePulse} />}
           <SceneContent
             phase={phase}
@@ -3129,6 +3131,216 @@ function SceneFurniture({ phase }: { phase: Phase }) {
           box-shadow: 0 -28px 70px rgba(45, 80, 38, 0.22);
           transform: translateX(-50%) perspective(540px) rotateX(66deg);
           transform-origin: bottom;
+        }
+      `}</style>
+    </div>
+  );
+}
+
+function WalkPathDecor() {
+  return (
+    <div className="walk-path-decor" aria-hidden="true">
+      <div className="path-side-bloom left">
+        <span /><span /><span /><span /><span /><span />
+      </div>
+      <div className="path-side-bloom right">
+        <span /><span /><span /><span /><span /><span />
+      </div>
+      <div className="path-flower-strip left" />
+      <div className="path-flower-strip right" />
+      <div className="path-shop left">
+        <i />
+        <span />
+      </div>
+      <div className="path-shop right">
+        <i />
+        <span />
+      </div>
+      <div className="path-bench" />
+      <div className="path-lamp left" />
+      <div className="path-lamp right" />
+      <style jsx>{`
+        .walk-path-decor {
+          position: absolute;
+          inset: 0;
+          z-index: 6;
+          pointer-events: none;
+          overflow: hidden;
+        }
+        .path-side-bloom {
+          position: absolute;
+          bottom: clamp(74px, 10vh, 116px);
+          display: flex;
+          align-items: flex-end;
+          gap: 12px;
+          filter: drop-shadow(0 10px 10px rgba(43, 69, 28, 0.2));
+        }
+        .path-side-bloom.left {
+          left: clamp(22px, 4vw, 70px);
+        }
+        .path-side-bloom.right {
+          right: clamp(22px, 4vw, 70px);
+          transform: scaleX(-1);
+        }
+        .path-side-bloom span {
+          position: relative;
+          width: 18px;
+          height: 54px;
+          border-radius: 999px;
+          background: linear-gradient(180deg, transparent 0 56%, #4f8f41 57% 100%);
+        }
+        .path-side-bloom span::before {
+          content: "";
+          position: absolute;
+          left: 50%;
+          top: 1px;
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          background:
+            radial-gradient(circle at 50% 50%, #ffe27a 0 17%, transparent 18%),
+            radial-gradient(circle at 50% 8%, var(--petal, #f47a9b) 0 30%, transparent 31%),
+            radial-gradient(circle at 90% 50%, var(--petal, #f47a9b) 0 30%, transparent 31%),
+            radial-gradient(circle at 50% 92%, var(--petal, #f47a9b) 0 30%, transparent 31%),
+            radial-gradient(circle at 10% 50%, var(--petal, #f47a9b) 0 30%, transparent 31%);
+          transform: translateX(-50%);
+        }
+        .path-side-bloom span:nth-child(2) { --petal: #f8b6d0; height: 42px; }
+        .path-side-bloom span:nth-child(3) { --petal: #b6e8ff; height: 62px; }
+        .path-side-bloom span:nth-child(4) { --petal: #ffd36f; height: 46px; }
+        .path-side-bloom span:nth-child(5) { --petal: #cfa8ff; height: 58px; }
+        .path-side-bloom span:nth-child(6) { --petal: #fff5f6; height: 40px; }
+        .path-flower-strip {
+          position: absolute;
+          bottom: clamp(126px, 18vh, 190px);
+          width: clamp(210px, 23vw, 360px);
+          height: 70px;
+          border-radius: 50%;
+          opacity: 0.88;
+          background:
+            radial-gradient(circle at 8% 62%, #f5789e 0 8px, transparent 9px),
+            radial-gradient(circle at 18% 42%, #fff0a0 0 7px, transparent 8px),
+            radial-gradient(circle at 28% 56%, #c6eaff 0 8px, transparent 9px),
+            radial-gradient(circle at 43% 45%, #f9a6bc 0 7px, transparent 8px),
+            radial-gradient(circle at 57% 64%, #ffe16f 0 8px, transparent 9px),
+            radial-gradient(circle at 72% 48%, #dcb7ff 0 7px, transparent 8px),
+            radial-gradient(circle at 84% 64%, #f47a9b 0 8px, transparent 9px),
+            linear-gradient(180deg, rgba(93, 149, 55, 0.18), rgba(59, 112, 45, 0.02));
+          filter: blur(0.1px) drop-shadow(0 12px 12px rgba(45, 74, 29, 0.16));
+        }
+        .path-flower-strip.left {
+          left: 4%;
+          transform: rotate(-8deg);
+        }
+        .path-flower-strip.right {
+          right: 5%;
+          transform: rotate(8deg) scaleX(-1);
+        }
+        .path-shop {
+          position: absolute;
+          top: clamp(126px, 21vh, 210px);
+          width: clamp(108px, 10vw, 150px);
+          height: clamp(82px, 8vw, 112px);
+          border-radius: 18px 18px 10px 10px;
+          background:
+            linear-gradient(180deg, rgba(255,255,255,0.6), transparent 42%),
+            linear-gradient(180deg, #f7dfbd, #bf8c5d);
+          box-shadow: 0 22px 38px rgba(52, 40, 28, 0.2);
+        }
+        .path-shop.left {
+          left: clamp(16px, 5vw, 86px);
+          transform: perspective(360px) rotateY(18deg);
+        }
+        .path-shop.right {
+          right: clamp(16px, 5vw, 86px);
+          transform: perspective(360px) rotateY(-18deg);
+        }
+        .path-shop::before {
+          content: "";
+          position: absolute;
+          left: 8px;
+          right: 8px;
+          top: -18px;
+          height: 30px;
+          border-radius: 12px 12px 5px 5px;
+          background: repeating-linear-gradient(90deg, #f47f98 0 16px, #fff1c9 16px 32px);
+          box-shadow: 0 8px 14px rgba(51, 36, 24, 0.14);
+        }
+        .path-shop i {
+          position: absolute;
+          left: 18px;
+          top: 30px;
+          width: 28px;
+          height: 48px;
+          border-radius: 8px 8px 3px 3px;
+          background: linear-gradient(180deg, #765337, #4b3224);
+        }
+        .path-shop span {
+          position: absolute;
+          right: 14px;
+          top: 28px;
+          width: 48px;
+          height: 30px;
+          border-radius: 8px;
+          background: linear-gradient(135deg, rgba(174, 222, 232, 0.92), rgba(255,255,255,0.5));
+          box-shadow: inset 0 0 0 2px rgba(255,255,255,0.45);
+        }
+        .path-bench {
+          position: absolute;
+          right: clamp(150px, 16vw, 260px);
+          bottom: clamp(126px, 16vh, 180px);
+          width: 126px;
+          height: 42px;
+          border-radius: 12px;
+          background:
+            linear-gradient(180deg, #8f5e37 0 18px, transparent 19px 23px, #8f5e37 24px 100%);
+          box-shadow: 0 15px 22px rgba(63, 45, 28, 0.22);
+          transform: perspective(360px) rotateY(-18deg) rotateZ(-2deg);
+        }
+        .path-bench::before,
+        .path-bench::after {
+          content: "";
+          position: absolute;
+          bottom: -26px;
+          width: 10px;
+          height: 28px;
+          border-radius: 999px;
+          background: #5d4029;
+        }
+        .path-bench::before { left: 20px; }
+        .path-bench::after { right: 20px; }
+        .path-lamp {
+          position: absolute;
+          top: clamp(118px, 18vh, 176px);
+          width: 10px;
+          height: clamp(116px, 16vh, 158px);
+          border-radius: 999px;
+          background: linear-gradient(180deg, #72835d, #38452f);
+          box-shadow: 0 16px 28px rgba(45, 61, 38, 0.18);
+        }
+        .path-lamp.left { left: 19%; }
+        .path-lamp.right { right: 18%; transform: scale(0.84); top: clamp(154px, 22vh, 216px); }
+        .path-lamp::before {
+          content: "";
+          position: absolute;
+          left: 50%;
+          top: -28px;
+          width: 42px;
+          height: 34px;
+          border-radius: 50% 50% 12px 12px;
+          background: radial-gradient(circle at 50% 40%, #fff2a7 0 34%, #778866 35% 100%);
+          transform: translateX(-50%);
+        }
+        @media (max-width: 760px) {
+          .path-shop,
+          .path-bench,
+          .path-lamp {
+            opacity: 0.72;
+            transform: scale(0.72);
+          }
+          .path-side-bloom span:nth-child(n+5) {
+            display: none;
+          }
         }
       `}</style>
     </div>
