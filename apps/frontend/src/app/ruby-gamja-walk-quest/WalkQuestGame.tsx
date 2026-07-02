@@ -1517,7 +1517,7 @@ function ThreeWalkWorld({
     reachedEntryRef.current = false;
     if (phase === "upstairs") positionRef.current = { x: -3.6, z: 8.2, yaw: 0 };
     if (phase === "garden") positionRef.current = { x: 0, z: 6.8, yaw: 0 };
-    if (phase === "gate") positionRef.current = { x: 0, z: -5.2, yaw: 0 };
+    if (phase === "gate") positionRef.current = { x: 0, z: -3.95, yaw: 0 };
     if (["walk", "pull", "poop", "run", "car", "barkingDog", "boss", "cat", "catFood", "home", "enterHome"].includes(phase)) positionRef.current = { x: 0, z: 7.2, yaw: 0 };
 
     const width = Math.max(1, mount.clientWidth);
@@ -1676,7 +1676,7 @@ function ThreeWalkWorld({
         onReachEntry?.();
       }
 
-      if (phase === "garden" && !reachedEntryRef.current && pos.z < -5.15) {
+      if (phase === "garden" && !reachedEntryRef.current && pos.z < -4.15) {
         reachedEntryRef.current = true;
         onReachGate?.();
       }
