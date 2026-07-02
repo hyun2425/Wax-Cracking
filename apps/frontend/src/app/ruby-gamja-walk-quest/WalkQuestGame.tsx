@@ -36,6 +36,7 @@ type PoopTool = "bag" | "leaf" | "sock" | null;
 type PoopStep = "ask" | "bagCheck" | "leafAsk" | "leafReady" | "sockAsk" | "sockReady";
 
 const movementKeyCodes = ["KeyW", "KeyA", "KeyS", "KeyD"];
+const movementJamoPattern = /[\u3147\u3148\u3139]{2,}/g;
 
 function randomLane(): Lane {
   const lanes: Lane[] = ["left", "center", "right"];
@@ -588,6 +589,10 @@ export default function WalkQuestGame() {
       event.preventDefault();
       return;
     }
+    if (event.repeat && /^[\u3147\u3148\u3139]$/.test(event.key)) {
+      event.preventDefault();
+      return;
+    }
     if (commandInputLocked && event.key === "Enter" && !input.trim()) event.preventDefault();
   }
 
@@ -1047,7 +1052,7 @@ export default function WalkQuestGame() {
                 value={input}
                 onChange={(event) => {
                   const nextInput = event.target.value;
-                  const cleanedInput = nextInput.replace(/[ㅈㄹ]{2,}/g, "");
+                  const cleanedInput = nextInput.replace(movementJamoPattern, "");
                   setInput(cleanedInput);
                 }}
                 onKeyDown={handleCommandKeyDown}
@@ -2036,16 +2041,17 @@ function addOutdoor(scene: THREE.Scene, phase: Phase, returnGateOpen = false) {
       grassEdge.receiveShadow = true;
       scene.add(grassEdge);
     });
-    for (let i = 0; i < 72; i += 1) {
+    for (let i = 0; i < 96; i += 1) {
       const side = i % 2 === 0 ? -1 : 1;
-      const x = side * (2.25 + (i % 4) * 0.22);
-      const z = 6.4 - i * 1.05;
-      const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.018, 0.18, 6), stemMat);
-      stem.position.set(x, 0.13, z);
+      const x = side * (1.95 + (i % 5) * 0.24);
+      const z = 7.8 - i * 0.82;
+      const scale = i < 24 ? 1.75 : 1;
+      const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.014 * scale, 0.02 * scale, 0.2 * scale, 6), stemMat);
+      stem.position.set(x, 0.13 * scale, z);
       scene.add(stem);
-      const flower = new THREE.Mesh(new THREE.SphereGeometry(0.09 + (i % 3) * 0.018, 10, 8), flowerMats[i % flowerMats.length]);
-      flower.scale.set(1.25, 0.58, 1.25);
-      flower.position.set(x + Math.sin(i) * 0.08, 0.24, z + Math.cos(i * 0.7) * 0.08);
+      const flower = new THREE.Mesh(new THREE.SphereGeometry((0.1 + (i % 3) * 0.022) * scale, 10, 8), flowerMats[i % flowerMats.length]);
+      flower.scale.set(1.35, 0.62, 1.35);
+      flower.position.set(x + Math.sin(i) * 0.1, 0.25 * scale, z + Math.cos(i * 0.7) * 0.08);
       flower.castShadow = true;
       scene.add(flower);
     }
@@ -2752,9 +2758,34 @@ function DogSprite({
 }
 
 function SceneFurniture({ phase }: { phase: Phase }) {
+  const showWalkDecor = ["walk", "pull", "poop", "run", "car", "barkingDog", "boss", "cat", "catFood"].includes(phase);
   return (
     <div className="furniture">
-      {["walk", "pull", "poop", "run", "car", "barkingDog", "boss", "cat"].includes(phase) && <div className="road-perspective" />}
+      {showWalkDecor && (
+        <>
+          <div className="road-perspective" />
+          <div className="walk-decor" aria-hidden="true">
+            <div className="flower-bed flower-bed-left">
+              <span /><span /><span /><span /><span /><span /><span />
+            </div>
+            <div className="flower-bed flower-bed-right">
+              <span /><span /><span /><span /><span /><span /><span />
+            </div>
+            <div className="street-shop street-shop-left">
+              <b>꽃집</b>
+              <i />
+            </div>
+            <div className="street-shop street-shop-right">
+              <b>간식가게</b>
+              <i />
+            </div>
+            <div className="walker walker-left" />
+            <div className="walker walker-right" />
+            <div className="lamp-post lamp-left" />
+            <div className="lamp-post lamp-right" />
+          </div>
+        </>
+      )}
       <style jsx>{`
         .furniture {
           position: absolute;
@@ -2762,6 +2793,162 @@ function SceneFurniture({ phase }: { phase: Phase }) {
           z-index: 2;
           pointer-events: none;
         }
+        .walk-decor {
+          position: absolute;
+          inset: 0;
+          z-index: 2;
+          overflow: hidden;
+        }
+        .flower-bed {
+          position: absolute;
+          bottom: 66px;
+          display: flex;
+          align-items: flex-end;
+          gap: 8px;
+          filter: drop-shadow(0 8px 8px rgba(46, 76, 33, 0.22));
+        }
+        .flower-bed-left {
+          left: clamp(30px, 8vw, 110px);
+          transform: rotate(-4deg);
+        }
+        .flower-bed-right {
+          right: clamp(28px, 7vw, 100px);
+          transform: rotate(4deg) scaleX(-1);
+        }
+        .flower-bed span {
+          position: relative;
+          width: 16px;
+          height: 38px;
+          border-radius: 999px;
+          background: linear-gradient(180deg, transparent 0 55%, #4f8f40 55% 100%);
+        }
+        .flower-bed span::before {
+          content: "";
+          position: absolute;
+          left: 50%;
+          top: 0;
+          width: 24px;
+          height: 24px;
+          border-radius: 50%;
+          background:
+            radial-gradient(circle at 50% 50%, #ffd867 0 20%, transparent 21%),
+            radial-gradient(circle at 50% 12%, var(--flower, #f28aa5) 0 28%, transparent 29%),
+            radial-gradient(circle at 88% 50%, var(--flower, #f28aa5) 0 28%, transparent 29%),
+            radial-gradient(circle at 50% 88%, var(--flower, #f28aa5) 0 28%, transparent 29%),
+            radial-gradient(circle at 12% 50%, var(--flower, #f28aa5) 0 28%, transparent 29%);
+          transform: translateX(-50%);
+        }
+        .flower-bed span:nth-child(2) { --flower: #ffe17d; height: 30px; }
+        .flower-bed span:nth-child(3) { --flower: #bfe8ff; height: 44px; }
+        .flower-bed span:nth-child(4) { --flower: #ffb36f; height: 34px; }
+        .flower-bed span:nth-child(5) { --flower: #dcb7ff; height: 48px; }
+        .flower-bed span:nth-child(6) { --flower: #f5f6ff; height: 32px; }
+        .flower-bed span:nth-child(7) { --flower: #f7a6bd; height: 40px; }
+        .street-shop {
+          position: absolute;
+          top: clamp(150px, 24vh, 230px);
+          width: clamp(118px, 12vw, 168px);
+          height: clamp(86px, 9vw, 118px);
+          border-radius: 18px 18px 10px 10px;
+          background:
+            linear-gradient(180deg, rgba(255, 255, 255, 0.62), transparent 42%),
+            linear-gradient(180deg, #f8e2c7, #d3a879);
+          box-shadow: 0 20px 42px rgba(56, 43, 30, 0.22);
+          transform: perspective(420px) rotateY(var(--shop-tilt, 20deg));
+        }
+        .street-shop::before {
+          content: "";
+          position: absolute;
+          left: 10px;
+          right: 10px;
+          top: -20px;
+          height: 30px;
+          border-radius: 12px 12px 5px 5px;
+          background: repeating-linear-gradient(90deg, #f48c9f 0 18px, #fff5d8 18px 36px);
+          box-shadow: 0 8px 16px rgba(50, 35, 26, 0.15);
+        }
+        .street-shop b {
+          position: absolute;
+          left: 14px;
+          top: 22px;
+          padding: 5px 9px;
+          border-radius: 999px;
+          background: rgba(255, 250, 238, 0.92);
+          color: #5a3b26;
+          font-size: 0.95rem;
+          font-weight: 950;
+        }
+        .street-shop i {
+          position: absolute;
+          left: 18px;
+          right: 18px;
+          bottom: 16px;
+          height: 26px;
+          border-radius: 8px;
+          background: linear-gradient(135deg, rgba(166, 218, 232, 0.82), rgba(255, 255, 255, 0.45));
+          box-shadow: inset 0 0 0 2px rgba(255,255,255,0.45);
+        }
+        .street-shop-left {
+          left: clamp(10px, 2.5vw, 42px);
+          --shop-tilt: 24deg;
+        }
+        .street-shop-right {
+          right: clamp(12px, 3vw, 46px);
+          --shop-tilt: -24deg;
+        }
+        .walker {
+          position: absolute;
+          bottom: 190px;
+          width: 34px;
+          height: 86px;
+          border-radius: 22px 22px 12px 12px;
+          background: linear-gradient(180deg, #f3c5a5 0 20%, #506f9d 20% 62%, #4a372d 62% 100%);
+          box-shadow: 0 16px 24px rgba(55, 40, 29, 0.2);
+          opacity: 0.88;
+        }
+        .walker::before {
+          content: "";
+          position: absolute;
+          left: 50%;
+          top: -24px;
+          width: 27px;
+          height: 27px;
+          border-radius: 50%;
+          background: #f3c5a5;
+          transform: translateX(-50%);
+        }
+        .walker-left {
+          left: 23%;
+          transform: scale(0.74) rotate(-2deg);
+        }
+        .walker-right {
+          right: 21%;
+          bottom: 236px;
+          transform: scale(0.54) rotate(4deg);
+          opacity: 0.72;
+        }
+        .lamp-post {
+          position: absolute;
+          top: 112px;
+          width: 10px;
+          height: 158px;
+          border-radius: 999px;
+          background: linear-gradient(180deg, #5e6e55, #34402f);
+          box-shadow: 0 16px 28px rgba(45, 61, 38, 0.22);
+        }
+        .lamp-post::before {
+          content: "";
+          position: absolute;
+          left: 50%;
+          top: -30px;
+          width: 44px;
+          height: 36px;
+          border-radius: 50% 50% 12px 12px;
+          background: radial-gradient(circle at 50% 40%, #fff6b9 0 36%, #6f7c61 37% 100%);
+          transform: translateX(-50%);
+        }
+        .lamp-left { left: 17%; }
+        .lamp-right { right: 16%; top: 150px; transform: scale(0.78); }
         .stairs-real {
           position: absolute;
           left: 8%;
