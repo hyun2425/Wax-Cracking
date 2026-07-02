@@ -2043,9 +2043,26 @@ function addOutdoor(scene: THREE.Scene, phase: Phase, returnGateOpen = false) {
       grassEdge.receiveShadow = true;
       scene.add(grassEdge);
     });
+    for (let i = 0; i < 12; i += 1) {
+      const side = i % 2 === 0 ? -1 : 1;
+      const row = Math.floor(i / 2);
+      const patch = makeVisibleFlowerPatch(i);
+      patch.position.set(side * (2.15 + (row % 2) * 0.22), 0.08, 5.8 - row * 8.5);
+      patch.rotation.y = side * -0.28;
+      patch.scale.setScalar(row < 2 ? 1.45 : 1.1);
+      scene.add(patch);
+    }
+    for (let i = 0; i < 5; i += 1) {
+      const side = i % 2 === 0 ? 1 : -1;
+      const bench = makeParkBench();
+      bench.position.set(side * 2.8, 0.08, 1.2 - i * 14);
+      bench.rotation.y = side > 0 ? -0.68 : 0.68;
+      bench.scale.setScalar(i === 0 ? 1.25 : 1);
+      scene.add(bench);
+    }
     for (let i = 0; i < 96; i += 1) {
       const side = i % 2 === 0 ? -1 : 1;
-      const x = side * (1.95 + (i % 5) * 0.24);
+      const x = side * (1.62 + (i % 5) * 0.18);
       const z = 7.8 - i * 0.82;
       const scale = i < 24 ? 1.75 : 1;
       const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.014 * scale, 0.02 * scale, 0.2 * scale, 6), stemMat);
@@ -2059,15 +2076,16 @@ function addOutdoor(scene: THREE.Scene, phase: Phase, returnGateOpen = false) {
     }
     for (let i = 0; i < 8; i += 1) {
       const shop = makeStreetShop(i % 3);
-      shop.position.set(i % 2 === 0 ? -4.85 : 4.85, 0, -2.8 - i * 10.8);
+      shop.position.set(i % 2 === 0 ? -3.55 : 3.55, 0, 2.5 - i * 10.8);
       shop.rotation.y = i % 2 === 0 ? Math.PI / 2.35 : -Math.PI / 2.35;
-      shop.scale.setScalar(1.18);
+      shop.scale.setScalar(i < 2 ? 1.55 : 1.28);
       scene.add(shop);
     }
     for (let i = 0; i < 10; i += 1) {
       const person = makePedestrian(i % 4);
-      person.position.set(i % 2 === 0 ? -2.95 : 2.95, 0, 3.8 - i * 8.2);
+      person.position.set(i % 2 === 0 ? -2.15 : 2.15, 0, 4.6 - i * 8.2);
       person.rotation.y = i % 2 === 0 ? 0.25 : -0.25;
+      person.scale.setScalar(i < 2 ? 1.18 : 1);
       scene.add(person);
     }
     for (let i = 0; i < 54; i += 1) {
@@ -2140,6 +2158,60 @@ function addOutdoor(scene: THREE.Scene, phase: Phase, returnGateOpen = false) {
       scene.add(trunk);
     }
   });
+}
+
+function makeVisibleFlowerPatch(seed = 0) {
+  const group = new THREE.Group();
+  const soilMat = new THREE.MeshStandardMaterial({ color: "#6d4c33", roughness: 0.92 });
+  const leafMat = new THREE.MeshStandardMaterial({ color: "#4f8f40", roughness: 0.84 });
+  const colors = ["#f47a9b", "#f8b6d0", "#ffe16f", "#b7e9ff", "#d6b1ff", "#fff3bd"];
+  const flowerMats = colors.map((color) => new THREE.MeshStandardMaterial({ color, roughness: 0.66 }));
+  const soil = new THREE.Mesh(new THREE.CylinderGeometry(0.48, 0.58, 0.08, 18), soilMat);
+  soil.scale.set(1.55, 1, 0.72);
+  soil.position.y = 0.03;
+  soil.castShadow = true;
+  soil.receiveShadow = true;
+  group.add(soil);
+
+  for (let i = 0; i < 9; i += 1) {
+    const angle = (i / 9) * Math.PI * 2 + seed * 0.23;
+    const radius = 0.2 + (i % 3) * 0.09;
+    const x = Math.cos(angle) * radius * 1.45;
+    const z = Math.sin(angle) * radius * 0.72;
+    const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.018, 0.18 + (i % 2) * 0.05, 6), leafMat);
+    stem.position.set(x, 0.14, z);
+    group.add(stem);
+    const bloom = new THREE.Mesh(new THREE.SphereGeometry(0.075 + (i % 2) * 0.02, 12, 8), flowerMats[(i + seed) % flowerMats.length]);
+    bloom.scale.set(1.35, 0.58, 1.35);
+    bloom.position.set(x, 0.27 + (i % 2) * 0.04, z);
+    bloom.castShadow = true;
+    group.add(bloom);
+  }
+
+  return group;
+}
+
+function makeParkBench() {
+  const group = new THREE.Group();
+  const woodMat = new THREE.MeshStandardMaterial({ color: "#8d5a35", roughness: 0.62 });
+  const metalMat = new THREE.MeshStandardMaterial({ color: "#4a4d45", roughness: 0.55, metalness: 0.12 });
+  for (let i = 0; i < 3; i += 1) {
+    const plank = new THREE.Mesh(new THREE.BoxGeometry(1.45, 0.08, 0.12), woodMat);
+    plank.position.set(0, 0.36 + i * 0.16, -0.08 - i * 0.04);
+    plank.castShadow = true;
+    group.add(plank);
+  }
+  const seat = new THREE.Mesh(new THREE.BoxGeometry(1.55, 0.1, 0.5), woodMat);
+  seat.position.set(0, 0.25, 0.25);
+  seat.castShadow = true;
+  group.add(seat);
+  [-0.55, 0.55].forEach((x) => {
+    const leg = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.34, 0.08), metalMat);
+    leg.position.set(x, 0.07, 0.25);
+    leg.castShadow = true;
+    group.add(leg);
+  });
+  return group;
 }
 
 function makeRoadsideHouse() {
