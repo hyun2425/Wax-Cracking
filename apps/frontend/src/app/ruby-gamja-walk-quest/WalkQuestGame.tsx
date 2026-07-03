@@ -21,6 +21,7 @@ type Phase =
   | "poop"
   | "run"
   | "car"
+  | "sniff"
   | "barkingDog"
   | "boss"
   | "cat"
@@ -34,6 +35,7 @@ type Dog = "ruby" | "gamja";
 type Lane = "left" | "center" | "right";
 type PoopTool = "bag" | "leaf" | "sock" | null;
 type PoopStep = "ask" | "bagCheck" | "leafAsk" | "leafReady" | "sockAsk" | "sockReady";
+type MiniEvent = "flowerSniff" | "puddle" | "neighborHello";
 
 const movementKeyCodes = ["KeyW", "KeyA", "KeyS", "KeyD"];
 const movementJamoPattern = /[\u3147\u3148\u3139]{2,}/g;
@@ -148,6 +150,12 @@ const commandWords = {
   wait: "\uAE30\uB2E4\uB824",
 };
 
+const miniEvents: MiniEvent[] = ["flowerSniff", "puddle", "neighborHello"];
+
+function pickMiniEvent(): MiniEvent {
+  return miniEvents[Math.floor(Math.random() * miniEvents.length)];
+}
+
 const phaseInfo: Record<Phase, { scene: string; mission: string; bg: string }> = {
   intro: { scene: "\uC624\uD504\uB2DD", mission: "\uC0B0\uCC45 START \uBC84\uD2BC\uC744 \uB20C\uB7EC \uC2DC\uC791\uD558\uC138\uC694.", bg: "home" },
   upstairs: { scene: "2\uCE35 \uACC4\uB2E8", mission: "1\uCE35\uC73C\uB85C \uB0B4\uB824\uAC00 \uBCFC\uAE4C\uC694? W\uB97C \uB20C\uB7EC \uACC4\uB2E8\uC744 \uB0B4\uB824\uAC00\uC138\uC694.", bg: "stairs" },
@@ -164,6 +172,7 @@ const phaseInfo: Record<Phase, { scene: string; mission: string; bg: string }> =
   poop: { scene: "\uD3AB\uD2F0\uCF13", mission: "주의! 감자가 똥을 쌌어요. 펫티켓을 지키겠습니까?", bg: "street" },
   run: { scene: "\uB6F0\uAE30", mission: "\uB0A0\uC528\uAC00 \uC88B\uB124\uC694. \uC2A4\uD398\uC774\uC2A4\uBC14\uB97C \uBE60\uB974\uAC8C \uB20C\uB7EC \uB530\uB77C\uAC00\uC138\uC694.", bg: "street" },
   car: { scene: "\uCC28 \uC870\uC2EC", mission: "\uC18D\uB3C4\uB97C \uB530\uB77C\uC7A1\uC558\uC5B4\uC694! \uADF8\uB7F0\uB370 \uC55E\uC5D0 \uCC28\uAC00 \uC624\uB124\uC694. \uC5BC\uB978 \uD53C\uD574\uC8FC\uC138\uC694!", bg: "road" },
+  sniff: { scene: "산책길 이벤트", mission: "루비와 감자가 산책길에서 작은 발견을 했어요.", bg: "street" },
   barkingDog: { scene: "\uC606\uC9D1 \uAC15\uC544\uC9C0", mission: "\uC606\uC9D1 \uAC15\uC544\uC9C0\uAC00 \uC9D6\uACE0 \uC788\uC5B4\uC694. 5\uCD08 \uC548\uC5D0 \uBB34\uC2DC\uD574\uB77C\uACE0 \uC785\uB825\uD558\uC138\uC694.", bg: "fence" },
   boss: { scene: "\uC0AC\uB098\uC6B4 \uAC15\uC544\uC9C0", mission: "\uC0AC\uB098\uC6B4 \uAC15\uC544\uC9C0\uAC00 \uB2EC\uB824\uC640\uC694. \uB098\uD0C0\uB098\uBA74 3\uCD08 \uC548\uC5D0 \uD074\uB9AD\uD558\uC138\uC694.", bg: "fence" },
   cat: { scene: "\uACE0\uC591\uC774 \uB4F1\uC7A5", mission: "\uACE0\uC591\uC774\uAC00 \uC67C\uCABD\uC5D0 \uB098\uD0C0\uB0AC\uC5B4\uC694. 5\uCD08 \uC548\uC5D0 \uC548\uB3FC\uB77C\uACE0 \uC785\uB825\uD558\uC138\uC694.", bg: "street" },
@@ -201,6 +210,7 @@ export default function WalkQuestGame() {
   const [bossLane, setBossLane] = useState<Lane>("center");
   const [bossBlocks, setBossBlocks] = useState(0);
   const [carGuide, setCarGuide] = useState(false);
+  const [miniEvent, setMiniEvent] = useState<MiniEvent>("flowerSniff");
   const [hearts, setHearts] = useState(false);
   const [successToast, setSuccessToast] = useState<string | null>(null);
   const [dangerToast, setDangerToast] = useState<string | null>(null);
@@ -357,6 +367,7 @@ export default function WalkQuestGame() {
     setBossLane("center");
     setBossBlocks(0);
     setCarGuide(false);
+    setMiniEvent("flowerSniff");
     setHearts(false);
     setSuccessToast(null);
     if (successToastTimerRef.current !== null) {
@@ -420,7 +431,22 @@ export default function WalkQuestGame() {
       return;
     }
 
-    if (walkStep === 3 && walkForwardRef.current >= 15) {
+    if (walkStep === 3 && walkForwardRef.current >= 8) {
+      const nextMiniEvent = pickMiniEvent();
+      walkForwardRef.current = 0;
+      setMiniEvent(nextMiniEvent);
+      setPhase("sniff");
+      setMessage(
+        nextMiniEvent === "flowerSniff"
+          ? "길가 꽃밭에서 좋은 냄새가 나요. 루비와 감자가 잠깐 냄새를 맡고 싶어 해요."
+          : nextMiniEvent === "puddle"
+            ? "앞에 작은 물웅덩이가 있어요. 발이 젖지 않게 살짝 돌아가 볼까요?"
+            : "동네 분이 루비와 감자에게 인사해도 되냐고 물어봐요. 차분하게 인사시켜볼까요?"
+      );
+      return;
+    }
+
+    if (walkStep === 4 && walkForwardRef.current >= 15) {
       walkForwardRef.current = 0;
       setPhase("barkingDog");
       setTimeLeft(5);
@@ -428,7 +454,7 @@ export default function WalkQuestGame() {
       return;
     }
 
-    if (walkStep === 4 && walkForwardRef.current >= 3) {
+    if (walkStep === 5 && walkForwardRef.current >= 3) {
       walkForwardRef.current = 0;
       setPhase("boss");
       setBossBlocks(-4);
@@ -438,7 +464,7 @@ export default function WalkQuestGame() {
       return;
     }
 
-    if (walkStep === 5 && walkForwardRef.current >= 3) {
+    if (walkStep === 6 && walkForwardRef.current >= 3) {
       walkForwardRef.current = 0;
       setPhase("cat");
       setTimeLeft(5);
@@ -446,7 +472,7 @@ export default function WalkQuestGame() {
       return;
     }
 
-    if (walkStep === 6 && walkForwardRef.current >= 3) {
+    if (walkStep === 7 && walkForwardRef.current >= 3) {
       walkForwardRef.current = 0;
       setPhase("catFood");
       setTimeLeft(3);
@@ -454,7 +480,7 @@ export default function WalkQuestGame() {
       return;
     }
 
-    if (walkStep >= 7 && walkForwardRef.current >= 3) {
+    if (walkStep >= 8 && walkForwardRef.current >= 3) {
       walkForwardRef.current = 0;
       setReturnGateOpen(false);
       setPhase("home");
@@ -756,6 +782,16 @@ export default function WalkQuestGame() {
     showHearts(text);
   }
 
+  function completeMiniEvent() {
+    const text =
+      miniEvent === "flowerSniff"
+        ? "꽃 냄새 충전 완료! 루비와 감자가 기분 좋게 다시 걷기 시작했어요."
+        : miniEvent === "puddle"
+          ? "물웅덩이를 야무지게 피했어요. 발바닥 뽀송 점수 +1!"
+          : "차분한 인사 성공! 동네 산책 매너가 반짝였어요.";
+    resumeWalk(text);
+  }
+
   function choosePoopTool(tool: PoopTool) {
     setPoopTool(tool);
     playSound("poop");
@@ -798,7 +834,7 @@ export default function WalkQuestGame() {
 
   function blockBoss() {
     setTimeLeft(null);
-    setWalkStep(5);
+    setWalkStep(6);
     setPhase("walk");
     showHearts("사나운 강아지를 막아냈어요. 조금만 더 걸어가면 집이에요.");
   }
@@ -922,7 +958,7 @@ export default function WalkQuestGame() {
     if (phase === "barkingDog" || phase === "boss" || phase === "car") return "alert";
     return "walk";
   }, [calledDogs, dogsSitting, phase]);
-  const showWalkPathDecor = ["walk", "pull", "poop", "run", "car", "barkingDog", "boss", "cat", "catFood"].includes(phase);
+  const showWalkPathDecor = ["walk", "pull", "poop", "run", "car", "sniff", "barkingDog", "boss", "cat", "catFood"].includes(phase);
 
   const commandPlaceholder = phase === "pull"
     ? "천천히"
@@ -1002,6 +1038,7 @@ export default function WalkQuestGame() {
             dogsRoadside={dogsRoadside}
             bossLane={bossLane}
             bossBlocks={bossBlocks}
+            miniEvent={miniEvent}
             returnGateOpen={returnGateOpen}
             start={start}
             reset={reset}
@@ -1028,6 +1065,7 @@ export default function WalkQuestGame() {
             ignoreDog={ignoreDog}
             blockBoss={blockBoss}
             clickBossDog={clickBossDog}
+            completeMiniEvent={completeMiniEvent}
             carGuide={carGuide}
             showSuccessToast={showSuccessToast}
           />
@@ -1499,7 +1537,7 @@ function ThreeWalkWorld({
   const rubyCalmRef = useRef(rubyCalm);
   const gamjaQuietRef = useRef(gamjaQuiet);
   const dogsRoadsideRef = useRef(dogsRoadside);
-  const outdoorPhases: Phase[] = ["garden", "gate", "walk", "pull", "poop", "run", "car", "barkingDog", "boss", "cat", "catFood", "home", "enterHome"];
+  const outdoorPhases: Phase[] = ["garden", "gate", "walk", "pull", "poop", "run", "car", "sniff", "barkingDog", "boss", "cat", "catFood", "home", "enterHome"];
   const isOutdoor = outdoorPhases.includes(phase);
 
   useEffect(() => {
@@ -1525,7 +1563,7 @@ function ThreeWalkWorld({
     if (phase === "upstairs") positionRef.current = { x: -3.6, z: 8.2, yaw: 0 };
     if (phase === "garden") positionRef.current = { x: 0, z: 6.8, yaw: 0 };
     if (phase === "gate") positionRef.current = { x: 0, z: -3.95, yaw: 0 };
-    if (["walk", "pull", "poop", "run", "car", "barkingDog", "boss", "cat", "catFood", "home", "enterHome"].includes(phase)) positionRef.current = { x: 0, z: 7.2, yaw: 0 };
+    if (["walk", "pull", "poop", "run", "car", "sniff", "barkingDog", "boss", "cat", "catFood", "home", "enterHome"].includes(phase)) positionRef.current = { x: 0, z: 7.2, yaw: 0 };
 
     const width = Math.max(1, mount.clientWidth);
     const height = Math.max(1, mount.clientHeight);
@@ -1572,7 +1610,7 @@ function ThreeWalkWorld({
 
     const textureLoader = new THREE.TextureLoader();
     const isSleepingScene = phase === "upstairs" || (phase === "living" && !calledDogs);
-    const walkingBackScene = ["walk", "pull", "run", "car", "barkingDog", "boss", "cat", "catFood", "home", "enterHome"].includes(phase);
+    const walkingBackScene = ["walk", "pull", "run", "car", "sniff", "barkingDog", "boss", "cat", "catFood", "home", "enterHome"].includes(phase);
     const rubySrc = isSleepingScene ? dog.ruby.sleep : walkingBackScene ? dog.ruby.back : phase === "excited" ? dog.ruby.hop : dog.ruby.call;
     const gamjaSrc = isSleepingScene ? dog.gamja.sleep : phase === "poop" ? dog.gamja.poop : walkingBackScene ? dog.gamja.back : phase === "excited" || phase === "gate" ? dog.gamja.hop : dog.gamja.call;
     const rubyMap = textureLoader.load(rubySrc);
@@ -1746,7 +1784,7 @@ function ThreeWalkWorld({
         dogGroup.position.z = pos.z - 3.05;
         gamja.position.x = 0.55 - Math.abs(Math.sin(clock.elapsedTime * 6.5)) * 0.42;
       }
-      const walkLike = ["walk", "pull", "run", "car", "barkingDog", "boss", "cat", "catFood", "home", "enterHome"].includes(phase);
+      const walkLike = ["walk", "pull", "run", "car", "sniff", "barkingDog", "boss", "cat", "catFood", "home", "enterHome"].includes(phase);
       const autoWalkingPhase = ["pull", "run", "cat", "catFood"].includes(phase);
       const activelyWalking = walkLike && ((!movementLocked && keysRef.current.has("KeyW")) || autoWalkingPhase);
       animateDogWalk(ruby, rubyPaws, clock.elapsedTime, activelyWalking, 0);
@@ -2832,7 +2870,7 @@ function DogSprite({
 }
 
 function SceneFurniture({ phase }: { phase: Phase }) {
-  const showWalkDecor = ["walk", "pull", "poop", "run", "car", "barkingDog", "boss", "cat", "catFood"].includes(phase);
+  const showWalkDecor = ["walk", "pull", "poop", "run", "car", "sniff", "barkingDog", "boss", "cat", "catFood"].includes(phase);
   return (
     <div className="furniture">
       {showWalkDecor && (
@@ -3437,6 +3475,7 @@ function SceneContent(props: {
   returnGateOpen: boolean;
   bossLane: Lane;
   bossBlocks: number;
+  miniEvent: MiniEvent;
   start: () => void;
   reset: () => void;
   setPhase: (phase: Phase) => void;
@@ -3462,6 +3501,7 @@ function SceneContent(props: {
   ignoreDog: () => void;
   blockBoss: () => void;
   clickBossDog: () => void;
+  completeMiniEvent: () => void;
   carGuide: boolean;
   showSuccessToast: (mission?: string) => void;
 }) {
@@ -3474,6 +3514,7 @@ function SceneContent(props: {
   if (p.phase === "boss") return <BossClickGame lane={p.bossLane} blocks={p.bossBlocks} timeLeft={p.timeLeft} clickBossDog={p.clickBossDog} />;
   if (p.phase === "cat") return <CatChaseLayer timeLeft={p.timeLeft} />;
   if (p.phase === "catFood") return <CatFoodLayer timeLeft={p.timeLeft} />;
+  if (p.phase === "sniff") return <MiniWalkEvent event={p.miniEvent} complete={p.completeMiniEvent} />;
   if (["upstairs", "living", "excited", "garden"].includes(p.phase)) return null;
   if (p.phase === "leashPrep") return <GearShelf rubyLeashed={p.rubyLeashed} gamjaLeashed={p.gamjaLeashed} hasPoopBag={p.hasPoopBag} side />;
   if (p.phase === "leashMission") {
@@ -3591,6 +3632,98 @@ function CarSafetyDock({
     </div>
   );
 }
+
+function MiniWalkEvent({ event, complete }: { event: MiniEvent; complete: () => void }) {
+  const detail =
+    event === "flowerSniff"
+      ? {
+          icon: "꽃",
+          title: "꽃밭 냄새 타임",
+          body: "루비와 감자가 길가 꽃 냄새에 멈춰 섰어요. 잠깐 맡게 해주면 더 즐거운 산책이 돼요.",
+          action: "냄새 맡게 하기",
+        }
+      : event === "puddle"
+        ? {
+            icon: "물",
+            title: "작은 물웅덩이",
+            body: "앞에 물웅덩이가 있어요. 발이 젖으면 집에 가서 발 닦기 미션이 추가될지도 몰라요.",
+            action: "살짝 돌아가기",
+          }
+        : {
+            icon: "인사",
+            title: "동네 인사",
+            body: "동네 분이 루비와 감자를 보고 웃으며 인사해요. 차분하게 인사하면 사회성 점수 상승!",
+            action: "차분히 인사하기",
+          };
+
+  return (
+    <div className="mini-event">
+      <div className="mini-card">
+        <span className="mini-icon">{detail.icon}</span>
+        <b>{detail.title}</b>
+        <p>{detail.body}</p>
+        <button type="button" onClick={complete}>{detail.action}</button>
+      </div>
+      <style jsx>{`
+        .mini-event {
+          position: absolute;
+          z-index: 24;
+          inset: 0;
+          display: grid;
+          place-items: center;
+          pointer-events: none;
+        }
+        .mini-card {
+          width: min(430px, calc(100vw - 56px));
+          display: grid;
+          justify-items: center;
+          gap: 10px;
+          padding: 22px 24px;
+          border-radius: 28px;
+          text-align: center;
+          color: #4b3322;
+          background:
+            radial-gradient(circle at 18% 14%, rgba(255, 255, 255, 0.74), transparent 34%),
+            linear-gradient(180deg, rgba(255, 252, 238, 0.98), rgba(235, 247, 207, 0.95));
+          border: 2px solid rgba(124, 161, 82, 0.28);
+          box-shadow: 0 24px 58px rgba(63, 90, 42, 0.22);
+          pointer-events: auto;
+        }
+        .mini-icon {
+          width: 56px;
+          height: 56px;
+          display: grid;
+          place-items: center;
+          border-radius: 999px;
+          font-size: 1.16rem;
+          font-weight: 950;
+          background: #fff7de;
+          box-shadow: inset 0 -6px 12px rgba(128, 91, 40, 0.12), 0 12px 24px rgba(71, 93, 45, 0.14);
+        }
+        b {
+          font-family: 'Jua', 'Poor Story', sans-serif;
+          font-size: clamp(1.35rem, 2.8vw, 1.9rem);
+        }
+        p {
+          margin: 0;
+          line-height: 1.5;
+          font-weight: 850;
+        }
+        button {
+          border: 0;
+          border-radius: 999px;
+          padding: 12px 22px;
+          color: #fffdf4;
+          background: linear-gradient(180deg, #79b653, #4e8f35);
+          box-shadow: 0 12px 22px rgba(65, 112, 48, 0.26);
+          font-weight: 950;
+          cursor: pointer;
+        }
+      `}</style>
+    </div>
+  );
+}
+
 function PullWarning({ timeLeft }: { timeLeft: number | null }) {
   return (
     <div className="pull-warning">
