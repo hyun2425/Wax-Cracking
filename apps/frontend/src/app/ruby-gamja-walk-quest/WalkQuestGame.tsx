@@ -1021,6 +1021,7 @@ export default function WalkQuestGame() {
           <SceneFurniture phase={phase} />
           {showWalkPathDecor && <WalkPathDecor />}
           {showDogs && <DogLayer pose={dogPose} phase={phase} rubyCalm={rubyCalm} gamjaQuiet={gamjaQuiet} hearts={hearts || phase === "clear"} peePulse={peePulse} />}
+          {showDogs && <DogReactionBubbles phase={phase} miniEvent={miniEvent} rubyCalm={rubyCalm} gamjaQuiet={gamjaQuiet} />}
           <SceneContent
             phase={phase}
             timeLeft={timeLeft}
@@ -3722,6 +3723,180 @@ function MiniWalkEvent({ event, complete }: { event: MiniEvent; complete: () => 
       `}</style>
     </div>
   );
+}
+
+function DogReactionBubbles({
+  phase,
+  miniEvent,
+  rubyCalm,
+  gamjaQuiet,
+}: {
+  phase: Phase;
+  miniEvent: MiniEvent;
+  rubyCalm: boolean;
+  gamjaQuiet: boolean;
+}) {
+  const reactions = getDogReactions(phase, miniEvent, rubyCalm, gamjaQuiet);
+  if (!reactions) return null;
+
+  return (
+    <div className={`dog-reactions ${reactions.tone ?? ""}`} aria-hidden="true">
+      <div className="dog-reaction ruby">
+        <b>루비</b>
+        <span>{reactions.ruby}</span>
+      </div>
+      <div className="dog-reaction gamja">
+        <b>감자</b>
+        <span>{reactions.gamja}</span>
+      </div>
+      <style jsx>{`
+        .dog-reactions {
+          position: absolute;
+          left: 50%;
+          bottom: clamp(86px, 13vh, 132px);
+          z-index: 34;
+          width: min(680px, calc(100% - 40px));
+          transform: translateX(-50%);
+          display: flex;
+          justify-content: space-between;
+          gap: 14px;
+          pointer-events: none;
+        }
+
+        .dog-reaction {
+          width: min(260px, 42vw);
+          padding: 10px 14px 12px;
+          border: 1px solid rgba(108, 80, 50, 0.18);
+          border-radius: 18px;
+          background: rgba(255, 250, 238, 0.88);
+          box-shadow: 0 16px 34px rgba(68, 44, 28, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+          color: #4a3526;
+          font-family: 'Poor Story', 'Jua', 'Pretendard', sans-serif;
+          font-size: clamp(0.98rem, 1.7vw, 1.22rem);
+          line-height: 1.22;
+          animation: reaction-float 2.4s ease-in-out infinite;
+        }
+
+        .dog-reaction b {
+          display: inline-flex;
+          align-items: center;
+          margin-right: 8px;
+          padding: 3px 9px 4px;
+          border-radius: 999px;
+          background: rgba(129, 181, 83, 0.18);
+          color: #4f7a32;
+          font-family: 'Jua', 'Poor Story', sans-serif;
+          font-size: 0.95em;
+        }
+
+        .dog-reaction span {
+          text-shadow: 0 1px 0 rgba(255, 255, 255, 0.62);
+        }
+
+        .dog-reaction.gamja {
+          animation-delay: 0.2s;
+          text-align: right;
+        }
+
+        .dog-reaction.gamja b {
+          background: rgba(222, 151, 92, 0.2);
+          color: #8a562f;
+        }
+
+        .dog-reactions.alert .dog-reaction {
+          background: rgba(255, 238, 238, 0.92);
+          border-color: rgba(208, 92, 92, 0.28);
+        }
+
+        .dog-reactions.calm .dog-reaction {
+          background: rgba(240, 255, 228, 0.9);
+          border-color: rgba(111, 172, 73, 0.22);
+        }
+
+        @keyframes reaction-float {
+          0%,
+          100% {
+            transform: translateY(0);
+          }
+          50% {
+            transform: translateY(-4px);
+          }
+        }
+
+        @media (max-width: 720px) {
+          .dog-reactions {
+            bottom: 92px;
+            gap: 8px;
+          }
+
+          .dog-reaction {
+            width: 46vw;
+            padding: 8px 10px 10px;
+          }
+        }
+      `}</style>
+    </div>
+  );
+}
+
+function getDogReactions(
+  phase: Phase,
+  miniEvent: MiniEvent,
+  rubyCalm: boolean,
+  gamjaQuiet: boolean,
+): { ruby: string; gamja: string; tone?: "alert" | "calm" } | null {
+  if (phase === "living") {
+    return { ruby: "부르면 바로 갈 준비!", gamja: "언니가 먼저 확인할게." };
+  }
+  if (phase === "excited") {
+    return { ruby: "밖에 나가는 거야?", gamja: "좋아, 그래도 질서는 지키자." };
+  }
+  if (phase === "leashPrep" || phase === "leashMission" || phase === "poopBag") {
+    return { ruby: "목줄만 하면 바로 출발!", gamja: "준비물도 챙겨야지.", tone: "calm" };
+  }
+  if (phase === "gate") {
+    return {
+      ruby: rubyCalm ? "앉았어. 문 열어도 돼?" : "너무 신나서 빙글빙글!",
+      gamja: gamjaQuiet ? "조용히 기다리는 중." : "나 여기 있다고 알려줄래!",
+      tone: rubyCalm && gamjaQuiet ? "calm" : "alert",
+    };
+  }
+  if (phase === "walk") {
+    return { ruby: "앞에 뭐가 있는지 궁금해!", gamja: "같이 가면 어디든 좋아." };
+  }
+  if (phase === "pull") {
+    return { ruby: "조금만 더 빨리 가고 싶어!", gamja: "루비야, 천천히 가자.", tone: "alert" };
+  }
+  if (phase === "poop") {
+    return { ruby: "잠깐 기다릴게.", gamja: "나 중요한 일 보는 중...", tone: "alert" };
+  }
+  if (phase === "run") {
+    return { ruby: "달리자 달리자!", gamja: "속도 맞춰서 가자!" };
+  }
+  if (phase === "car") {
+    return { ruby: "차가 와! 옆으로 갈게.", gamja: "기다려 할 수 있어.", tone: "alert" };
+  }
+  if (phase === "sniff") {
+    if (miniEvent === "flowerSniff") return { ruby: "꽃 냄새 최고!", gamja: "냄새 확인 완료.", tone: "calm" };
+    if (miniEvent === "puddle") return { ruby: "첨벙하고 싶지만 참을게.", gamja: "발 젖으면 큰일이야.", tone: "calm" };
+    return { ruby: "사람이다! 인사해도 돼?", gamja: "차분하게 한 번만.", tone: "calm" };
+  }
+  if (phase === "barkingDog") {
+    return { ruby: "저 친구 왜 화났지?", gamja: "무시하고 지나가자.", tone: "alert" };
+  }
+  if (phase === "boss") {
+    return { ruby: "뒤로 물러날게!", gamja: "루비는 내가 지켜.", tone: "alert" };
+  }
+  if (phase === "cat") {
+    return { ruby: "고양이다!", gamja: "나도 모르게 몸이 움직여!", tone: "alert" };
+  }
+  if (phase === "catFood") {
+    return { ruby: "저 밥 냄새 뭐야?", gamja: "우리 밥 아니야.", tone: "alert" };
+  }
+  if (phase === "home" || phase === "enterHome" || phase === "clear") {
+    return { ruby: "오늘 산책 재밌었어!", gamja: "무사히 돌아왔네.", tone: "calm" };
+  }
+  return null;
 }
 
 function PullWarning({ timeLeft }: { timeLeft: number | null }) {
