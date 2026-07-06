@@ -461,14 +461,7 @@ export default function WalkQuestGame() {
       walkForwardRef.current = 0;
       setMiniEvent(nextMiniEvent);
       setPhase("sniff");
-      window.setTimeout(() => setMessage(getMiniEventMessage(nextMiniEvent)), 0);
-      setMessage(
-        nextMiniEvent === "flowerSniff"
-          ? "길가 꽃밭에서 좋은 냄새가 나요. 루비와 감자가 잠깐 냄새를 맡고 싶어 해요."
-          : nextMiniEvent === "puddle"
-            ? "앞에 작은 물웅덩이가 있어요. 발이 젖지 않게 살짝 돌아가 볼까요?"
-            : "동네 분이 루비와 감자에게 인사해도 되냐고 물어봐요. 차분하게 인사시켜볼까요?"
-      );
+      setMessage(getMiniEventMessage(nextMiniEvent));
       return;
     }
 
@@ -477,8 +470,7 @@ export default function WalkQuestGame() {
       setPhase("poop");
       setPoopStep("ask");
       setPoopTool(null);
-      window.setTimeout(() => setMessage("\uC8FC\uC758! \uAC10\uC790\uAC00 \uB625\uC744 \uC30C\uC5B4\uC694. \uD3AB\uD2F0\uCF13\uC744 \uC9C0\uD0A4\uACA0\uC2B5\uB2C8\uAE4C?"), 0);
-      setMessage("주의! 감자가 똥을 쌌어요. 펫티켓을 지키겠습니까?");
+      setMessage("\uC8FC\uC758! \uAC10\uC790\uAC00 \uB625\uC744 \uC30C\uC5B4\uC694. \uD3AB\uD2F0\uCF13\uC744 \uC9C0\uD0A4\uACA0\uC2B5\uB2C8\uAE4C?");
       return;
     }
 
@@ -490,21 +482,6 @@ export default function WalkQuestGame() {
       setCarGuide(true);
       setTimeLeft(null);
       setMessage("\uC18D\uB3C4\uB97C \uB530\uB77C\uC7A1\uC558\uC5B4\uC694! \uADF8\uB7F0\uB370 \uC55E\uC5D0 \uCC28\uAC00 \uC624\uB124\uC694! \uC5BC\uB978 \uBA48\uCDB0\uB77C\uACE0 \uC785\uB825\uD558\uACE0, \uB8E8\uAC10\uC774\uB97C \uD480\uCABD\uC73C\uB85C \uC62E\uAE34 \uB4A4 \uAE30\uB2E4\uB824\uB77C\uACE0 \uC785\uB825\uD558\uC138\uC694!");
-      return;
-    }
-
-    if (walkStep === 3 && walkForwardRef.current >= 8) {
-      const nextMiniEvent = pickMiniEvent();
-      walkForwardRef.current = 0;
-      setMiniEvent(nextMiniEvent);
-      setPhase("sniff");
-      setMessage(
-        nextMiniEvent === "flowerSniff"
-          ? "길가 꽃밭에서 좋은 냄새가 나요. 루비와 감자가 잠깐 냄새를 맡고 싶어 해요."
-          : nextMiniEvent === "puddle"
-            ? "앞에 작은 물웅덩이가 있어요. 발이 젖지 않게 살짝 돌아가 볼까요?"
-            : "동네 분이 루비와 감자에게 인사해도 되냐고 물어봐요. 차분하게 인사시켜볼까요?"
-      );
       return;
     }
 
@@ -522,7 +499,7 @@ export default function WalkQuestGame() {
       setBossBlocks(-4);
       setBossLane(randomLane());
       setTimeLeft(null);
-      setMessage("멀리서 낮게 짖는 소리가 들려요...");
+      setMessage("\uBA40\uB9AC\uC11C \uD06C\uAC8C \uC9D6\uB294 \uC18C\uB9AC\uAC00 \uB4E4\uB824\uC694...");
       return;
     }
 
@@ -538,7 +515,7 @@ export default function WalkQuestGame() {
       walkForwardRef.current = 0;
       setPhase("catFood");
       setTimeLeft(3);
-      setMessage("왼쪽에 길고양이 밥이 있어요! 루비가 냄새를 맡고 확 달려들어요. 3초 안에 먹지마라고 입력하세요!");
+      setMessage("\uC67C\uCABD \uAE38\uAC00\uC5D0 \uAE38\uACE0\uC591\uC774 \uBC25\uC774 \uC788\uC5B4\uC694. \uB8E8\uBE44\uAC00 \uB0C4\uC0C8\uB97C \uB9E1\uACE0 \uB2EC\uB824\uB4E4\uC5B4\uC694! 3\uCD08 \uC548\uC5D0 \uBA39\uC9C0\uB9C8\uB77C\uACE0 \uC785\uB825\uD558\uC138\uC694.");
       return;
     }
 
@@ -549,7 +526,6 @@ export default function WalkQuestGame() {
       setMessage("\uC9D1 \uC55E\uC5D0 \uAC70\uC758 \uB3C4\uCC29\uD588\uC5B4\uC694.");
     }
   }, [phase, walkStep]);
-
   function fall(reason: string) {
     playSound("fall");
     const next = falls + 1;
@@ -816,13 +792,13 @@ export default function WalkQuestGame() {
   function goOut() {
     setPhase("garden");
     playSound("step");
-    setMessage(hasPoopBag ? "똥봉투까지 챙겼어요. 정원으로 나왔습니다. 대문 밖으로 나가 본격적인 산책 해볼까요?" : "똥봉투는 없지만 정원으로 나왔어요. 대문 밖으로 나가 본격적인 산책 해볼까요?");
+    setMessage(hasPoopBag ? "\uB625\uBD09\uD22C\uAE4C\uC9C0 \uCC59\uACBC\uC5B4\uC694. \uC815\uC6D0\uC73C\uB85C \uB098\uC654\uC2B5\uB2C8\uB2E4. \uB300\uBB38 \uBC16\uC73C\uB85C \uB098\uAC00 \uBCF8\uACA9\uC801\uC778 \uC0B0\uCC45\uC744 \uD574\uBCFC\uAE4C\uC694?" : "\uB625\uBD09\uD22C\uB294 \uC5C6\uC9C0\uB9CC \uC815\uC6D0\uC73C\uB85C \uB098\uC654\uC5B4\uC694. \uB300\uBB38 \uBC16\uC73C\uB85C \uB098\uAC00 \uBCF8\uACA9\uC801\uC778 \uC0B0\uCC45\uC744 \uD574\uBCFC\uAE4C\uC694?");
   }
 
   function openGate() {
     if (!rubyCalm || !gamjaQuiet) {
-      showDangerToast("앉아 / 조용히 해를 하지 않고 대문을 열어서 넘어졌어요!");
-      fall("대문을 그냥 열자 루비가 뛰고 감자가 짖어서 넘어졌어요.");
+      showDangerToast("\uC549\uC544 / \uC870\uC6A9\uD788 \uD574\uB97C \uC544\uC9C1 \uD558\uC9C0 \uC54A\uACE0 \uB300\uBB38\uC744 \uC5F4\uC5B4\uC11C \uB118\uC5B4\uC84C\uC5B4\uC694!");
+      fall("\uB300\uBB38\uC744 \uADF8\uB0E5 \uC5F4\uC790 \uB8E8\uBE44\uAC00 \uB2F9\uAE30\uACE0 \uAC10\uC790\uAC00 \uC9D6\uC5B4\uC11C \uB118\uC5B4\uC84C\uC5B4\uC694.");
       setPhase("gate");
       return;
     }
@@ -830,9 +806,8 @@ export default function WalkQuestGame() {
     playSound("step");
     setWalkStep(0);
     walkForwardRef.current = 0;
-    setMessage("늘 가던 산책길이에요. 앞으로 가볼까요?");
+    setMessage("\uB298 \uAC00\uB358 \uC0B0\uCC45\uAE38\uC774\uC5D0\uC694. \uC55E\uC73C\uB85C \uAC00\uBCFC\uAE4C\uC694?");
   }
-
   function resumeWalk(text: string) {
     setWalkStep((current) => current + 1);
     walkForwardRef.current = 0;
@@ -860,15 +835,15 @@ export default function WalkQuestGame() {
     playSound("poop");
     if (tool === "leaf") {
       setPoopStep("leafReady");
-      setMessage("풀숲에서 나뭇잎을 찾아 똥을 주워보세요.");
+      setMessage("\uD480\uC232\uC5D0\uC11C \uB098\uBB47\uC78E\uC744 \uCC3E\uC544 \uB625\uC744 \uC8FC\uC6CC\uBCF4\uC138\uC694.");
     }
     if (tool === "sock") {
       setPoopStep("sockReady");
-      setMessage("양말을 벗었어요. 손에 든 양말을 똥으로 옮겨주세요.");
+      setMessage("\uC591\uB9D0\uC744 \uBC97\uC5C8\uC5B4\uC694. \uC190\uC5D0 \uB4E0 \uC591\uB9D0\uC744 \uB625\uC73C\uB85C \uC62E\uACA8\uC8FC\uC138\uC694.");
     }
     if (tool === "bag") {
       setPoopStep("bagCheck");
-      setMessage("똥봉투를 똥 위로 옮겨주세요.");
+      setMessage("\uB625\uBD09\uD22C\uB97C \uB625 \uC704\uB85C \uC62E\uACA8\uC8FC\uC138\uC694.");
     }
   }
 
@@ -876,19 +851,18 @@ export default function WalkQuestGame() {
     const selectedTool = toolOverride ?? poopTool;
     if (selectedTool === "bag") {
       setPoopTool(null);
-      resumeWalk("펫티켓 완료!");
+      resumeWalk("\uD3AB\uD2F0\uCF13 \uC644\uB8CC!");
     } else if (selectedTool === "leaf") {
       setPoopTool(null);
       setPoopStep("sockAsk");
-      setMessage("나뭇잎이 너무 작아요! 손에 묻어버렸어요... 어쩔 수 없다... 양말뿐인건가..?");
+      setMessage("\uB098\uBB47\uC78E\uC774 \uB108\uBB34 \uC791\uC544\uC694! \uC190\uC5D0 \uBB3B\uC5B4\uBC84\uB838\uC5B4\uC694... \uC5B4\uCA54 \uC218 \uC5C6\uB2E4... \uC591\uB9D0\uBFD0\uC778\uAC74\uAC00..?");
     } else if (selectedTool === "sock") {
       setPoopTool(null);
-      resumeWalk("양말은 잃었지만 환경은 지켜냈어요!");
+      resumeWalk("\uC591\uB9D0\uC740 \uC783\uC5C8\uC9C0\uB9CC \uD658\uACBD\uC740 \uC9C0\uCF1C\uB0C8\uC5B4\uC694!");
     } else {
-      setMessage("먼저 처리할 도구를 선택하세요.");
+      setMessage("\uBA3C\uC800 \uCC98\uB9AC\uD560 \uB3C4\uAD6C\uB97C \uC120\uD0DD\uD558\uC138\uC694.");
     }
   }
-
   function ignoreDog() {
     setTimeLeft(null);
     playSound("bark");
