@@ -156,6 +156,51 @@ function pickMiniEvent(): MiniEvent {
   return miniEvents[Math.floor(Math.random() * miniEvents.length)];
 }
 
+function getMiniEventMessage(event: MiniEvent) {
+  if (event === "flowerSniff") {
+    return "\uAE38\uAC00 \uAF43\uBC2D\uC5D0\uC11C \uC88B\uC740 \uB0C4\uC0C8\uAC00 \uB098\uC694. \uB8E8\uBE44\uC640 \uAC10\uC790\uAC00 \uC7A0\uAE50 \uB0C4\uC0C8\uB97C \uB9E1\uACE0 \uC2F6\uC5B4 \uD574\uC694.";
+  }
+  if (event === "puddle") {
+    return "\uC55E\uC5D0 \uC791\uC740 \uBB3C\uC6C5\uB369\uC774\uAC00 \uC788\uC5B4\uC694. \uBC1C\uC774 \uC816\uC9C0 \uC54A\uAC8C \uC0B4\uC9DD \uB3CC\uC544\uAC00 \uBCFC\uAE4C\uC694?";
+  }
+  return "\uB3D9\uB124 \uBD84\uC774 \uB8E8\uBE44\uC640 \uAC10\uC790\uC5D0\uAC8C \uC778\uC0AC\uD574\uB3C4 \uB418\uB0D0\uACE0 \uBB3C\uC5B4\uBD10\uC694. \uCC28\uBD84\uD558\uAC8C \uC778\uC0AC\uC2DC\uCF1C\uBCFC\uAE4C\uC694?";
+}
+
+function getMiniEventSuccessMessage(event: MiniEvent) {
+  if (event === "flowerSniff") {
+    return "\uAF43 \uB0C4\uC0C8 \uCDA9\uC804 \uC644\uB8CC! \uB8E8\uBE44\uC640 \uAC10\uC790\uAC00 \uAE30\uBD84 \uC88B\uAC8C \uB2E4\uC2DC \uAC77\uAE30 \uC2DC\uC791\uD588\uC5B4\uC694.";
+  }
+  if (event === "puddle") {
+    return "\uBB3C\uC6C5\uB369\uC774\uB97C \uC57C\uBB34\uC9C0\uAC8C \uD53C\uD588\uC5B4\uC694. \uBC1C\uBC14\uB2E5 \uBF40\uC1A1 \uC810\uC218 +1!";
+  }
+  return "\uCC28\uBD84\uD55C \uC778\uC0AC \uC131\uACF5! \uB3D9\uB124 \uC0B0\uCC45 \uB9E4\uB108\uAC00 \uBC18\uC9DD\uC600\uC5B4\uC694.";
+}
+
+function getMiniEventDetail(event: MiniEvent) {
+  if (event === "flowerSniff") {
+    return {
+      icon: "\uAF43",
+      title: "\uAF43\uBC2D \uB0C4\uC0C8 \uD0C0\uC784",
+      body: "\uB8E8\uBE44\uC640 \uAC10\uC790\uAC00 \uAE38\uAC00 \uAF43 \uB0C4\uC0C8\uC5D0 \uBA48\uCDB0 \uC130\uC694. \uC7A0\uAE50 \uB9E1\uAC8C \uD574\uC8FC\uBA74 \uB354 \uC990\uAC70\uC6B4 \uC0B0\uCC45\uC774 \uB3FC\uC694.",
+      action: "\uB0C4\uC0C8 \uB9E1\uAC8C \uD558\uAE30",
+    };
+  }
+  if (event === "puddle") {
+    return {
+      icon: "\uBB3C",
+      title: "\uC791\uC740 \uBB3C\uC6C5\uB369\uC774",
+      body: "\uC55E\uC5D0 \uBB3C\uC6C5\uB369\uC774\uAC00 \uC788\uC5B4\uC694. \uBC1C\uC774 \uC816\uC73C\uBA74 \uC9D1\uC5D0 \uAC00\uC11C \uBC1C \uB2E6\uAE30 \uBBF8\uC158\uC774 \uCD94\uAC00\uB420\uC9C0\uB3C4 \uBAB0\uB77C\uC694.",
+      action: "\uC0B4\uC9DD \uB3CC\uC544\uAC00\uAE30",
+    };
+  }
+  return {
+    icon: "\uC778\uC0AC",
+    title: "\uB3D9\uB124 \uC778\uC0AC",
+    body: "\uB3D9\uB124 \uBD84\uC774 \uB8E8\uBE44\uC640 \uAC10\uC790\uB97C \uBCF4\uACE0 \uC6C3\uC73C\uBA70 \uC778\uC0AC\uD574\uC694. \uCC28\uBD84\uD558\uAC8C \uC778\uC0AC\uD558\uBA74 \uC0AC\uD68C\uC131 \uC810\uC218 \uC0C1\uC2B9!",
+    action: "\uCC28\uBD84\uD788 \uC778\uC0AC\uD558\uAE30",
+  };
+}
+
 const phaseInfo: Record<Phase, { scene: string; mission: string; bg: string }> = {
   intro: { scene: "\uC624\uD504\uB2DD", mission: "\uC0B0\uCC45 START \uBC84\uD2BC\uC744 \uB20C\uB7EC \uC2DC\uC791\uD558\uC138\uC694.", bg: "home" },
   upstairs: { scene: "2\uCE35 \uACC4\uB2E8", mission: "1\uCE35\uC73C\uB85C \uB0B4\uB824\uAC00 \uBCFC\uAE4C\uC694? W\uB97C \uB20C\uB7EC \uACC4\uB2E8\uC744 \uB0B4\uB824\uAC00\uC138\uC694.", bg: "stairs" },
@@ -411,16 +456,33 @@ export default function WalkQuestGame() {
       return;
     }
 
-    if (walkStep === 1 && walkForwardRef.current >= 15) {
+    if (walkStep === 1 && walkForwardRef.current >= 6) {
+      const nextMiniEvent = pickMiniEvent();
+      walkForwardRef.current = 0;
+      setMiniEvent(nextMiniEvent);
+      setPhase("sniff");
+      window.setTimeout(() => setMessage(getMiniEventMessage(nextMiniEvent)), 0);
+      setMessage(
+        nextMiniEvent === "flowerSniff"
+          ? "길가 꽃밭에서 좋은 냄새가 나요. 루비와 감자가 잠깐 냄새를 맡고 싶어 해요."
+          : nextMiniEvent === "puddle"
+            ? "앞에 작은 물웅덩이가 있어요. 발이 젖지 않게 살짝 돌아가 볼까요?"
+            : "동네 분이 루비와 감자에게 인사해도 되냐고 물어봐요. 차분하게 인사시켜볼까요?"
+      );
+      return;
+    }
+
+    if (walkStep === 2 && walkForwardRef.current >= 15) {
       walkForwardRef.current = 0;
       setPhase("poop");
       setPoopStep("ask");
       setPoopTool(null);
+      window.setTimeout(() => setMessage("\uC8FC\uC758! \uAC10\uC790\uAC00 \uB625\uC744 \uC30C\uC5B4\uC694. \uD3AB\uD2F0\uCF13\uC744 \uC9C0\uD0A4\uACA0\uC2B5\uB2C8\uAE4C?"), 0);
       setMessage("주의! 감자가 똥을 쌌어요. 펫티켓을 지키겠습니까?");
       return;
     }
 
-    if (walkStep === 2 && walkForwardRef.current >= 3) {
+    if (walkStep === 3 && walkForwardRef.current >= 3) {
       walkForwardRef.current = 0;
       setPhase("car");
       setCarStopped(false);
@@ -783,7 +845,8 @@ export default function WalkQuestGame() {
   }
 
   function completeMiniEvent() {
-    const text =
+    const fixedMiniEventText = getMiniEventSuccessMessage(miniEvent);
+    const text = fixedMiniEventText ? fixedMiniEventText :
       miniEvent === "flowerSniff"
         ? "꽃 냄새 충전 완료! 루비와 감자가 기분 좋게 다시 걷기 시작했어요."
         : miniEvent === "puddle"
@@ -3657,13 +3720,16 @@ function MiniWalkEvent({ event, complete }: { event: MiniEvent; complete: () => 
             action: "차분히 인사하기",
           };
 
+  const fixedDetail = getMiniEventDetail(event);
+  void detail;
+
   return (
     <div className="mini-event">
       <div className="mini-card">
-        <span className="mini-icon">{detail.icon}</span>
-        <b>{detail.title}</b>
-        <p>{detail.body}</p>
-        <button type="button" onClick={complete}>{detail.action}</button>
+        <span className="mini-icon">{fixedDetail.icon}</span>
+        <b>{fixedDetail.title}</b>
+        <p>{fixedDetail.body}</p>
+        <button type="button" onClick={complete}>{fixedDetail.action}</button>
       </div>
       <style jsx>{`
         .mini-event {
