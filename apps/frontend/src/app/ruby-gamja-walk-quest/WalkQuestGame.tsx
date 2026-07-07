@@ -995,7 +995,7 @@ export default function WalkQuestGame() {
     if (phase === "barkingDog" || phase === "boss" || phase === "car") return "alert";
     return "walk";
   }, [calledDogs, dogsSitting, phase]);
-  const showWalkPathDecor = ["walk", "pull", "poop", "run", "car", "sniff", "barkingDog", "boss", "cat", "catFood"].includes(phase);
+  const showWalkPathDecor = false;
 
   const commandPlaceholder = phase === "pull"
     ? "천천히"
@@ -1055,7 +1055,7 @@ export default function WalkQuestGame() {
             />
           )}
           <div className="first-person" />
-          <SceneFurniture phase={phase} />
+          <SceneFurniture />
           {showWalkPathDecor && <WalkPathDecor />}
           {showDogs && <DogLayer pose={dogPose} phase={phase} rubyCalm={rubyCalm} gamjaQuiet={gamjaQuiet} hearts={hearts || phase === "clear"} peePulse={peePulse} />}
           {showDogs && <DogReactionBubbles phase={phase} miniEvent={miniEvent} rubyCalm={rubyCalm} gamjaQuiet={gamjaQuiet} />}
@@ -2088,6 +2088,119 @@ function addInterior(scene: THREE.Scene) {
   handle.rotation.z = Math.PI / 2;
   handle.position.set(4.88, 1.38, -7.58);
   scene.add(handle);
+
+  const fabricMat = new THREE.MeshStandardMaterial({ color: "#d9c6ad", roughness: 0.86 });
+  const cushionMat = new THREE.MeshStandardMaterial({ color: "#f0e1cc", roughness: 0.82 });
+  const blueCushionMat = new THREE.MeshStandardMaterial({ color: "#7e9bb0", roughness: 0.78 });
+  const rugMat = new THREE.MeshStandardMaterial({ color: "#d8c5ad", roughness: 0.92 });
+  const frameMat = new THREE.MeshStandardMaterial({ color: "#8a6244", roughness: 0.58 });
+  const paperMat = new THREE.MeshStandardMaterial({ color: "#f7efe2", roughness: 0.74 });
+  const leafMat = new THREE.MeshStandardMaterial({ color: "#5f8c52", roughness: 0.9 });
+  const potMat = new THREE.MeshStandardMaterial({ color: "#b4845f", roughness: 0.82 });
+  const shadeMat = new THREE.MeshStandardMaterial({ color: "#fff1d5", roughness: 0.7, emissive: "#f5d9a8", emissiveIntensity: 0.18 });
+
+  const rug = new THREE.Mesh(new THREE.PlaneGeometry(3.35, 1.65), rugMat);
+  rug.rotation.x = -Math.PI / 2;
+  rug.position.set(1.6, 0.035, -2.9);
+  rug.receiveShadow = true;
+  scene.add(rug);
+
+  const sofa = new THREE.Group();
+  const sofaBase = new THREE.Mesh(new THREE.BoxGeometry(2.35, 0.44, 0.92), fabricMat);
+  sofaBase.position.set(0, 0.36, 0);
+  sofaBase.castShadow = true;
+  sofaBase.receiveShadow = true;
+  sofa.add(sofaBase);
+  const sofaBack = new THREE.Mesh(new THREE.BoxGeometry(2.45, 0.92, 0.18), fabricMat);
+  sofaBack.position.set(0, 0.76, -0.46);
+  sofaBack.castShadow = true;
+  sofa.add(sofaBack);
+  [-1.1, 1.1].forEach((x) => {
+    const arm = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.72, 0.98), fabricMat);
+    arm.position.set(x, 0.56, 0);
+    arm.castShadow = true;
+    sofa.add(arm);
+  });
+  [-0.52, 0.22, 0.82].forEach((x, index) => {
+    const cushion = new THREE.Mesh(new THREE.BoxGeometry(0.58, 0.34, 0.18), index === 1 ? blueCushionMat : cushionMat);
+    cushion.position.set(x, 0.83, -0.34);
+    cushion.rotation.x = -0.12;
+    cushion.rotation.z = index === 1 ? 0.08 : -0.04;
+    cushion.castShadow = true;
+    sofa.add(cushion);
+  });
+  sofa.position.set(-5.0, 0.02, -2.7);
+  sofa.rotation.y = Math.PI / 2;
+  scene.add(sofa);
+
+  const consoleTable = new THREE.Group();
+  const top = new THREE.Mesh(new THREE.BoxGeometry(2.05, 0.12, 0.52), woodMat);
+  top.position.set(0, 0.86, 0);
+  top.castShadow = true;
+  consoleTable.add(top);
+  [-0.84, 0.84].forEach((x) => {
+    [-0.18, 0.18].forEach((z) => {
+      const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.045, 0.82, 8), woodMat);
+      leg.position.set(x, 0.42, z);
+      leg.castShadow = true;
+      consoleTable.add(leg);
+    });
+  });
+  const basket = new THREE.Mesh(new THREE.BoxGeometry(0.58, 0.3, 0.38), new THREE.MeshStandardMaterial({ color: "#a77a4d", roughness: 0.9 }));
+  basket.position.set(-0.48, 0.22, 0);
+  basket.castShadow = true;
+  consoleTable.add(basket);
+  const tray = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.22, 0.055, 22), new THREE.MeshStandardMaterial({ color: "#ead7bd", roughness: 0.68 }));
+  tray.position.set(0.55, 0.96, 0.03);
+  tray.castShadow = true;
+  consoleTable.add(tray);
+  consoleTable.position.set(2.4, 0.02, -7.1);
+  scene.add(consoleTable);
+
+  [-0.78, 0, 0.78].forEach((x, index) => {
+    const frame = new THREE.Group();
+    const outer = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.7, 0.055), frameMat);
+    outer.position.set(0, 0, 0);
+    frame.add(outer);
+    const paper = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.56, 0.064), paperMat);
+    paper.position.set(0, 0, 0.012);
+    frame.add(paper);
+    const art = new THREE.Mesh(
+      new THREE.CircleGeometry(0.12 + index * 0.02, 16),
+      new THREE.MeshStandardMaterial({ color: index === 1 ? "#86a66d" : "#c89b73", roughness: 0.82 })
+    );
+    art.position.set(0, 0.02, 0.05);
+    frame.add(art);
+    frame.position.set(2.4 + x, 2.15 + (index === 1 ? 0.18 : 0), -7.56);
+    scene.add(frame);
+  });
+
+  const floorLamp = new THREE.Group();
+  const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 1.55, 12), railMat);
+  pole.position.set(0, 0.82, 0);
+  floorLamp.add(pole);
+  const shade = new THREE.Mesh(new THREE.ConeGeometry(0.32, 0.5, 24), shadeMat);
+  shade.position.set(0, 1.66, 0);
+  floorLamp.add(shade);
+  floorLamp.position.set(-5.85, 0.02, -4.25);
+  scene.add(floorLamp);
+
+  const indoorPlant = new THREE.Group();
+  const pot = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.28, 0.42, 16), potMat);
+  pot.position.set(0, 0.22, 0);
+  pot.castShadow = true;
+  indoorPlant.add(pot);
+  for (let i = 0; i < 9; i += 1) {
+    const leaf = new THREE.Mesh(new THREE.SphereGeometry(0.18, 12, 8), leafMat);
+    leaf.scale.set(0.48, 0.18, 1.02);
+    leaf.position.set(Math.sin(i * 0.7) * 0.28, 0.56 + (i % 3) * 0.08, Math.cos(i * 0.7) * 0.22);
+    leaf.rotation.set(0.5, i * 0.7, 0.25);
+    leaf.castShadow = true;
+    indoorPlant.add(leaf);
+  }
+  indoorPlant.position.set(-6.15, 0.02, -6.85);
+  scene.add(indoorPlant);
+
   const plant = new THREE.Mesh(new THREE.ConeGeometry(0.55, 1.2, 8), new THREE.MeshStandardMaterial({ color: "#5f8c52", roughness: 0.9 }));
   plant.position.set(5.7, 0.7, -4.1);
   scene.add(plant);
@@ -2907,8 +3020,8 @@ function DogSprite({
   );
 }
 
-function SceneFurniture({ phase }: { phase: Phase }) {
-  const showWalkDecor = ["walk", "pull", "poop", "run", "car", "sniff", "barkingDog", "boss", "cat", "catFood"].includes(phase);
+function SceneFurniture() {
+  const showWalkDecor = false;
   return (
     <div className="furniture">
       {showWalkDecor && (
