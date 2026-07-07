@@ -2294,7 +2294,7 @@ function addOutdoor(scene: THREE.Scene, phase: Phase, returnGateOpen = false) {
   }
 
   if (isBeforeGate) {
-    const frontGate = makeRealisticFrontGate(phase === "walk");
+    const frontGate = makeRealisticFrontGate(false);
     frontGate.position.set(0, 0, -6.8);
     scene.add(frontGate);
   }
