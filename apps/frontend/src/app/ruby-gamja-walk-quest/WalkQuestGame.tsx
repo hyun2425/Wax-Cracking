@@ -2294,30 +2294,9 @@ function addOutdoor(scene: THREE.Scene, phase: Phase, returnGateOpen = false) {
   }
 
   if (isBeforeGate) {
-    const gateMat = new THREE.MeshStandardMaterial({ color: "#1f2321", roughness: 0.45, metalness: 0.15 });
-    const fenceMat = new THREE.MeshStandardMaterial({ color: "#202520", roughness: 0.5, metalness: 0.12 });
-    const addFenceRail = (x: number, z: number, width: number) => {
-      const rail = new THREE.Mesh(new THREE.BoxGeometry(width, 0.08, 0.08), fenceMat);
-      rail.position.set(x, 1.45, z);
-      scene.add(rail);
-    };
-    addFenceRail(-4.9, -6.8, 4.8);
-    addFenceRail(4.9, -6.8, 4.8);
-    for (let i = -14; i <= 14; i += 1) {
-      const x = i * 0.35;
-      if (Math.abs(x) < 1.65) continue;
-      const bar = new THREE.Mesh(new THREE.BoxGeometry(0.07, 2.2, 0.07), fenceMat);
-      bar.position.set(x, 1.1, -6.8);
-      scene.add(bar);
-    }
-    for (let i = -3; i <= 3; i += 1) {
-      const bar = new THREE.Mesh(new THREE.BoxGeometry(0.08, 2.3, 0.08), gateMat);
-      bar.position.set(i * 0.38, 1.15, -6.8);
-      scene.add(bar);
-    }
-    const rail = new THREE.Mesh(new THREE.BoxGeometry(3.1, 0.08, 0.08), gateMat);
-    rail.position.set(0, 1.55, -6.8);
-    scene.add(rail);
+    const frontGate = makeRealisticFrontGate(phase === "walk");
+    frontGate.position.set(0, 0, -6.8);
+    scene.add(frontGate);
   }
 
   if (phase === "barkingDog") {
@@ -2424,6 +2403,151 @@ function makeRoadsideHouse() {
   rail.position.set(0, 0.5, -0.95);
   group.add(rail);
   group.rotation.y = -0.45;
+  return group;
+}
+
+function makeRealisticFrontGate(openGate = false) {
+  const group = new THREE.Group();
+  const wallMat = new THREE.MeshStandardMaterial({ color: "#eadfc9", roughness: 0.82 });
+  const capMat = new THREE.MeshStandardMaterial({ color: "#d4c2a5", roughness: 0.72 });
+  const ironMat = new THREE.MeshStandardMaterial({ color: "#171c1b", roughness: 0.34, metalness: 0.32 });
+  const edgeMat = new THREE.MeshStandardMaterial({ color: "#2e3432", roughness: 0.38, metalness: 0.24 });
+  const brassMat = new THREE.MeshStandardMaterial({ color: "#c49a4e", roughness: 0.22, metalness: 0.48 });
+  const plateMat = new THREE.MeshStandardMaterial({ color: "#f5efe0", roughness: 0.62 });
+  const stoneMat = new THREE.MeshStandardMaterial({ color: "#cfc1aa", roughness: 0.88 });
+  const leafMat = new THREE.MeshStandardMaterial({ color: "#4f7e42", roughness: 0.86 });
+
+  const makeWall = (x: number, width: number) => {
+    const wall = new THREE.Mesh(new THREE.BoxGeometry(width, 1.34, 0.28), wallMat);
+    wall.position.set(x, 0.67, 0);
+    wall.castShadow = true;
+    wall.receiveShadow = true;
+    group.add(wall);
+    const cap = new THREE.Mesh(new THREE.BoxGeometry(width + 0.16, 0.18, 0.44), capMat);
+    cap.position.set(x, 1.42, 0);
+    cap.castShadow = true;
+    group.add(cap);
+  };
+
+  makeWall(-4.5, 3.6);
+  makeWall(4.5, 3.6);
+
+  [-2.36, 2.36].forEach((x) => {
+    const pillar = new THREE.Mesh(new THREE.BoxGeometry(0.52, 1.86, 0.52), wallMat);
+    pillar.position.set(x, 0.93, 0);
+    pillar.castShadow = true;
+    pillar.receiveShadow = true;
+    group.add(pillar);
+    const cap = new THREE.Mesh(new THREE.BoxGeometry(0.72, 0.18, 0.68), capMat);
+    cap.position.set(x, 1.96, 0);
+    cap.castShadow = true;
+    group.add(cap);
+    const lampBase = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.2, 0.12, 18), edgeMat);
+    lampBase.position.set(x, 2.1, 0);
+    group.add(lampBase);
+    const lamp = new THREE.Mesh(
+      new THREE.SphereGeometry(0.16, 18, 10),
+      new THREE.MeshStandardMaterial({ color: "#ffe6a5", roughness: 0.24, emissive: "#ffd06e", emissiveIntensity: 0.22 })
+    );
+    lamp.position.set(x, 2.25, 0);
+    group.add(lamp);
+  });
+
+  const makePanel = (side: -1 | 1) => {
+    const panel = new THREE.Group();
+    const width = 2.1;
+    const centerX = side * 1.05;
+    const openedAngle = side * -0.62;
+    const framePieces = [
+      { x: centerX, y: 1.52, w: width, h: 0.11 },
+      { x: centerX, y: 0.42, w: width, h: 0.11 },
+      { x: centerX - side * 0.98, y: 0.97, w: 0.12, h: 1.28 },
+      { x: centerX + side * 0.98, y: 0.97, w: 0.12, h: 1.28 },
+    ];
+
+    framePieces.forEach((piece) => {
+      const mesh = new THREE.Mesh(new THREE.BoxGeometry(piece.w, piece.h, 0.09), ironMat);
+      mesh.position.set(piece.x, piece.y, 0);
+      mesh.castShadow = true;
+      panel.add(mesh);
+    });
+
+    for (let i = 0; i < 6; i += 1) {
+      const x = centerX - side * 0.72 + side * i * 0.28;
+      const bar = new THREE.Mesh(new THREE.BoxGeometry(0.07, 1.26, 0.07), ironMat);
+      bar.position.set(x, 0.96, 0);
+      bar.castShadow = true;
+      panel.add(bar);
+      const spear = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.2, 8), ironMat);
+      spear.position.set(x, 1.74, 0);
+      spear.castShadow = true;
+      panel.add(spear);
+    }
+
+    const diagonal = new THREE.Mesh(new THREE.BoxGeometry(1.95, 0.07, 0.07), edgeMat);
+    diagonal.position.set(centerX, 0.96, 0.02);
+    diagonal.rotation.z = side * 0.36;
+    diagonal.castShadow = true;
+    panel.add(diagonal);
+
+    const hingeX = side * 2.08;
+    [0.62, 1.35].forEach((y) => {
+      const hinge = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.18, 14), brassMat);
+      hinge.rotation.x = Math.PI / 2;
+      hinge.position.set(hingeX, y, -0.08);
+      panel.add(hinge);
+    });
+
+    const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.46, 14), brassMat);
+    handle.rotation.z = Math.PI / 2;
+    handle.position.set(side * 0.22, 0.9, -0.1);
+    panel.add(handle);
+
+    if (openGate) {
+      panel.position.set(side * 2.08, 0, 0);
+      panel.rotation.y = openedAngle;
+      panel.children.forEach((child) => {
+        child.position.x -= side * 2.08;
+      });
+    }
+
+    group.add(panel);
+  };
+
+  makePanel(-1);
+  makePanel(1);
+
+  const latchPlate = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.28, 0.045), plateMat);
+  latchPlate.position.set(0, 0.98, -0.08);
+  group.add(latchPlate);
+  const latch = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.055, 0.05), brassMat);
+  latch.position.set(0, 0.98, -0.12);
+  group.add(latch);
+
+  const intercom = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.48, 0.06), edgeMat);
+  intercom.position.set(2.68, 1.1, -0.17);
+  group.add(intercom);
+  const button = new THREE.Mesh(new THREE.SphereGeometry(0.055, 14, 8), brassMat);
+  button.position.set(2.68, 1.0, -0.22);
+  group.add(button);
+
+  for (let i = 0; i < 5; i += 1) {
+    const stone = new THREE.Mesh(new THREE.CylinderGeometry(0.34 + i * 0.04, 0.36 + i * 0.04, 0.035, 22), stoneMat);
+    stone.rotation.y = i * 0.35;
+    stone.scale.x = 1.28;
+    stone.position.set(Math.sin(i * 0.8) * 0.25, 0.04, 1.0 + i * 0.58);
+    stone.receiveShadow = true;
+    group.add(stone);
+  }
+
+  [-3.05, 3.05].forEach((x) => {
+    const shrub = new THREE.Mesh(new THREE.SphereGeometry(0.48, 18, 12), leafMat);
+    shrub.scale.set(1.25, 0.72, 0.8);
+    shrub.position.set(x, 0.44, 0.32);
+    shrub.castShadow = true;
+    group.add(shrub);
+  });
+
   return group;
 }
 
@@ -2705,22 +2829,71 @@ function makeReturnHome(openDoor: boolean, openGate: boolean) {
     const localCenterX = openGate ? -side * 0.84 : 0;
     const railTop = new THREE.Mesh(new THREE.BoxGeometry(panelWidth, 0.08, 0.08), gateMat);
     railTop.position.set(localCenterX, 1.14, 0);
+    railTop.castShadow = true;
     const railBottom = new THREE.Mesh(new THREE.BoxGeometry(panelWidth, 0.08, 0.08), gateMat);
     railBottom.position.set(localCenterX, 0.38, 0);
+    railBottom.castShadow = true;
+    const railMid = new THREE.Mesh(new THREE.BoxGeometry(panelWidth * 0.92, 0.055, 0.07), gateMat);
+    railMid.position.set(localCenterX, 0.78, -0.015);
+    railMid.castShadow = true;
     panel.add(railTop, railBottom);
+    panel.add(railMid);
+
+    const sideFrameA = new THREE.Mesh(new THREE.BoxGeometry(0.08, 1.18, 0.09), gateMat);
+    sideFrameA.position.set(localCenterX - 0.82, 0.76, 0);
+    sideFrameA.castShadow = true;
+    const sideFrameB = sideFrameA.clone();
+    sideFrameB.position.x = localCenterX + 0.82;
+    panel.add(sideFrameA, sideFrameB);
+
     for (let i = 0; i < 6; i += 1) {
       const bar = new THREE.Mesh(new THREE.BoxGeometry(0.065, 1.26, 0.065), gateMat);
       bar.position.set(localCenterX - 0.7 + i * 0.28, 0.75, 0);
       bar.castShadow = true;
       panel.add(bar);
+      const tip = new THREE.Mesh(new THREE.ConeGeometry(0.065, 0.17, 8), gateMat);
+      tip.position.set(bar.position.x, 1.48, 0);
+      tip.castShadow = true;
+      panel.add(tip);
     }
+
+    const diagonal = new THREE.Mesh(new THREE.BoxGeometry(panelWidth * 0.95, 0.045, 0.055), gateMat);
+    diagonal.position.set(localCenterX, 0.78, 0.025);
+    diagonal.rotation.z = side * 0.3;
+    diagonal.castShadow = true;
+    panel.add(diagonal);
+
+    [0.48, 1.13].forEach((y) => {
+      const hinge = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.18, 14), gateHandleMat);
+      hinge.rotation.x = Math.PI / 2;
+      hinge.position.set(localCenterX + side * 0.86, y, -0.09);
+      hinge.castShadow = true;
+      panel.add(hinge);
+    });
+
+    const handlePlate = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.2, 0.045), gateHandleMat);
+    handlePlate.position.set(localCenterX - side * 0.5, 0.8, -0.08);
+    panel.add(handlePlate);
     const handle = new THREE.Mesh(new THREE.SphereGeometry(0.08, 16, 10), gateHandleMat);
-    handle.position.set(localCenterX - side * 0.58, 0.78, -0.08);
+    handle.position.set(localCenterX - side * 0.58, 0.78, -0.12);
     panel.add(handle);
     group.add(panel);
   };
   makeGatePanel(-1);
   makeGatePanel(1);
+
+  const centerLatch = new THREE.Mesh(new THREE.BoxGeometry(0.58, 0.06, 0.06), gateHandleMat);
+  centerLatch.position.set(0, 0.83, -4.13);
+  centerLatch.castShadow = true;
+  group.add(centerLatch);
+
+  const intercom = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.34, 0.07), roofEdgeMat);
+  intercom.position.set(2.18, 0.96, -4.2);
+  intercom.castShadow = true;
+  group.add(intercom);
+  const intercomButton = new THREE.Mesh(new THREE.SphereGeometry(0.035, 12, 8), gateHandleMat);
+  intercomButton.position.set(2.18, 0.9, -4.25);
+  group.add(intercomButton);
 
   [-3.25, 3.25].forEach((x) => {
     const shrub = new THREE.Mesh(new THREE.SphereGeometry(0.55, 18, 12), leafMat);
