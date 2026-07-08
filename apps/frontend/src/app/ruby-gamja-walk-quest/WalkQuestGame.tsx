@@ -1053,6 +1053,8 @@ export default function WalkQuestGame() {
               onWalkForward={handleWalkForward}
               movementLocked={needsInput}
               miniEvent={miniEvent}
+              onPuddleAvoid={completeMiniEvent}
+              onPuddleSplash={() => fall("물웅덩이를 그대로 밟아서 미끄러졌어요. 다음엔 옆으로 살짝 피해봐요.")}
             />
           )}
           <div className="first-person" />
@@ -1555,6 +1557,8 @@ function ThreeWalkWorld({
   onWalkForward,
   movementLocked = false,
   miniEvent,
+  onPuddleAvoid,
+  onPuddleSplash,
 }: {
   phase: Phase;
   calledDogs: boolean;
@@ -1569,12 +1573,15 @@ function ThreeWalkWorld({
   onWalkForward?: (delta: number) => void;
   movementLocked?: boolean;
   miniEvent: MiniEvent;
+  onPuddleAvoid?: () => void;
+  onPuddleSplash?: () => void;
 }) {
   const mountRef = useRef<HTMLDivElement | null>(null);
   const positionRef = useRef({ x: 0, z: 5.5, yaw: 0 });
   const keysRef = useRef(new Set<string>());
   const stepAudioRef = useRef<HTMLAudioElement | null>(null);
   const reachedEntryRef = useRef(false);
+  const puddleResolvedRef = useRef(false);
   const rubyCalmRef = useRef(rubyCalm);
   const gamjaQuietRef = useRef(gamjaQuiet);
   const dogsRoadsideRef = useRef(dogsRoadside);
@@ -1601,6 +1608,7 @@ function ThreeWalkWorld({
     const mount = mountRef.current;
     if (!mount) return;
     reachedEntryRef.current = false;
+    puddleResolvedRef.current = false;
     if (phase === "upstairs") positionRef.current = { x: -3.6, z: 8.2, yaw: 0 };
     if (phase === "garden") positionRef.current = { x: 0, z: 6.8, yaw: 0 };
     if (phase === "gate") positionRef.current = { x: 0, z: -3.95, yaw: 0 };
@@ -1701,6 +1709,11 @@ function ThreeWalkWorld({
     sniffFlowerPatchSmall.visible = phase === "sniff" && miniEvent === "flowerSniff";
     sniffFlowerPatchSmall.scale.set(0.85, 0.85, 0.85);
     scene.add(sniffFlowerPatchSmall);
+
+    const puddle = makeAvoidPuddle();
+    puddle.visible = phase === "sniff" && miniEvent === "puddle";
+    puddle.position.set(0, 0.04, 2.2);
+    scene.add(puddle);
 
     const otherDog = makeOtherDog();
     otherDog.visible = false;
@@ -1848,6 +1861,21 @@ function ThreeWalkWorld({
         sniffFlowerPatchSmall.position.set(pos.x + 1.05, 0.07, pos.z - 4.1);
         sniffFlowerPatchSmall.rotation.y = -0.25;
       }
+      if (phase === "sniff" && miniEvent === "puddle" && !puddleResolvedRef.current) {
+        dogGroup.position.x = pos.x;
+        dogGroup.position.z = pos.z - 3.25;
+        puddle.rotation.z = Math.sin(clock.elapsedTime * 1.4) * 0.04;
+        const reachedPuddle = pos.z < 2.9;
+        const clearedPuddle = pos.z < 1.45;
+        const safeSide = Math.abs(pos.x) > 1.05;
+        if (reachedPuddle && !safeSide) {
+          puddleResolvedRef.current = true;
+          onPuddleSplash?.();
+        } else if (clearedPuddle && safeSide) {
+          puddleResolvedRef.current = true;
+          onPuddleAvoid?.();
+        }
+      }
       const walkLike = ["walk", "pull", "run", "car", "sniff", "barkingDog", "boss", "cat", "catFood", "home", "enterHome"].includes(phase);
       const autoWalkingPhase = ["pull", "run", "cat", "catFood"].includes(phase);
       const activelyWalking = walkLike && ((!movementLocked && keysRef.current.has("KeyW")) || autoWalkingPhase);
@@ -1922,7 +1950,7 @@ function ThreeWalkWorld({
       gamjaSitMap.dispose();
       mount.removeChild(renderer.domElement);
     };
-  }, [calledDogs, canReachEntry, dogsRoadside, isOutdoor, miniEvent, movementLocked, onReachEntry, onReachGate, onReachLiving, onWalkForward, phase, returnGateOpen]);
+  }, [calledDogs, canReachEntry, dogsRoadside, isOutdoor, miniEvent, movementLocked, onPuddleAvoid, onPuddleSplash, onReachEntry, onReachGate, onReachLiving, onWalkForward, phase, returnGateOpen]);
 
   return (
     <div className="three-world" ref={mountRef} aria-label="3D 산책길">
@@ -2380,6 +2408,40 @@ function makeVisibleFlowerPatch(seed = 0) {
     bloom.position.set(x, 0.27 + (i % 2) * 0.04, z);
     bloom.castShadow = true;
     group.add(bloom);
+  }
+
+  return group;
+}
+
+function makeAvoidPuddle() {
+  const group = new THREE.Group();
+  const waterMat = new THREE.MeshStandardMaterial({
+    color: "#77c9e7",
+    roughness: 0.18,
+    metalness: 0.05,
+    transparent: true,
+    opacity: 0.72,
+  });
+  const rimMat = new THREE.MeshStandardMaterial({ color: "#5ba6ba", roughness: 0.5, transparent: true, opacity: 0.48 });
+  const puddle = new THREE.Mesh(new THREE.CylinderGeometry(1.05, 1.2, 0.025, 32), waterMat);
+  puddle.scale.set(1.28, 1, 0.52);
+  puddle.position.y = 0.03;
+  puddle.receiveShadow = true;
+  group.add(puddle);
+
+  const rim = new THREE.Mesh(new THREE.TorusGeometry(0.86, 0.025, 8, 40), rimMat);
+  rim.scale.set(1.72, 0.62, 1);
+  rim.rotation.x = Math.PI / 2;
+  rim.position.y = 0.055;
+  group.add(rim);
+
+  const glintMat = new THREE.MeshBasicMaterial({ color: "#f5ffff", transparent: true, opacity: 0.78 });
+  for (let i = 0; i < 3; i += 1) {
+    const glint = new THREE.Mesh(new THREE.PlaneGeometry(0.24 - i * 0.035, 0.035), glintMat);
+    glint.rotation.x = -Math.PI / 2;
+    glint.rotation.z = 0.2 + i * 0.18;
+    glint.position.set(-0.45 + i * 0.42, 0.075, -0.08 + i * 0.09);
+    group.add(glint);
   }
 
   return group;
@@ -3864,6 +3926,7 @@ function SceneContent(props: {
   if (p.phase === "boss") return <BossClickGame lane={p.bossLane} blocks={p.bossBlocks} timeLeft={p.timeLeft} clickBossDog={p.clickBossDog} />;
   if (p.phase === "cat") return <CatChaseLayer timeLeft={p.timeLeft} />;
   if (p.phase === "catFood") return <CatFoodLayer timeLeft={p.timeLeft} />;
+  if (p.phase === "sniff" && p.miniEvent === "puddle") return <PuddleAvoidGuide />;
   if (p.phase === "sniff") return <MiniWalkEvent event={p.miniEvent} complete={p.completeMiniEvent} />;
   if (["upstairs", "living", "excited", "garden"].includes(p.phase)) return null;
   if (p.phase === "leashPrep") return <GearShelf rubyLeashed={p.rubyLeashed} gamjaLeashed={p.gamjaLeashed} hasPoopBag={p.hasPoopBag} side />;
@@ -4068,6 +4131,53 @@ function MiniWalkEvent({ event, complete }: { event: MiniEvent; complete: () => 
           box-shadow: 0 12px 22px rgba(65, 112, 48, 0.26);
           font-weight: 950;
           cursor: pointer;
+        }
+      `}</style>
+    </div>
+  );
+}
+
+function PuddleAvoidGuide() {
+  return (
+    <div className="puddle-guide" role="status" aria-live="polite">
+      <strong>{"\uBB3C\uC6C5\uB369\uC774 \uBC1C\uACAC!"}</strong>
+      <span>{"A/D\uB85C \uC606\uC73C\uB85C \uBE44\uD0A8 \uB4A4 W\uB85C \uC9C0\uB098\uAC00\uC138\uC694."}</span>
+      <small>{"\uC815\uBA74\uC73C\uB85C \uBC1F\uC73C\uBA74 \uBBF8\uB044\uB7EC\uC838\uC694."}</small>
+      <style jsx>{`
+        .puddle-guide {
+          position: absolute;
+          left: 50%;
+          bottom: 84px;
+          z-index: 7;
+          width: min(420px, calc(100% - 32px));
+          padding: 18px 22px;
+          border: 2px solid rgba(96, 158, 178, 0.42);
+          border-radius: 24px;
+          background: linear-gradient(180deg, rgba(236, 252, 255, 0.96), rgba(213, 242, 250, 0.92));
+          box-shadow: 0 16px 32px rgba(47, 103, 118, 0.22);
+          color: #2c4f58;
+          text-align: center;
+          transform: translateX(-50%);
+        }
+        strong,
+        span,
+        small {
+          display: block;
+        }
+        strong {
+          margin-bottom: 6px;
+          font-family: var(--font-display);
+          font-size: 1.35rem;
+          color: #246273;
+        }
+        span {
+          font-weight: 950;
+          font-size: 1.04rem;
+        }
+        small {
+          margin-top: 5px;
+          color: #6a7b80;
+          font-weight: 800;
         }
       `}</style>
     </div>
