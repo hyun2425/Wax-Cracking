@@ -3887,9 +3887,6 @@ function SceneContent(props: {
       </ActionDock>
     );
   }
-  if (p.phase === "home") {
-    return <ActionDock><button onClick={() => { p.setPhase("enterHome"); p.setMessage("현관문이 열렸어요. 루비와 감자가 먼저 집으로 쏙 들어가요."); }}>{"집 안으로 들어가기"}</button></ActionDock>;
-  }
   if (p.phase === "enterHome") return <ActionDock><span className="counter">집으로 들어가는 중...</span></ActionDock>;
   if (p.phase === "clear") return <CenterCard title="산책 완료!" body="산책 완료! 루비와 감자가 행복해 보여요." button="다시 하기" onClick={p.reset} image={dog.duo} />;
   if (p.phase === "fail") return <CenterCard title="산책 실패..." body="다시 도전해볼까요?" button="Restart" onClick={p.reset} image={dog.duo} />;
