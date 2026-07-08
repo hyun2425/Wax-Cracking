@@ -1052,6 +1052,7 @@ export default function WalkQuestGame() {
               onReachGate={reachGate}
               onWalkForward={handleWalkForward}
               movementLocked={needsInput}
+              miniEvent={miniEvent}
             />
           )}
           <div className="first-person" />
@@ -1553,6 +1554,7 @@ function ThreeWalkWorld({
   onReachGate,
   onWalkForward,
   movementLocked = false,
+  miniEvent,
 }: {
   phase: Phase;
   calledDogs: boolean;
@@ -1566,6 +1568,7 @@ function ThreeWalkWorld({
   onReachGate?: () => void;
   onWalkForward?: (delta: number) => void;
   movementLocked?: boolean;
+  miniEvent: MiniEvent;
 }) {
   const mountRef = useRef<HTMLDivElement | null>(null);
   const positionRef = useRef({ x: 0, z: 5.5, yaw: 0 });
@@ -1688,6 +1691,16 @@ function ThreeWalkWorld({
     car.visible = phase === "car";
     car.position.set(0.7, 0.42, -10.5);
     scene.add(car);
+
+    const sniffFlowerPatch = makeVisibleFlowerPatch(42);
+    sniffFlowerPatch.visible = phase === "sniff" && miniEvent === "flowerSniff";
+    sniffFlowerPatch.scale.set(1.25, 1.25, 1.25);
+    scene.add(sniffFlowerPatch);
+
+    const sniffFlowerPatchSmall = makeVisibleFlowerPatch(47);
+    sniffFlowerPatchSmall.visible = phase === "sniff" && miniEvent === "flowerSniff";
+    sniffFlowerPatchSmall.scale.set(0.85, 0.85, 0.85);
+    scene.add(sniffFlowerPatchSmall);
 
     const otherDog = makeOtherDog();
     otherDog.visible = false;
@@ -1822,6 +1835,19 @@ function ThreeWalkWorld({
         dogGroup.position.z = pos.z - 3.05;
         gamja.position.x = 0.55 - Math.abs(Math.sin(clock.elapsedTime * 6.5)) * 0.42;
       }
+      if (phase === "sniff" && miniEvent === "flowerSniff") {
+        const sniffBounce = Math.sin(clock.elapsedTime * 4.8) * 0.035;
+        dogGroup.position.x = pos.x;
+        dogGroup.position.z = pos.z - 3.25;
+        ruby.position.set(-0.62, 0.72 + sniffBounce, -1.18);
+        gamja.position.set(0.78, 0.58 - sniffBounce * 0.4, -1.08);
+        ruby.rotation.z = -0.16 + Math.sin(clock.elapsedTime * 3.2) * 0.025;
+        gamja.rotation.z = 0.18 + Math.sin(clock.elapsedTime * 3.6) * 0.025;
+        sniffFlowerPatch.position.set(pos.x - 0.1, 0.08, pos.z - 4.55);
+        sniffFlowerPatch.rotation.y = Math.sin(clock.elapsedTime * 0.8) * 0.08;
+        sniffFlowerPatchSmall.position.set(pos.x + 1.05, 0.07, pos.z - 4.1);
+        sniffFlowerPatchSmall.rotation.y = -0.25;
+      }
       const walkLike = ["walk", "pull", "run", "car", "sniff", "barkingDog", "boss", "cat", "catFood", "home", "enterHome"].includes(phase);
       const autoWalkingPhase = ["pull", "run", "cat", "catFood"].includes(phase);
       const activelyWalking = walkLike && ((!movementLocked && keysRef.current.has("KeyW")) || autoWalkingPhase);
@@ -1896,7 +1922,7 @@ function ThreeWalkWorld({
       gamjaSitMap.dispose();
       mount.removeChild(renderer.domElement);
     };
-  }, [calledDogs, canReachEntry, dogsRoadside, isOutdoor, movementLocked, onReachEntry, onReachGate, onReachLiving, onWalkForward, phase, returnGateOpen]);
+  }, [calledDogs, canReachEntry, dogsRoadside, isOutdoor, miniEvent, movementLocked, onReachEntry, onReachGate, onReachLiving, onWalkForward, phase, returnGateOpen]);
 
   return (
     <div className="three-world" ref={mountRef} aria-label="3D 산책길">
