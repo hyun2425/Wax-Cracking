@@ -2317,11 +2317,11 @@ function addOutdoor(scene: THREE.Scene, phase: Phase, returnGateOpen = false) {
       flower.castShadow = true;
       scene.add(flower);
     }
-    for (let i = 0; i < 8; i += 1) {
+    for (let i = 0; i < 3; i += 1) {
       const shop = makeStreetShop(i % 3);
-      shop.position.set(i % 2 === 0 ? -3.55 : 3.55, 0, 2.5 - i * 10.8);
+      shop.position.set(i % 2 === 0 ? -3.85 : 3.85, 0, -4.5 - i * 24);
       shop.rotation.y = i % 2 === 0 ? Math.PI / 2.35 : -Math.PI / 2.35;
-      shop.scale.setScalar(i < 2 ? 1.55 : 1.28);
+      shop.scale.setScalar(i === 0 ? 1.32 : 1.12);
       scene.add(shop);
     }
     for (let i = 0; i < 10; i += 1) {
@@ -3670,14 +3670,6 @@ function WalkPathDecor() {
       </div>
       <div className="path-flower-strip left" />
       <div className="path-flower-strip right" />
-      <div className="path-shop left">
-        <i />
-        <span />
-      </div>
-      <div className="path-shop right">
-        <i />
-        <span />
-      </div>
       <div className="path-bench" />
       <div className="path-lamp left" />
       <div className="path-lamp right" />
