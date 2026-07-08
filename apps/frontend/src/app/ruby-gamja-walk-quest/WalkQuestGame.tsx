@@ -231,7 +231,6 @@ const phaseInfo: Record<Phase, { scene: string; mission: string; bg: string }> =
 export default function WalkQuestGame() {
   const [phase, setPhase] = useState<Phase>("intro");
   const [message, setMessage] = useState("\uB8E8\uBE44\uC640 \uAC10\uC790\uAC00 \uC0B0\uCC45\uC744 \uAE30\uB2E4\uB9AC\uACE0 \uC788\uC5B4\uC694.");
-  const [input, setInput] = useState("");
   const [commandInputLocked, setCommandInputLocked] = useState(false);
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const [falls, setFalls] = useState(0);
@@ -389,7 +388,6 @@ export default function WalkQuestGame() {
   function reset() {
     setPhase("intro");
     setMessage("\uB8E8\uBE44\uC640 \uAC10\uC790\uAC00 \uC0B0\uCC45\uC744 \uAE30\uB2E4\uB9AC\uACE0 \uC788\uC5B4\uC694.");
-    setInput("");
     setTimeLeft(null);
     setFalls(0);
     setCalledDogs(false);
@@ -642,10 +640,10 @@ export default function WalkQuestGame() {
 
   function submitCommand(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const command = input.trim();
+    const command = commandInputRef.current?.value.trim() ?? "";
     if (!command) return;
     runCommand(command);
-    setInput("");
+    if (commandInputRef.current) commandInputRef.current.value = "";
   }
 
   function handleCommandKeyDown(event: ReactKeyboardEvent<HTMLInputElement>) {
@@ -657,7 +655,7 @@ export default function WalkQuestGame() {
       event.preventDefault();
       return;
     }
-    if (commandInputLocked && event.key === "Enter" && !input.trim()) event.preventDefault();
+    if (commandInputLocked && event.key === "Enter" && !commandInputRef.current?.value.trim()) event.preventDefault();
   }
 
   function runCommand(command: string) {
@@ -1130,11 +1128,10 @@ export default function WalkQuestGame() {
             <form className="command" onSubmit={submitCommand}>
               <input
                 ref={commandInputRef}
-                value={input}
                 onChange={(event) => {
                   const nextInput = event.target.value;
                   const cleanedInput = nextInput.replace(movementJamoPattern, "");
-                  setInput(cleanedInput);
+                  event.currentTarget.value = cleanedInput;
                 }}
                 onKeyDown={handleCommandKeyDown}
                 placeholder={commandPlaceholder}
