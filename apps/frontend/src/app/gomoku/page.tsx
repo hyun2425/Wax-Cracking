@@ -507,8 +507,69 @@ export default function GomokuPage() {
             </button>
           </div>
 
-          <div className="mx-auto aspect-square w-full max-w-[720px] rounded-lg border-2 border-[#9f7f4f] bg-[#d8a95e] p-[5.6%] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.35),inset_12px_0_32px_rgba(255,236,169,0.22)]">
-            <div className="relative h-full w-full border border-[#5f4328] bg-[linear-gradient(90deg,rgba(255,255,255,0.12),transparent_18%,rgba(117,77,32,0.12)_52%,transparent_83%),repeating-linear-gradient(90deg,rgba(112,74,34,0.08)_0_1px,transparent_1px_17px),linear-gradient(#4d3524,#4d3524),repeating-linear-gradient(to_right,#4d3524_0_2px,transparent_2px_calc(100%/14)),repeating-linear-gradient(to_bottom,#4d3524_0_2px,transparent_2px_calc(100%/14))] bg-[length:100%_100%,34px_100%,100%_2px,calc(100%/14)_100%,100%_calc(100%/14)] bg-[position:0_0,0_0,0_100%,0_0,0_0] bg-repeat">
+          <div className="mx-auto aspect-square w-full max-w-[720px] rounded-lg border border-[#8c6635] bg-[#d8a24d] p-[7%] shadow-[inset_0_0_0_2px_rgba(255,237,181,0.32),inset_16px_0_40px_rgba(255,231,143,0.28),inset_-18px_0_36px_rgba(103,63,22,0.16),0_12px_28px_rgba(69,47,22,0.18)]">
+            <div className="relative h-full w-full">
+              <svg
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0 h-full w-full"
+                preserveAspectRatio="none"
+                viewBox="0 0 100 100"
+              >
+                <defs>
+                  <linearGradient id="gomokuWood" x1="0" x2="1" y1="0" y2="0">
+                    <stop offset="0" stopColor="#d39a43" />
+                    <stop offset="0.32" stopColor="#efc86f" />
+                    <stop offset="0.66" stopColor="#dca84f" />
+                    <stop offset="1" stopColor="#f1cd78" />
+                  </linearGradient>
+                  <pattern
+                    height="7"
+                    id="gomokuGrain"
+                    patternUnits="userSpaceOnUse"
+                    width="13"
+                  >
+                    <path
+                      d="M0 2 C3 1, 5 4, 8 2 S12 1, 13 3"
+                      fill="none"
+                      stroke="#a46d2c"
+                      strokeOpacity="0.18"
+                      strokeWidth="0.22"
+                    />
+                    <path
+                      d="M1 6 C4 4, 7 7, 12 5"
+                      fill="none"
+                      stroke="#fff1b2"
+                      strokeOpacity="0.22"
+                      strokeWidth="0.18"
+                    />
+                  </pattern>
+                </defs>
+                <rect fill="url(#gomokuWood)" height="100" width="100" />
+                <rect fill="url(#gomokuGrain)" height="100" width="100" />
+                {Array.from({ length: boardSize }, (_, index) => {
+                  const position = (index / (boardSize - 1)) * 100;
+                  return (
+                    <g key={index}>
+                      <line
+                        stroke="#2c2118"
+                        strokeWidth={index === 0 || index === boardSize - 1 ? 0.72 : 0.42}
+                        x1={position}
+                        x2={position}
+                        y1="0"
+                        y2="100"
+                      />
+                      <line
+                        stroke="#2c2118"
+                        strokeWidth={index === 0 || index === boardSize - 1 ? 0.72 : 0.42}
+                        x1="0"
+                        x2="100"
+                        y1={position}
+                        y2={position}
+                      />
+                    </g>
+                  );
+                })}
+              </svg>
               {[
                 [3, 3],
                 [3, 11],
@@ -517,7 +578,7 @@ export default function GomokuPage() {
                 [11, 11],
               ].map(([row, col]) => (
                 <span
-                  className="pointer-events-none absolute z-0 block aspect-square w-[1.45%] min-w-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#2d2118]"
+                  className="pointer-events-none absolute z-0 block aspect-square w-[1.55%] min-w-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#211711]"
                   key={`${row}-${col}`}
                   style={{
                     left: `${(col / (boardSize - 1)) * 100}%`,
