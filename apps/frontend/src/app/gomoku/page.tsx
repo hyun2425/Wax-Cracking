@@ -64,7 +64,7 @@ function waitForIceGathering(peer: RTCPeerConnection) {
   }
 
   return new Promise<void>((resolve) => {
-    const timeoutId = window.setTimeout(resolve, 5000);
+    const timeoutId = window.setTimeout(resolve, 10000);
     peer.addEventListener("icegatheringstatechange", () => {
       if (peer.iceGatheringState === "complete") {
         window.clearTimeout(timeoutId);
@@ -153,6 +153,7 @@ export default function GomokuPage() {
   const [answerData, setAnswerData] = useState("");
   const [remoteAnswerData, setRemoteAnswerData] = useState("");
   const [notice, setNotice] = useState("");
+  const [peerDetail, setPeerDetail] = useState("연결 전");
   const peerRef = useRef<RTCPeerConnection | null>(null);
   const channelRef = useRef<RTCDataChannel | null>(null);
   const roleRef = useRef<Role>(0);
@@ -170,10 +171,27 @@ export default function GomokuPage() {
     channelRef.current = null;
     peerRef.current = null;
     roleRef.current = 0;
+    setPeerDetail("연결 전");
   }
 
   function attachPeer(peer: RTCPeerConnection) {
+    const updatePeerDetail = () => {
+      setPeerDetail(
+        `WebRTC ${peer.connectionState} / ICE ${peer.iceConnectionState} / 후보 ${peer.iceGatheringState}`,
+      );
+    };
+
+    peer.oniceconnectionstatechange = () => {
+      updatePeerDetail();
+
+      if (peer.iceConnectionState === "failed") {
+        setNotice("브라우저끼리 직접 연결하지 못했습니다. 다른 와이파이나 핫스팟으로 시도해 보거나, 초대/응답 데이터를 새로 만들어 주세요.");
+      }
+    };
+    peer.onicegatheringstatechange = updatePeerDetail;
+    peer.onsignalingstatechange = updatePeerDetail;
     peer.onconnectionstatechange = () => {
+      updatePeerDetail();
       if (peer.connectionState === "connected") {
         setConnection("connected");
         setNotice("상대와 연결됐습니다.");
@@ -185,8 +203,13 @@ export default function GomokuPage() {
 
       if (["closed", "failed", "disconnected"].includes(peer.connectionState)) {
         setConnection("closed");
+        if (peer.connectionState === "failed") {
+          setNotice("직접 연결에 실패했습니다. 회사/학교망, 일부 모바일망, VPN에서는 서버 없는 연결이 막힐 수 있습니다.");
+        }
       }
     };
+
+    updatePeerDetail();
   }
 
   function attachChannel(channel: RTCDataChannel) {
@@ -399,6 +422,12 @@ export default function GomokuPage() {
               <Status label="내 돌" value={myStone} />
               <Status label="차례" value={turnLabel} />
               <Status label="상태" value={game.winner ? "종료" : "진행"} />
+            </div>
+            <div className="mt-3 rounded-lg border border-[#e8dece] bg-[#fffaf2] p-3">
+              <p className="text-xs font-extrabold text-[#6f685e]">연결 상세</p>
+              <p className="mt-1 break-words text-sm font-bold text-[#4f473d]">
+                {peerDetail}
+              </p>
             </div>
             <div className="mt-4 rounded-lg bg-[#f7f4ed] p-4">
               <p className="text-sm font-extrabold text-[#6f685e]">현재 상태</p>
