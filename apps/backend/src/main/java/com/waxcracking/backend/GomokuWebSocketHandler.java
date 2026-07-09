@@ -115,7 +115,6 @@ public class GomokuWebSocketHandler extends TextWebSocketHandler {
 		private final int[][] board = new int[BOARD_SIZE][BOARD_SIZE];
 		private final Map<String, WebSocketSession> sessions = new HashMap<>();
 		private final Map<String, Integer> players = new HashMap<>();
-		private int nextPlayer = 1;
 		private int turn = 1;
 		private int winner = 0;
 		private int moveCount = 0;
@@ -131,10 +130,14 @@ public class GomokuWebSocketHandler extends TextWebSocketHandler {
 
 		private synchronized void join(WebSocketSession session) {
 			sessions.put(session.getId(), session);
-			int player = nextPlayer <= 2 ? nextPlayer++ : 0;
+			int player = nextAvailablePlayer();
 			players.put(session.getId(), player);
-			if (player == 2) {
-				status = "두 명이 연결됐습니다. 검은 돌부터 시작하세요.";
+			if (players.containsValue(1) && players.containsValue(2)) {
+				if (winner == 0 && moveCount == 0) {
+					status = "두 명이 연결됐습니다. 검은 돌부터 시작하세요.";
+				} else if (winner == 0) {
+					status = playerName(turn) + " 차례입니다.";
+				}
 			}
 		}
 
@@ -142,8 +145,18 @@ public class GomokuWebSocketHandler extends TextWebSocketHandler {
 			sessions.remove(session.getId());
 			Integer player = players.remove(session.getId());
 			if (player != null && player > 0) {
-				status = playerName(player) + " 플레이어가 나갔습니다. 재접속하거나 새 판을 시작하세요.";
+				status = playerName(player) + " 플레이어가 나갔습니다. 다시 접속하거나 새 판을 시작하세요.";
 			}
+		}
+
+		private synchronized int nextAvailablePlayer() {
+			if (!players.containsValue(1)) {
+				return 1;
+			}
+			if (!players.containsValue(2)) {
+				return 2;
+			}
+			return 0;
 		}
 
 		private synchronized boolean isEmpty() {
@@ -250,6 +263,7 @@ public class GomokuWebSocketHandler extends TextWebSocketHandler {
 
 			for (WebSocketSession session : disconnected) {
 				leave(session);
+				sessionRooms.remove(session.getId());
 			}
 		}
 
