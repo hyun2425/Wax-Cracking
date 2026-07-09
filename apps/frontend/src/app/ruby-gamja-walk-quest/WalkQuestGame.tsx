@@ -2180,8 +2180,8 @@ function addInterior(scene: THREE.Scene) {
     cushion.castShadow = true;
     sofa.add(cushion);
   });
-  sofa.position.set(-5.0, 0.02, -2.7);
-  sofa.rotation.y = Math.PI / 2;
+  sofa.position.set(3.25, 0.02, -3.25);
+  sofa.rotation.y = -0.08;
   scene.add(sofa);
 
   const consoleTable = new THREE.Group();
@@ -3501,10 +3501,10 @@ function SceneFurniture() {
         }
         .sofa {
           position: absolute;
-          left: 7%;
-          bottom: 215px;
-          width: min(380px, 42vw);
-          height: 132px;
+          right: 9%;
+          bottom: 156px;
+          width: min(340px, 36vw);
+          height: 118px;
           border-radius: 32px 32px 18px 18px;
           background: linear-gradient(180deg, #d9c4ae, #a3836c);
           box-shadow: 0 22px 40px rgba(80, 58, 43, 0.22);
