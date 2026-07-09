@@ -17,6 +17,7 @@ public class HealthController {
 				"status", "ok",
 				"service", "wax-cracking-backend",
 				"database", "disabled",
+				"gomoku", "websocket-enabled",
 				"timestamp", Instant.now().toString());
 	}
 }
