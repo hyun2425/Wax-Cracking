@@ -1579,9 +1579,18 @@ function ThreeWalkWorld({
   const stepAudioRef = useRef<HTMLAudioElement | null>(null);
   const reachedEntryRef = useRef(false);
   const puddleResolvedRef = useRef(false);
+  const canReachEntryRef = useRef(canReachEntry);
+  const movementLockedRef = useRef(movementLocked);
+  const miniEventRef = useRef(miniEvent);
   const rubyCalmRef = useRef(rubyCalm);
   const gamjaQuietRef = useRef(gamjaQuiet);
   const dogsRoadsideRef = useRef(dogsRoadside);
+  const onReachLivingRef = useRef(onReachLiving);
+  const onReachEntryRef = useRef(onReachEntry);
+  const onReachGateRef = useRef(onReachGate);
+  const onWalkForwardRef = useRef(onWalkForward);
+  const onPuddleAvoidRef = useRef(onPuddleAvoid);
+  const onPuddleSplashRef = useRef(onPuddleSplash);
   const outdoorPhases: Phase[] = ["garden", "gate", "walk", "pull", "poop", "run", "car", "sniff", "barkingDog", "boss", "cat", "catFood", "home", "enterHome"];
   const isOutdoor = outdoorPhases.includes(phase);
 
@@ -1596,10 +1605,19 @@ function ThreeWalkWorld({
   }, [movementLocked]);
 
   useEffect(() => {
+    canReachEntryRef.current = canReachEntry;
+    movementLockedRef.current = movementLocked;
+    miniEventRef.current = miniEvent;
     rubyCalmRef.current = rubyCalm;
     gamjaQuietRef.current = gamjaQuiet;
     dogsRoadsideRef.current = dogsRoadside;
-  }, [rubyCalm, gamjaQuiet, dogsRoadside]);
+    onReachLivingRef.current = onReachLiving;
+    onReachEntryRef.current = onReachEntry;
+    onReachGateRef.current = onReachGate;
+    onWalkForwardRef.current = onWalkForward;
+    onPuddleAvoidRef.current = onPuddleAvoid;
+    onPuddleSplashRef.current = onPuddleSplash;
+  }, [canReachEntry, movementLocked, miniEvent, rubyCalm, gamjaQuiet, dogsRoadside, onReachLiving, onReachEntry, onReachGate, onWalkForward, onPuddleAvoid, onPuddleSplash]);
 
   useEffect(() => {
     const mount = mountRef.current;
@@ -1746,14 +1764,16 @@ function ThreeWalkWorld({
       const delta = Math.min(clock.getDelta(), 0.04);
       const pos = positionRef.current;
       const speed = 3.4 * delta;
-      const movingForward = !movementLocked && keysRef.current.has("KeyW");
-      if (!movementLocked && keysRef.current.has("KeyA")) pos.x -= speed;
-      if (!movementLocked && keysRef.current.has("KeyD")) pos.x += speed;
+      const locked = movementLockedRef.current;
+      const currentMiniEvent = miniEventRef.current;
+      const movingForward = !locked && keysRef.current.has("KeyW");
+      if (!locked && keysRef.current.has("KeyA")) pos.x -= speed;
+      if (!locked && keysRef.current.has("KeyD")) pos.x += speed;
       if (movingForward) {
         pos.z -= speed;
-        if (phase === "walk") onWalkForward?.(delta);
+        if (phase === "walk") onWalkForwardRef.current?.(delta);
       }
-      if (!movementLocked && keysRef.current.has("KeyS")) pos.z += speed;
+      if (!locked && keysRef.current.has("KeyS")) pos.z += speed;
       pos.x = THREE.MathUtils.clamp(pos.x, -6.2, 6.2);
       const minZ = isOutdoor && !["garden", "gate"].includes(phase) ? -58 : -10.5;
       pos.z = THREE.MathUtils.clamp(pos.z, minZ, 8.5);
@@ -1774,17 +1794,17 @@ function ThreeWalkWorld({
 
       if (phase === "upstairs" && !reachedEntryRef.current && pos.z < -2.8) {
         reachedEntryRef.current = true;
-        onReachLiving?.();
+        onReachLivingRef.current?.();
       }
 
-      if (phase === "excited" && canReachEntry && !reachedEntryRef.current && (pos.z < -6.6 || pos.x > 4.8)) {
+      if (phase === "excited" && canReachEntryRef.current && !reachedEntryRef.current && (pos.z < -6.6 || pos.x > 4.8)) {
         reachedEntryRef.current = true;
-        onReachEntry?.();
+        onReachEntryRef.current?.();
       }
 
       if (phase === "garden" && !reachedEntryRef.current && pos.z < -4.15) {
         reachedEntryRef.current = true;
-        onReachGate?.();
+        onReachGateRef.current?.();
       }
 
       const stairCameraY = THREE.MathUtils.clamp(THREE.MathUtils.mapLinear(pos.z, 8.2, -2.8, 2.35, 1.52), 1.52, 2.35);
@@ -1845,7 +1865,7 @@ function ThreeWalkWorld({
         dogGroup.position.z = pos.z - 3.05;
         gamja.position.x = 0.55 - Math.abs(Math.sin(clock.elapsedTime * 6.5)) * 0.42;
       }
-      if (phase === "sniff" && miniEvent === "flowerSniff") {
+      if (phase === "sniff" && currentMiniEvent === "flowerSniff") {
         const sniffBounce = Math.sin(clock.elapsedTime * 4.8) * 0.035;
         dogGroup.position.x = pos.x;
         dogGroup.position.z = pos.z - 3.25;
@@ -1858,7 +1878,7 @@ function ThreeWalkWorld({
         sniffFlowerPatchSmall.position.set(pos.x + 1.05, 0.07, pos.z - 4.1);
         sniffFlowerPatchSmall.rotation.y = -0.25;
       }
-      if (phase === "sniff" && miniEvent === "puddle" && !puddleResolvedRef.current) {
+      if (phase === "sniff" && currentMiniEvent === "puddle" && !puddleResolvedRef.current) {
         dogGroup.position.x = pos.x;
         dogGroup.position.z = pos.z - 3.25;
         puddle.rotation.z = Math.sin(clock.elapsedTime * 1.4) * 0.04;
@@ -1867,15 +1887,15 @@ function ThreeWalkWorld({
         const safeSide = Math.abs(pos.x) > 1.05;
         if (reachedPuddle && !safeSide) {
           puddleResolvedRef.current = true;
-          onPuddleSplash?.();
+          onPuddleSplashRef.current?.();
         } else if (clearedPuddle && safeSide) {
           puddleResolvedRef.current = true;
-          onPuddleAvoid?.();
+          onPuddleAvoidRef.current?.();
         }
       }
       const walkLike = ["walk", "pull", "run", "car", "sniff", "barkingDog", "boss", "cat", "catFood", "home", "enterHome"].includes(phase);
       const autoWalkingPhase = ["pull", "run", "cat", "catFood"].includes(phase);
-      const activelyWalking = walkLike && ((!movementLocked && keysRef.current.has("KeyW")) || autoWalkingPhase);
+      const activelyWalking = walkLike && ((!locked && keysRef.current.has("KeyW")) || autoWalkingPhase);
       animateDogWalk(ruby, rubyPaws, clock.elapsedTime, activelyWalking, 0);
       animateDogWalk(gamja, gamjaPaws, clock.elapsedTime, activelyWalking, Math.PI * 0.68);
       if (phase === "car") {
@@ -1892,7 +1912,7 @@ function ThreeWalkWorld({
 
     const onKeyDown = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null;
-      if (movementLocked || target?.closest("input, textarea, select, [contenteditable='true']")) {
+      if (movementLockedRef.current || target?.closest("input, textarea, select, [contenteditable='true']")) {
         keysRef.current.clear();
         stopStepAudio();
         return;
@@ -1904,7 +1924,7 @@ function ThreeWalkWorld({
       }
     };
     const onKeyUp = (event: KeyboardEvent) => {
-      if (movementLocked) {
+      if (movementLockedRef.current) {
         keysRef.current.clear();
         stopStepAudio();
         return;
@@ -1947,7 +1967,7 @@ function ThreeWalkWorld({
       gamjaSitMap.dispose();
       mount.removeChild(renderer.domElement);
     };
-  }, [calledDogs, canReachEntry, dogsRoadside, isOutdoor, miniEvent, movementLocked, onPuddleAvoid, onPuddleSplash, onReachEntry, onReachGate, onReachLiving, onWalkForward, phase, returnGateOpen]);
+  }, [calledDogs, isOutdoor, miniEvent, phase, returnGateOpen]);
 
   return (
     <div className="three-world" ref={mountRef} aria-label="3D 산책길">
