@@ -27,13 +27,9 @@ public class GomokuWebSocketHandler extends TextWebSocketHandler {
 	private static final TypeReference<Map<String, Object>> MESSAGE_TYPE = new TypeReference<>() {
 	};
 
-	private final ObjectMapper objectMapper;
+	private final ObjectMapper objectMapper = new ObjectMapper();
 	private final Map<String, Room> rooms = new ConcurrentHashMap<>();
 	private final Map<String, String> sessionRooms = new ConcurrentHashMap<>();
-
-	public GomokuWebSocketHandler(ObjectMapper objectMapper) {
-		this.objectMapper = objectMapper;
-	}
 
 	@Override
 	public void afterConnectionEstablished(WebSocketSession session) throws IOException {
