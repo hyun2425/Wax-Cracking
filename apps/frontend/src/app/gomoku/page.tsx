@@ -478,30 +478,44 @@ export default function GomokuPage() {
             </button>
           </div>
 
-          <div className="mx-auto aspect-square w-full max-w-[720px] rounded-lg border-2 border-[#9f7f4f] bg-[#d8a95e] p-2 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.35)]">
-            <div
-              className="grid h-full w-full rounded-[4px] border border-[#8f6d3f]"
-              style={{
-                gridTemplateColumns: `repeat(${boardSize}, minmax(0, 1fr))`,
-                gridTemplateRows: `repeat(${boardSize}, minmax(0, 1fr))`,
-              }}
-            >
+          <div className="mx-auto aspect-square w-full max-w-[720px] rounded-lg border-2 border-[#9f7f4f] bg-[#d8a95e] p-[5.6%] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.35),inset_12px_0_32px_rgba(255,236,169,0.22)]">
+            <div className="relative h-full w-full border border-[#5f4328] bg-[linear-gradient(90deg,rgba(255,255,255,0.12),transparent_18%,rgba(117,77,32,0.12)_52%,transparent_83%),repeating-linear-gradient(90deg,rgba(112,74,34,0.08)_0_1px,transparent_1px_17px),linear-gradient(#4d3524,#4d3524),repeating-linear-gradient(to_right,#4d3524_0_2px,transparent_2px_calc(100%/14)),repeating-linear-gradient(to_bottom,#4d3524_0_2px,transparent_2px_calc(100%/14))] bg-[length:100%_100%,34px_100%,100%_2px,calc(100%/14)_100%,100%_calc(100%/14)] bg-[position:0_0,0_0,0_100%,0_0,0_0] bg-repeat">
+              {[
+                [3, 3],
+                [3, 11],
+                [7, 7],
+                [11, 3],
+                [11, 11],
+              ].map(([row, col]) => (
+                <span
+                  className="pointer-events-none absolute z-0 block aspect-square w-[1.45%] min-w-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#2d2118]"
+                  key={`${row}-${col}`}
+                  style={{
+                    left: `${(col / (boardSize - 1)) * 100}%`,
+                    top: `${(row / (boardSize - 1)) * 100}%`,
+                  }}
+                />
+              ))}
               {game.board.map((row, rowIndex) =>
                 row.map((cell, colIndex) => (
                   <button
                     aria-label={`${rowIndex + 1}행 ${colIndex + 1}열`}
-                    className="relative flex min-h-0 items-center justify-center border border-[#8f6d3f]/70 bg-transparent"
+                    className="absolute z-10 flex aspect-square w-[8.4%] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-transparent outline-none focus-visible:ring-2 focus-visible:ring-[#b33d21] disabled:cursor-default"
                     disabled={cell !== 0 || game.winner !== 0}
                     key={`${rowIndex}-${colIndex}`}
                     onClick={() => handleMove(rowIndex, colIndex)}
+                    style={{
+                      left: `${(colIndex / (boardSize - 1)) * 100}%`,
+                      top: `${(rowIndex / (boardSize - 1)) * 100}%`,
+                    }}
                     type="button"
                   >
                     {cell !== 0 ? (
                       <span
-                        className={`block aspect-square w-[78%] rounded-full shadow-lg ${
+                        className={`block aspect-square w-[82%] rounded-full shadow-[0_5px_8px_rgba(32,22,10,0.34),inset_-4px_-5px_8px_rgba(0,0,0,0.24),inset_3px_4px_7px_rgba(255,255,255,0.28)] ${
                           cell === 1
-                            ? "bg-[#15120f] shadow-black/30"
-                            : "border border-[#d8d1c8] bg-[#fffaf2] shadow-black/15"
+                            ? "bg-[radial-gradient(circle_at_32%_28%,#4f4b48_0,#171511_42%,#050504_100%)]"
+                            : "border border-[#d8d1c8] bg-[radial-gradient(circle_at_30%_24%,#ffffff_0,#f6f1e8_45%,#cfc7bb_100%)]"
                         }`}
                       />
                     ) : null}
