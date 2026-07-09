@@ -25,9 +25,22 @@ const emptyBoard = Array.from({ length: boardSize }, () =>
   Array.from({ length: boardSize }, () => 0 as Cell),
 );
 
-const apiBaseUrl =
-  process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ??
-  "http://localhost:8080";
+const localApiBaseUrl = "http://localhost:8080";
+const deployedApiBaseUrl = "https://wax-cracking-backend.onrender.com";
+
+function getApiBaseUrl() {
+  const configuredUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "");
+  if (configuredUrl) {
+    return configuredUrl;
+  }
+
+  if (typeof window === "undefined") {
+    return localApiBaseUrl;
+  }
+
+  const localHosts = new Set(["localhost", "127.0.0.1", "::1"]);
+  return localHosts.has(window.location.hostname) ? localApiBaseUrl : deployedApiBaseUrl;
+}
 
 function makeInviteCode() {
   const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -41,7 +54,7 @@ function normalizeCode(value: string) {
 }
 
 function socketUrl(roomCode: string) {
-  const base = apiBaseUrl.replace(/^https?:\/\//, (match) =>
+  const base = getApiBaseUrl().replace(/^https?:\/\//, (match) =>
     match === "https://" ? "wss://" : "ws://",
   );
   return `${base}/ws/gomoku?room=${encodeURIComponent(roomCode)}`;
@@ -62,6 +75,7 @@ export default function GomokuPage() {
   });
   const [connection, setConnection] = useState<"idle" | "connecting" | "open" | "closed">("idle");
   const [notice, setNotice] = useState("");
+  const [reconnectAttempt, setReconnectAttempt] = useState(0);
   const socketRef = useRef<WebSocket | null>(null);
 
   const inviteUrl = useMemo(() => {
@@ -79,15 +93,44 @@ export default function GomokuPage() {
     }
 
     const ws = new WebSocket(socketUrl(roomCode));
+    let isActive = true;
     socketRef.current = ws;
+    const timeoutId = window.setTimeout(() => {
+      if (ws.readyState === WebSocket.CONNECTING) {
+        ws.close();
+        if (isActive) {
+          setConnection("closed");
+          setNotice(`연결 시간이 초과됐습니다. 백엔드 서버(${getApiBaseUrl()})가 켜져 있는지 확인해 주세요.`);
+        }
+      }
+    }, 7000);
 
-    ws.onopen = () => setConnection("open");
-    ws.onclose = () => setConnection("closed");
-    ws.onerror = () => {
+    ws.onopen = () => {
+      if (!isActive) {
+        return;
+      }
+      window.clearTimeout(timeoutId);
+      setConnection("open");
+    };
+    ws.onclose = () => {
+      if (!isActive) {
+        return;
+      }
+      window.clearTimeout(timeoutId);
       setConnection("closed");
-      setNotice("서버 연결을 확인해 주세요. 백엔드가 켜져 있어야 실시간으로 둘 수 있습니다.");
+    };
+    ws.onerror = () => {
+      if (!isActive) {
+        return;
+      }
+      window.clearTimeout(timeoutId);
+      setConnection("closed");
+      setNotice(`서버 연결을 확인해 주세요. 백엔드 서버(${getApiBaseUrl()})가 켜져 있어야 실시간으로 둘 수 있습니다.`);
     };
     ws.onmessage = (event) => {
+      if (!isActive) {
+        return;
+      }
       const message = JSON.parse(event.data) as ServerMessage;
       if (message.type === "error") {
         setNotice(message.message);
@@ -108,9 +151,11 @@ export default function GomokuPage() {
     };
 
     return () => {
+      isActive = false;
+      window.clearTimeout(timeoutId);
       ws.close();
     };
-  }, [roomCode]);
+  }, [roomCode, reconnectAttempt]);
 
   function joinRoom(code = draftCode) {
     const normalized = normalizeCode(code);
@@ -122,6 +167,7 @@ export default function GomokuPage() {
     setConnection("connecting");
     setNotice("");
     setRoomCode(normalized);
+    setReconnectAttempt((current) => current + 1);
 
     if (typeof window !== "undefined") {
       const url = new URL(window.location.href);
@@ -148,6 +194,14 @@ export default function GomokuPage() {
   }
 
   const isConnected = connection === "open";
+  const connectionLabel =
+    connection === "open"
+      ? "온라인"
+      : connection === "connecting"
+        ? "연결 중"
+        : connection === "closed"
+          ? "연결 실패"
+          : "대기";
   const turnLabel = game.turn === 1 ? "검은 돌" : "흰 돌";
   const myStone = game.you === 0 ? "관전" : game.you === 1 ? "검은 돌" : "흰 돌";
 
@@ -243,7 +297,7 @@ export default function GomokuPage() {
 
           <div className="rounded-lg border border-[#ded5c7] bg-white p-5 shadow-sm">
             <div className="grid grid-cols-2 gap-3">
-              <Status label="연결" value={isConnected ? "온라인" : connection === "connecting" ? "연결 중" : "대기"} />
+              <Status label="연결" value={connectionLabel} />
               <Status label="방 코드" value={roomCode || "-"} />
               <Status label="내 돌" value={myStone} />
               <Status label="플레이어" value={`${game.players}/2`} />
