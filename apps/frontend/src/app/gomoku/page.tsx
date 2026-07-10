@@ -468,101 +468,7 @@ export default function GomokuPage() {
           <span className="text-sm text-zinc-400">실시간 오목</span>
         </nav>
 
-        <section className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
-          <div className="flex flex-col gap-5">
-            <div className="rounded-lg border border-white/15 bg-[#201812] p-4 shadow-2xl shadow-black/25">
-              <div className="mx-auto aspect-square w-full max-w-[720px] rounded-lg border border-[#8c6635] bg-[#d8a24d] p-[7%] shadow-[inset_0_0_34px_rgba(91,54,20,0.55)]">
-                <div className="relative h-full w-full">
-                  <svg
-                    aria-hidden="true"
-                    className="absolute inset-0 h-full w-full overflow-visible"
-                    preserveAspectRatio="none"
-                    viewBox="0 0 100 100"
-                  >
-                    <defs>
-                      <linearGradient id="gomokuWood" x1="0" x2="1" y1="0" y2="1">
-                        <stop offset="0%" stopColor="#f1c56a" />
-                        <stop offset="48%" stopColor="#d8a24d" />
-                        <stop offset="100%" stopColor="#bd7f35" />
-                      </linearGradient>
-                      <pattern id="gomokuGrain" height="9" patternUnits="userSpaceOnUse" width="9">
-                        <path
-                          d="M 0 4 C 2 2, 5 2, 9 4"
-                          fill="none"
-                          opacity="0.18"
-                          stroke="#8b5a24"
-                          strokeWidth="0.25"
-                        />
-                      </pattern>
-                    </defs>
-                    <rect fill="url(#gomokuWood)" height="100" width="100" x="0" y="0" />
-                    <rect fill="url(#gomokuGrain)" height="100" width="100" x="0" y="0" />
-                    {linePositions.map((position, index) => (
-                      <g key={position}>
-                        <line
-                          stroke="#2c2118"
-                          strokeLinecap="square"
-                          strokeWidth={index === 0 || index === boardSize - 1 ? 0.72 : 0.42}
-                          x1={position}
-                          x2={position}
-                          y1="0"
-                          y2="100"
-                        />
-                        <line
-                          stroke="#2c2118"
-                          strokeLinecap="square"
-                          strokeWidth={index === 0 || index === boardSize - 1 ? 0.72 : 0.42}
-                          x1="0"
-                          x2="100"
-                          y1={position}
-                          y2={position}
-                        />
-                      </g>
-                    ))}
-                  </svg>
-
-                  {starPoints.map(([row, col]) => (
-                    <span
-                      aria-hidden="true"
-                      className="absolute z-0 aspect-square w-[1.55%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#2c2118]"
-                      key={`${row}-${col}`}
-                      style={{
-                        left: `${(col / (boardSize - 1)) * 100}%`,
-                        top: `${(row / (boardSize - 1)) * 100}%`,
-                      }}
-                    />
-                  ))}
-
-                  {game.board.map((row, rowIndex) =>
-                    row.map((cell, colIndex) => (
-                      <button
-                        aria-label={getCellLabel(cell, rowIndex, colIndex)}
-                        className="absolute z-10 flex aspect-square w-[8.4%] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-transparent outline-none transition focus-visible:ring-2 focus-visible:ring-[#b33d21] disabled:cursor-default"
-                        disabled={!isConnected || cell !== 0 || game.winner !== 0}
-                        key={`${rowIndex}-${colIndex}`}
-                        onClick={() => handleMove(rowIndex, colIndex)}
-                        style={{
-                          left: `${(colIndex / (boardSize - 1)) * 100}%`,
-                          top: `${(rowIndex / (boardSize - 1)) * 100}%`,
-                        }}
-                      >
-                        {cell !== 0 && (
-                          <span
-                            className={`block aspect-square w-[78%] rounded-full shadow-[0_5px_7px_rgba(0,0,0,0.32)] ${
-                              cell === 1
-                                ? "bg-[radial-gradient(circle_at_32%_28%,#5b5b5b_0%,#181818_38%,#050505_74%)]"
-                                : "bg-[radial-gradient(circle_at_32%_28%,#ffffff_0%,#eeeeee_45%,#c9c9c9_82%)]"
-                            }`}
-                          />
-                        )}
-                      </button>
-                    )),
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-
+        <section className="grid gap-5 xl:grid-cols-[300px_minmax(0,1fr)_320px]">
           <aside className="flex flex-col gap-4">
             <div className="rounded-lg border border-white/15 bg-[#201812] p-4">
               <div className="flex items-center justify-between gap-3">
@@ -662,6 +568,103 @@ export default function GomokuPage() {
               <StatusItem label="인원" value={`${game.players}명 / 관전 ${game.spectators}명`} />
             </div>
 
+          </aside>
+
+          <div className="flex flex-col gap-5">
+            <div className="rounded-lg border border-white/15 bg-[#201812] p-4 shadow-2xl shadow-black/25">
+              <div className="mx-auto aspect-square w-full max-w-[720px] rounded-lg border border-[#8c6635] bg-[#d8a24d] p-[7%] shadow-[inset_0_0_34px_rgba(91,54,20,0.55)]">
+                <div className="relative h-full w-full">
+                  <svg
+                    aria-hidden="true"
+                    className="absolute inset-0 h-full w-full overflow-visible"
+                    preserveAspectRatio="none"
+                    viewBox="0 0 100 100"
+                  >
+                    <defs>
+                      <linearGradient id="gomokuWood" x1="0" x2="1" y1="0" y2="1">
+                        <stop offset="0%" stopColor="#f1c56a" />
+                        <stop offset="48%" stopColor="#d8a24d" />
+                        <stop offset="100%" stopColor="#bd7f35" />
+                      </linearGradient>
+                      <pattern id="gomokuGrain" height="9" patternUnits="userSpaceOnUse" width="9">
+                        <path
+                          d="M 0 4 C 2 2, 5 2, 9 4"
+                          fill="none"
+                          opacity="0.18"
+                          stroke="#8b5a24"
+                          strokeWidth="0.25"
+                        />
+                      </pattern>
+                    </defs>
+                    <rect fill="url(#gomokuWood)" height="100" width="100" x="0" y="0" />
+                    <rect fill="url(#gomokuGrain)" height="100" width="100" x="0" y="0" />
+                    {linePositions.map((position, index) => (
+                      <g key={position}>
+                        <line
+                          stroke="#2c2118"
+                          strokeLinecap="square"
+                          strokeWidth={index === 0 || index === boardSize - 1 ? 0.72 : 0.42}
+                          x1={position}
+                          x2={position}
+                          y1="0"
+                          y2="100"
+                        />
+                        <line
+                          stroke="#2c2118"
+                          strokeLinecap="square"
+                          strokeWidth={index === 0 || index === boardSize - 1 ? 0.72 : 0.42}
+                          x1="0"
+                          x2="100"
+                          y1={position}
+                          y2={position}
+                        />
+                      </g>
+                    ))}
+                  </svg>
+
+                  {starPoints.map(([row, col]) => (
+                    <span
+                      aria-hidden="true"
+                      className="absolute z-0 aspect-square w-[1.55%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#2c2118]"
+                      key={`${row}-${col}`}
+                      style={{
+                        left: `${(col / (boardSize - 1)) * 100}%`,
+                        top: `${(row / (boardSize - 1)) * 100}%`,
+                      }}
+                    />
+                  ))}
+
+                  {game.board.map((row, rowIndex) =>
+                    row.map((cell, colIndex) => (
+                      <button
+                        aria-label={getCellLabel(cell, rowIndex, colIndex)}
+                        className="absolute z-10 flex aspect-square w-[8.4%] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-transparent outline-none transition focus-visible:ring-2 focus-visible:ring-[#b33d21] disabled:cursor-default"
+                        disabled={!isConnected || cell !== 0 || game.winner !== 0}
+                        key={`${rowIndex}-${colIndex}`}
+                        onClick={() => handleMove(rowIndex, colIndex)}
+                        style={{
+                          left: `${(colIndex / (boardSize - 1)) * 100}%`,
+                          top: `${(rowIndex / (boardSize - 1)) * 100}%`,
+                        }}
+                      >
+                        {cell !== 0 && (
+                          <span
+                            className={`block aspect-square w-[78%] rounded-full shadow-[0_5px_7px_rgba(0,0,0,0.32)] ${
+                              cell === 1
+                                ? "bg-[radial-gradient(circle_at_32%_28%,#5b5b5b_0%,#181818_38%,#050505_74%)]"
+                                : "bg-[radial-gradient(circle_at_32%_28%,#ffffff_0%,#eeeeee_45%,#c9c9c9_82%)]"
+                            }`}
+                          />
+                        )}
+                      </button>
+                    )),
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <aside className="flex flex-col gap-4">
             <div className="rounded-lg border border-white/15 bg-[#201812] p-4">
               <p className="text-sm font-semibold text-zinc-300">상태</p>
               <p className="mt-2 text-lg font-bold text-white">{game.status}</p>
