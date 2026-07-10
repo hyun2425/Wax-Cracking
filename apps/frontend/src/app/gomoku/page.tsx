@@ -11,6 +11,7 @@ type GameState = {
   board: Cell[][];
   players: number;
   room: string;
+  roomPlayers: RoomPlayer[];
   spectators: number;
   status: string;
   turn: 1 | 2;
@@ -29,6 +30,11 @@ type ChatMessage = {
 type PlayerProfile = {
   nickname: string;
   playerId: string;
+};
+
+type RoomPlayer = {
+  nickname: string;
+  role: 1 | 2;
 };
 
 type LeaderboardEntry = {
@@ -61,6 +67,10 @@ function initialGame(room = ""): GameState {
     board: makeEmptyBoard(),
     players: 0,
     room,
+    roomPlayers: [
+      { nickname: "대기 중", role: 1 },
+      { nickname: "대기 중", role: 2 },
+    ],
     spectators: 0,
     status: "초대 코드를 만들거나 받은 코드를 입력해서 같이 오목을 시작하세요.",
     turn: 1,
@@ -167,6 +177,10 @@ function getCellLabel(cell: Cell, row: number, col: number) {
     return `${row + 1}행 ${col + 1}열에 두기`;
   }
   return `${row + 1}행 ${col + 1}열 ${stoneName(cell)}`;
+}
+
+function getPlayerName(game: GameState, role: 1 | 2) {
+  return game.roomPlayers.find((player) => player.role === role)?.nickname ?? "대기 중";
 }
 
 function StatusItem({ label, value }: { label: string; value: string }) {
@@ -321,6 +335,7 @@ export default function GomokuPage() {
         board: message.board,
         players: message.players,
         room: message.room,
+        roomPlayers: message.roomPlayers,
         spectators: message.spectators,
         status: message.status,
         turn: message.turn,
@@ -767,6 +782,20 @@ export default function GomokuPage() {
           <aside className="flex flex-col gap-4">
             <div className="rounded-lg border border-white/15 bg-[#201812] p-4">
               <p className="text-sm font-semibold text-zinc-300">상태</p>
+              <div className="mt-3 rounded-lg border border-white/10 bg-black/20 p-3">
+                <p className="text-xs font-semibold text-zinc-500">대전 중</p>
+                <div className="mt-2 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-black text-white">{getPlayerName(game, 1)}</p>
+                    <p className="mt-1 text-xs font-semibold text-zinc-500">검은 돌</p>
+                  </div>
+                  <span className="text-xs font-black text-[#ffd07a]">VS</span>
+                  <div className="min-w-0 text-right">
+                    <p className="truncate text-sm font-black text-white">{getPlayerName(game, 2)}</p>
+                    <p className="mt-1 text-xs font-semibold text-zinc-500">흰 돌</p>
+                  </div>
+                </div>
+              </div>
               <p className="mt-2 text-lg font-bold text-white">{game.status}</p>
               {notice && <p className="mt-3 text-sm leading-6 text-[#ffd07a]">{notice}</p>}
               <button

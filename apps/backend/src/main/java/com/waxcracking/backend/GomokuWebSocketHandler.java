@@ -441,7 +441,26 @@ public class GomokuWebSocketHandler extends TextWebSocketHandler {
 			payload.put("spectators", sessionPlayers.values().stream().filter(player -> player == 0).count());
 			payload.put("you", players.getOrDefault(sessionId, 0));
 			payload.put("nickname", displayName(sessionId));
+			payload.put("roomPlayers", roomPlayers());
 			return payload;
+		}
+
+		private List<Map<String, Object>> roomPlayers() {
+			List<Map<String, Object>> roomPlayers = new ArrayList<>();
+			for (int role = 1; role <= 2; role++) {
+				String nickname = nameForRole(role).orElse("대기 중");
+				roomPlayers.add(Map.of(
+						"role", role,
+						"nickname", nickname));
+			}
+			return roomPlayers;
+		}
+
+		private Optional<String> nameForRole(int role) {
+			return players.entrySet().stream()
+					.filter(entry -> entry.getValue() == role)
+					.map(entry -> displayName(entry.getKey()))
+					.findFirst();
 		}
 
 		private void sendError(WebSocketSession session, String message) throws IOException {
