@@ -154,6 +154,9 @@ public class GomokuWebSocketHandler extends TextWebSocketHandler {
 			sessions.put(session.getId(), session);
 			int player = nextAvailablePlayer();
 			players.put(session.getId(), player);
+			if (player > 0) {
+				profiles.put(session.getId(), statsService.profile("session-" + session.getId(), playerName(player)));
+			}
 			if (players.containsValue(1) && players.containsValue(2)) {
 				if (winner == 0 && moveCount == 0) {
 					status = "두 명이 연결됐습니다. 검은 돌부터 시작하세요.";
@@ -231,6 +234,9 @@ public class GomokuWebSocketHandler extends TextWebSocketHandler {
 			}
 
 			broadcast();
+			if (winner != 0) {
+				sendLeaderboard();
+			}
 		}
 
 		private synchronized void reset() throws IOException {
@@ -291,6 +297,13 @@ public class GomokuWebSocketHandler extends TextWebSocketHandler {
 					.filter(profile -> profile != null)
 					.findFirst()
 					.orElse(null);
+		}
+
+		private synchronized void sendLeaderboard() throws IOException {
+			Map<String, Object> payload = new HashMap<>();
+			payload.put("type", "leaderboard");
+			payload.put("leaders", statsService.leaderboard());
+			sendToRoom(payload);
 		}
 
 		private boolean hasFive(int row, int col, int player) {

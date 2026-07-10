@@ -43,6 +43,7 @@ type LeaderboardEntry = {
 type ServerMessage =
   | (GameState & { type: "state" })
   | { message: string; type: "error" }
+  | { leaders: LeaderboardEntry[]; type: "leaderboard" }
   | { message: string; sender: string; senderRole: Role; sentAt: number; type: "chat" };
 
 const boardSize = 15;
@@ -304,6 +305,11 @@ export default function GomokuPage() {
         return;
       }
 
+      if (message.type === "leaderboard") {
+        setLeaderboard(message.leaders);
+        return;
+      }
+
       const nextGame: GameState = {
         board: message.board,
         players: message.players,
@@ -316,9 +322,13 @@ export default function GomokuPage() {
       };
       setGame(nextGame);
       if (nextGame.winner !== 0) {
-        void refreshLeaderboard();
+        setNotice(`${stoneName(nextGame.winner)} 승리! 전적과 랭킹에 반영했습니다.`);
+        window.setTimeout(() => {
+          void refreshLeaderboard();
+        }, 600);
+      } else {
+        setNotice("");
       }
-      setNotice("");
     };
 
     socket.onerror = () => {
@@ -568,6 +578,46 @@ export default function GomokuPage() {
               <StatusItem label="인원" value={`${game.players}명 / 관전 ${game.spectators}명`} />
             </div>
 
+            <div className="rounded-lg border border-white/15 bg-[#201812] p-4">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-sm font-semibold text-zinc-300">전체 랭킹</p>
+                <button
+                  className="rounded-lg border border-white/15 px-3 py-1.5 text-xs font-bold text-zinc-100 transition hover:border-white/35"
+                  onClick={() => void refreshLeaderboard()}
+                  type="button"
+                >
+                  새로고침
+                </button>
+              </div>
+              <div className="mt-3 flex max-h-64 flex-col gap-2 overflow-y-auto">
+                {leaderboard.length === 0 ? (
+                  <p className="rounded-lg bg-black/20 px-3 py-5 text-center text-sm text-zinc-500">
+                    아직 기록된 승부가 없습니다.
+                  </p>
+                ) : (
+                  leaderboard.map((entry, index) => (
+                    <div
+                      className={`grid grid-cols-[28px_minmax(0,1fr)_76px] items-center gap-2 rounded-lg px-3 py-2 ${
+                        entry.playerId === profile.playerId
+                          ? "bg-[#e4b467] text-[#20110a]"
+                          : "bg-white/10 text-zinc-100"
+                      }`}
+                      key={entry.playerId}
+                    >
+                      <span className="text-sm font-black">{index + 1}</span>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-bold">{entry.nickname}</p>
+                        <p className="text-xs opacity-70">
+                          {entry.games}전 {entry.wins}승 {entry.losses}패
+                        </p>
+                      </div>
+                      <p className="text-right text-sm font-black">{entry.winRate}%</p>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
           </aside>
 
           <div className="flex flex-col gap-5">
@@ -677,46 +727,6 @@ export default function GomokuPage() {
               >
                 다시 시작
               </button>
-            </div>
-
-            <div className="rounded-lg border border-white/15 bg-[#201812] p-4">
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-sm font-semibold text-zinc-300">랭킹</p>
-                <button
-                  className="rounded-lg border border-white/15 px-3 py-1.5 text-xs font-bold text-zinc-100 transition hover:border-white/35"
-                  onClick={() => void refreshLeaderboard()}
-                  type="button"
-                >
-                  새로고침
-                </button>
-              </div>
-              <div className="mt-3 flex max-h-56 flex-col gap-2 overflow-y-auto">
-                {leaderboard.length === 0 ? (
-                  <p className="rounded-lg bg-black/20 px-3 py-5 text-center text-sm text-zinc-500">
-                    아직 기록된 승부가 없습니다.
-                  </p>
-                ) : (
-                  leaderboard.map((entry, index) => (
-                    <div
-                      className={`grid grid-cols-[28px_minmax(0,1fr)_76px] items-center gap-2 rounded-lg px-3 py-2 ${
-                        entry.playerId === profile.playerId
-                          ? "bg-[#e4b467] text-[#20110a]"
-                          : "bg-white/10 text-zinc-100"
-                      }`}
-                      key={entry.playerId}
-                    >
-                      <span className="text-sm font-black">{index + 1}</span>
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-bold">{entry.nickname}</p>
-                        <p className="text-xs opacity-70">
-                          {entry.games}전 {entry.wins}승 {entry.losses}패
-                        </p>
-                      </div>
-                      <p className="text-right text-sm font-black">{entry.winRate}%</p>
-                    </div>
-                  ))
-                )}
-              </div>
             </div>
 
             <div className="rounded-lg border border-white/15 bg-[#201812] p-4">
