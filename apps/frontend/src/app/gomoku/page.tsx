@@ -907,13 +907,25 @@ export default function GomokuPage() {
                 {tab}
               </span>
             ))}
-            <button
-              className="ml-auto mb-1 rounded-sm border border-[#217346]/25 bg-white px-2 py-1 text-xs text-[#217346]"
-              onClick={() => setViewMode("dark")}
-              type="button"
-            >
-              보기 전환
-            </button>
+            <div className="ml-auto mb-1 flex overflow-hidden rounded-sm border border-[#217346]/25 bg-white text-xs font-semibold text-[#217346]">
+              <Link className="border-r border-[#d0d0d0] px-3 py-1 hover:bg-[#e2f0d9]" href="/">
+                메인
+              </Link>
+              <button
+                className="border-r border-[#d0d0d0] px-3 py-1 hover:bg-[#e2f0d9]"
+                onClick={() => setViewMode("dark")}
+                type="button"
+              >
+                Dark
+              </button>
+              <button
+                className="px-3 py-1 hover:bg-[#e2f0d9]"
+                onClick={() => setViewMode("light")}
+                type="button"
+              >
+                Light
+              </button>
+            </div>
           </div>
 
           <div className="grid h-28 grid-cols-[170px_220px_220px_1fr] gap-4 border-b border-[#c9c9c9] bg-[#f3f2f1] px-5 py-2 text-xs text-[#333]">
