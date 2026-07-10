@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -38,7 +39,12 @@ public class CatchMindWebSocketHandler extends TextWebSocketHandler {
 	private static final int ROUND_SECONDS = 80;
 	private static final List<String> WORDS = List.of(
 			"우산", "달팽이", "피아노", "비행기", "호랑이", "김밥", "자전거", "눈사람", "로켓", "바나나",
-			"선풍기", "캠핑", "고래", "도서관", "치킨", "마법사", "소방차", "수박", "카메라", "등대");
+			"선풍기", "캠핑", "고래", "도서관", "치킨", "마법사", "소방차", "수박", "카메라", "등대",
+			"기린", "햄버거", "택시", "축구공", "무지개", "냉장고", "우주복", "공룡", "마이크", "선물",
+			"초밥", "병원", "유령", "노트북", "핫도그", "버스", "잠수함", "연필", "나무", "아이스크림",
+			"드럼", "해바라기", "망원경", "스케이트", "왕관", "커피", "풍선", "기타", "성", "복숭아",
+			"열쇠", "양말", "컴퓨터", "배낭", "오리", "하트", "우체통", "도넛", "엘리베이터", "거북이",
+			"팝콘", "헬리콥터", "양치질", "목도리", "침대", "트럭", "책상", "촛불", "테니스", "라면");
 
 	private final ObjectMapper objectMapper = new ObjectMapper();
 	private final ScheduledExecutorService timerExecutor = Executors.newSingleThreadScheduledExecutor();
@@ -164,6 +170,7 @@ public class CatchMindWebSocketHandler extends TextWebSocketHandler {
 		private final Map<String, Player> players = new LinkedHashMap<>();
 		private final List<Map<String, Object>> strokes = new ArrayList<>();
 		private final Set<String> correctPlayerIds = ConcurrentHashMap.newKeySet();
+		private final Set<String> usedWordCandidates = new LinkedHashSet<>();
 		private final List<String> turnOrder = new ArrayList<>();
 		private final List<String> wordCandidates = new ArrayList<>();
 		private String mode = "classic";
@@ -262,6 +269,7 @@ public class CatchMindWebSocketHandler extends TextWebSocketHandler {
 			turnOrder.clear();
 			turnOrder.addAll(players.keySet());
 			Collections.shuffle(turnOrder);
+			usedWordCandidates.clear();
 			turnIndex = -1;
 			round = 0;
 			nextTurn();
@@ -442,6 +450,7 @@ public class CatchMindWebSocketHandler extends TextWebSocketHandler {
 			word = "";
 			strokes.clear();
 			correctPlayerIds.clear();
+			usedWordCandidates.clear();
 			turnOrder.clear();
 			wordCandidates.clear();
 			roundEndsAt = 0;
@@ -457,9 +466,19 @@ public class CatchMindWebSocketHandler extends TextWebSocketHandler {
 		}
 
 		private List<String> pickWordCandidates() {
-			List<String> shuffled = new ArrayList<>(WORDS);
+			List<String> available = WORDS.stream()
+					.filter(candidate -> !usedWordCandidates.contains(candidate))
+					.toList();
+			if (available.size() < 3) {
+				usedWordCandidates.clear();
+				available = WORDS;
+			}
+
+			List<String> shuffled = new ArrayList<>(available);
 			Collections.shuffle(shuffled);
-			return shuffled.subList(0, Math.min(3, shuffled.size()));
+			List<String> selected = shuffled.subList(0, Math.min(3, shuffled.size()));
+			usedWordCandidates.addAll(selected);
+			return selected;
 		}
 
 		private String normalizeGuess(String value) {
