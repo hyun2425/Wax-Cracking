@@ -26,6 +26,20 @@ type ChatMessage = {
   sentAt: number;
 };
 
+type PlayerProfile = {
+  nickname: string;
+  playerId: string;
+};
+
+type LeaderboardEntry = {
+  games: number;
+  losses: number;
+  nickname: string;
+  playerId: string;
+  winRate: number;
+  wins: number;
+};
+
 type ServerMessage =
   | (GameState & { type: "state" })
   | { message: string; type: "error" }
@@ -107,6 +121,30 @@ function getInitialRoomCode() {
   return normalizeCode(new URLSearchParams(window.location.search).get("room") ?? "");
 }
 
+function makePlayerId() {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return crypto.randomUUID();
+  }
+  return `player-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+function getInitialProfile(): PlayerProfile {
+  if (typeof window === "undefined") {
+    return { nickname: "이름 없는 고수", playerId: "server" };
+  }
+
+  const playerId = window.localStorage.getItem("gomokuPlayerId") ?? makePlayerId();
+  const nickname = window.localStorage.getItem("gomokuNickname") ?? "이름 없는 고수";
+  window.localStorage.setItem("gomokuPlayerId", playerId);
+  window.localStorage.setItem("gomokuNickname", nickname);
+  return { nickname, playerId };
+}
+
+function sanitizeNickname(value: string) {
+  const next = value.trim().replace(/\s+/g, " ");
+  return (next || "이름 없는 고수").slice(0, 16);
+}
+
 function getConnectionLabel(connection: ConnectionState) {
   if (connection === "open") {
     return "연결됨";
@@ -146,10 +184,14 @@ export default function GomokuPage() {
   const [notice, setNotice] = useState(() =>
     getInitialRoomCode() ? "방에 연결하고 있습니다." : "",
   );
+  const [profile, setProfile] = useState<PlayerProfile>(() => getInitialProfile());
+  const [nicknameDraft, setNicknameDraft] = useState(() => getInitialProfile().nickname);
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [chatDraft, setChatDraft] = useState("");
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [reconnectAttempt, setReconnectAttempt] = useState(0);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
+  const profileRef = useRef(profile);
   const socketRef = useRef<WebSocket | null>(null);
 
   const isConnected = connection === "open";
@@ -182,6 +224,42 @@ export default function GomokuPage() {
     return url.toString();
   }, [roomCode]);
 
+  const myStats = leaderboard.find((entry) => entry.playerId === profile.playerId);
+
+  const refreshLeaderboard = useCallback(async () => {
+    try {
+      const response = await fetch(`${getApiBaseUrl()}/api/gomoku/leaderboard`, {
+        cache: "no-store",
+      });
+      if (!response.ok) {
+        throw new Error(`Leaderboard ${response.status}`);
+      }
+      const data = (await response.json()) as LeaderboardEntry[];
+      setLeaderboard(data);
+    } catch {
+      setLeaderboard([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    profileRef.current = profile;
+    window.localStorage.setItem("gomokuPlayerId", profile.playerId);
+    window.localStorage.setItem("gomokuNickname", profile.nickname);
+
+    const socket = socketRef.current;
+    if (socket?.readyState === WebSocket.OPEN) {
+      socket.send(JSON.stringify({ ...profile, type: "profile" }));
+    }
+  }, [profile]);
+
+  useEffect(() => {
+    const timerId = window.setTimeout(() => {
+      void refreshLeaderboard();
+    }, 0);
+
+    return () => window.clearTimeout(timerId);
+  }, [refreshLeaderboard]);
+
   useEffect(() => {
     if (!roomCode) {
       return;
@@ -202,6 +280,7 @@ export default function GomokuPage() {
       window.clearTimeout(timeoutId);
       setConnection("open");
       setNotice("연결되었습니다. 상대도 같은 초대 코드로 들어오면 바로 같이 둘 수 있어요.");
+      socket.send(JSON.stringify({ ...profileRef.current, type: "profile" }));
     };
 
     socket.onmessage = (event) => {
@@ -236,6 +315,9 @@ export default function GomokuPage() {
         you: message.you,
       };
       setGame(nextGame);
+      if (nextGame.winner !== 0) {
+        void refreshLeaderboard();
+      }
       setNotice("");
     };
 
@@ -257,7 +339,7 @@ export default function GomokuPage() {
       window.clearTimeout(timeoutId);
       socket.close();
     };
-  }, [roomCode, reconnectAttempt]);
+  }, [refreshLeaderboard, roomCode, reconnectAttempt]);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ block: "end" });
@@ -313,6 +395,13 @@ export default function GomokuPage() {
 
     sendMessage({ message: message.slice(0, 200), type: "chat" });
     setChatDraft("");
+  }
+
+  function saveNickname() {
+    const nickname = sanitizeNickname(nicknameDraft);
+    setNicknameDraft(nickname);
+    setProfile((current) => ({ ...current, nickname }));
+    setNotice(`${nickname} 닉네임으로 로그인했습니다.`);
   }
 
   async function copyInviteUrl() {
@@ -476,6 +565,53 @@ export default function GomokuPage() {
 
           <aside className="flex flex-col gap-4">
             <div className="rounded-lg border border-white/15 bg-[#201812] p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold text-zinc-300">닉네임 로그인</p>
+                  <p className="mt-1 text-xs text-zinc-500">전적과 랭킹에 표시됩니다.</p>
+                </div>
+                <span className="rounded-full bg-[#e4b467]/15 px-3 py-1 text-xs font-bold text-[#ffd07a]">
+                  {profile.nickname}
+                </span>
+              </div>
+              <div className="mt-3 flex gap-2">
+                <input
+                  className="min-w-0 flex-1 rounded-lg border border-white/15 bg-black/25 px-3 py-2 text-sm text-white outline-none transition placeholder:text-zinc-500 focus:border-[#e4b467]"
+                  maxLength={16}
+                  onChange={(event) => setNicknameDraft(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      saveNickname();
+                    }
+                  }}
+                  placeholder="닉네임"
+                  value={nicknameDraft}
+                />
+                <button
+                  className="rounded-lg bg-[#e4b467] px-4 py-2 text-sm font-bold text-[#20110a] transition hover:bg-[#ffd07a]"
+                  onClick={saveNickname}
+                  type="button"
+                >
+                  저장
+                </button>
+              </div>
+              <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+                <div className="rounded-lg bg-white/10 px-2 py-2">
+                  <p className="text-xs text-zinc-400">전적</p>
+                  <p className="mt-1 text-sm font-bold text-white">{myStats?.games ?? 0}전</p>
+                </div>
+                <div className="rounded-lg bg-white/10 px-2 py-2">
+                  <p className="text-xs text-zinc-400">승리</p>
+                  <p className="mt-1 text-sm font-bold text-white">{myStats?.wins ?? 0}승</p>
+                </div>
+                <div className="rounded-lg bg-white/10 px-2 py-2">
+                  <p className="text-xs text-zinc-400">승률</p>
+                  <p className="mt-1 text-sm font-bold text-white">{myStats?.winRate ?? 0}%</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-lg border border-white/15 bg-[#201812] p-4">
               <label className="text-sm font-semibold text-zinc-200" htmlFor="room-code">
                 초대 코드
               </label>
@@ -538,6 +674,46 @@ export default function GomokuPage() {
               >
                 다시 시작
               </button>
+            </div>
+
+            <div className="rounded-lg border border-white/15 bg-[#201812] p-4">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-sm font-semibold text-zinc-300">랭킹</p>
+                <button
+                  className="rounded-lg border border-white/15 px-3 py-1.5 text-xs font-bold text-zinc-100 transition hover:border-white/35"
+                  onClick={() => void refreshLeaderboard()}
+                  type="button"
+                >
+                  새로고침
+                </button>
+              </div>
+              <div className="mt-3 flex max-h-56 flex-col gap-2 overflow-y-auto">
+                {leaderboard.length === 0 ? (
+                  <p className="rounded-lg bg-black/20 px-3 py-5 text-center text-sm text-zinc-500">
+                    아직 기록된 승부가 없습니다.
+                  </p>
+                ) : (
+                  leaderboard.map((entry, index) => (
+                    <div
+                      className={`grid grid-cols-[28px_minmax(0,1fr)_76px] items-center gap-2 rounded-lg px-3 py-2 ${
+                        entry.playerId === profile.playerId
+                          ? "bg-[#e4b467] text-[#20110a]"
+                          : "bg-white/10 text-zinc-100"
+                      }`}
+                      key={entry.playerId}
+                    >
+                      <span className="text-sm font-black">{index + 1}</span>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-bold">{entry.nickname}</p>
+                        <p className="text-xs opacity-70">
+                          {entry.games}전 {entry.wins}승 {entry.losses}패
+                        </p>
+                      </div>
+                      <p className="text-right text-sm font-black">{entry.winRate}%</p>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
 
             <div className="rounded-lg border border-white/15 bg-[#201812] p-4">

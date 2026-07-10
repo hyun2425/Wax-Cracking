@@ -12,6 +12,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.waxcracking.backend.GomokuStatsService.PlayerProfile;
 
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
@@ -28,8 +29,13 @@ public class GomokuWebSocketHandler extends TextWebSocketHandler {
 	};
 
 	private final ObjectMapper objectMapper = new ObjectMapper();
+	private final GomokuStatsService statsService;
 	private final Map<String, Room> rooms = new ConcurrentHashMap<>();
 	private final Map<String, String> sessionRooms = new ConcurrentHashMap<>();
+
+	public GomokuWebSocketHandler(GomokuStatsService statsService) {
+		this.statsService = statsService;
+	}
 
 	@Override
 	public void afterConnectionEstablished(WebSocketSession session) throws IOException {
@@ -64,6 +70,11 @@ public class GomokuWebSocketHandler extends TextWebSocketHandler {
 
 		if ("chat".equals(type)) {
 			room.chat(session, asText(payload.get("message")));
+			return;
+		}
+
+		if ("profile".equals(type)) {
+			room.profile(session, asText(payload.get("playerId")), asText(payload.get("nickname")));
 		}
 	}
 
@@ -124,9 +135,11 @@ public class GomokuWebSocketHandler extends TextWebSocketHandler {
 		private final int[][] board = new int[BOARD_SIZE][BOARD_SIZE];
 		private final Map<String, WebSocketSession> sessions = new HashMap<>();
 		private final Map<String, Integer> players = new HashMap<>();
+		private final Map<String, PlayerProfile> profiles = new HashMap<>();
 		private int turn = 1;
 		private int winner = 0;
 		private int moveCount = 0;
+		private boolean resultRecorded = false;
 		private String status = "검은 돌 차례입니다.";
 
 		private Room(String code) {
@@ -153,6 +166,7 @@ public class GomokuWebSocketHandler extends TextWebSocketHandler {
 		private synchronized void leave(WebSocketSession session) {
 			sessions.remove(session.getId());
 			Integer player = players.remove(session.getId());
+			profiles.remove(session.getId());
 			if (player != null && player > 0) {
 				status = playerName(player) + " 플레이어가 나갔습니다. 다시 접속하거나 새 판을 시작하세요.";
 			}
@@ -208,6 +222,7 @@ public class GomokuWebSocketHandler extends TextWebSocketHandler {
 			if (hasFive(row, col, player)) {
 				winner = player;
 				status = playerName(player) + " 승리!";
+				recordResult(player);
 			} else if (moveCount == BOARD_SIZE * BOARD_SIZE) {
 				status = "무승부입니다.";
 			} else {
@@ -228,7 +243,13 @@ public class GomokuWebSocketHandler extends TextWebSocketHandler {
 			turn = 1;
 			winner = 0;
 			moveCount = 0;
+			resultRecorded = false;
 			status = "새 판입니다. 검은 돌부터 시작하세요.";
+			broadcast();
+		}
+
+		private synchronized void profile(WebSocketSession session, String playerId, String nickname) throws IOException {
+			profiles.put(session.getId(), statsService.profile(playerId, nickname));
 			broadcast();
 		}
 
@@ -246,10 +267,30 @@ public class GomokuWebSocketHandler extends TextWebSocketHandler {
 			Map<String, Object> payload = new HashMap<>();
 			payload.put("type", "chat");
 			payload.put("message", message);
-			payload.put("sender", playerName(sender));
+			payload.put("sender", displayName(senderSession.getId()));
 			payload.put("senderRole", sender);
 			payload.put("sentAt", System.currentTimeMillis());
 			sendToRoom(payload);
+		}
+
+		private void recordResult(int winnerRole) {
+			if (resultRecorded) {
+				return;
+			}
+
+			PlayerProfile winnerProfile = profileForRole(winnerRole);
+			PlayerProfile loserProfile = profileForRole(winnerRole == 1 ? 2 : 1);
+			statsService.recordGame(winnerProfile, loserProfile);
+			resultRecorded = true;
+		}
+
+		private PlayerProfile profileForRole(int role) {
+			return players.entrySet().stream()
+					.filter(entry -> entry.getValue() == role)
+					.map(entry -> profiles.get(entry.getKey()))
+					.filter(profile -> profile != null)
+					.findFirst()
+					.orElse(null);
 		}
 
 		private boolean hasFive(int row, int col, int player) {
@@ -386,6 +427,7 @@ public class GomokuWebSocketHandler extends TextWebSocketHandler {
 			payload.put("players", sessionPlayers.values().stream().filter(player -> player > 0).count());
 			payload.put("spectators", sessionPlayers.values().stream().filter(player -> player == 0).count());
 			payload.put("you", players.getOrDefault(sessionId, 0));
+			payload.put("nickname", displayName(sessionId));
 			return payload;
 		}
 
@@ -405,6 +447,14 @@ public class GomokuWebSocketHandler extends TextWebSocketHandler {
 				return "흰 돌";
 			}
 			return "관전자";
+		}
+
+		private String displayName(String sessionId) {
+			PlayerProfile profile = profiles.get(sessionId);
+			if (profile != null) {
+				return profile.nickname();
+			}
+			return playerName(players.getOrDefault(sessionId, 0));
 		}
 	}
 }
