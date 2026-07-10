@@ -280,10 +280,10 @@ export default function GomokuPage() {
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
         <nav className="flex items-center justify-between gap-4">
           <Link
-            href="/games"
+            href="/"
             className="rounded-lg border border-white/15 px-4 py-2 text-sm font-semibold text-zinc-200 transition hover:border-white/35 hover:text-white"
           >
-            게임으로
+            홈으로
           </Link>
           <span className="text-sm text-zinc-400">실시간 오목</span>
         </nav>
