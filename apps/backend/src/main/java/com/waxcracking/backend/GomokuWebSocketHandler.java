@@ -12,6 +12,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.waxcracking.backend.GomokuStatsService.DuplicateNicknameException;
 import com.waxcracking.backend.GomokuStatsService.PlayerProfile;
 
 import org.springframework.stereotype.Component;
@@ -155,7 +156,7 @@ public class GomokuWebSocketHandler extends TextWebSocketHandler {
 			int player = nextAvailablePlayer();
 			players.put(session.getId(), player);
 			if (player > 0) {
-				profiles.put(session.getId(), statsService.profile("session-" + session.getId(), playerName(player)));
+				profiles.put(session.getId(), new PlayerProfile("session-" + session.getId(), playerName(player)));
 			}
 			if (players.containsValue(1) && players.containsValue(2)) {
 				if (winner == 0 && moveCount == 0) {
@@ -255,7 +256,11 @@ public class GomokuWebSocketHandler extends TextWebSocketHandler {
 		}
 
 		private synchronized void profile(WebSocketSession session, String playerId, String nickname) throws IOException {
-			profiles.put(session.getId(), statsService.profile(playerId, nickname));
+			try {
+				profiles.put(session.getId(), statsService.registerProfile(playerId, nickname));
+			} catch (DuplicateNicknameException exception) {
+				sendError(session, exception.getMessage());
+			}
 			broadcast();
 		}
 

@@ -39,14 +39,28 @@ public class GomokuStatsService {
 	}
 
 	public PlayerProfile profile(String playerId, String nickname) {
+		try {
+			return registerProfile(playerId, nickname);
+		} catch (DuplicateNicknameException exception) {
+			return new PlayerProfile(sanitizeId(playerId), sanitizeNickname(nickname));
+		}
+	}
+
+	public PlayerProfile registerProfile(String playerId, String nickname) {
 		String safeId = sanitizeId(playerId);
 		String safeNickname = sanitizeNickname(nickname);
 
 		if (databaseEnabled) {
+			if (nicknameTakenInDatabase(safeId, safeNickname)) {
+				throw new DuplicateNicknameException(safeNickname);
+			}
 			upsertProfile(safeId, safeNickname);
 			return new PlayerProfile(safeId, safeNickname);
 		}
 
+		if (nicknameTakenInMemory(safeId, safeNickname)) {
+			throw new DuplicateNicknameException(safeNickname);
+		}
 		stats.compute(safeId, (id, current) -> {
 			MutableStats next = current == null ? new MutableStats(id, safeNickname) : current;
 			next.nickname = safeNickname;
@@ -135,6 +149,32 @@ public class GomokuStatsService {
 		} catch (SQLException exception) {
 			stats.computeIfAbsent(playerId, id -> new MutableStats(id, nickname));
 		}
+	}
+
+	private boolean nicknameTakenInDatabase(String playerId, String nickname) {
+		String sql = """
+				select 1
+				from gomoku_players
+				where lower(nickname) = lower(?)
+					and player_id <> ?
+				limit 1
+				""";
+
+		try (Connection connection = DriverManager.getConnection(jdbcUrl, databaseProperties);
+				PreparedStatement statement = connection.prepareStatement(sql)) {
+			statement.setString(1, nickname);
+			statement.setString(2, playerId);
+			try (ResultSet resultSet = statement.executeQuery()) {
+				return resultSet.next();
+			}
+		} catch (SQLException exception) {
+			return false;
+		}
+	}
+
+	private boolean nicknameTakenInMemory(String playerId, String nickname) {
+		return stats.values().stream()
+				.anyMatch(stat -> !stat.playerId.equals(playerId) && stat.nickname.equalsIgnoreCase(nickname));
 	}
 
 	private void recordGameInDatabase(PlayerProfile winner, PlayerProfile loser) {
@@ -250,6 +290,12 @@ public class GomokuStatsService {
 	}
 
 	public record PlayerStats(String playerId, String nickname, int games, int wins, int losses, int winRate) {
+	}
+
+	public static class DuplicateNicknameException extends RuntimeException {
+		public DuplicateNicknameException(String nickname) {
+			super("이미 사용 중인 닉네임입니다: " + nickname);
+		}
 	}
 
 	private record DatabaseConfig(String jdbcUrl, Properties properties) {

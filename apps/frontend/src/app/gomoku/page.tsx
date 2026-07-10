@@ -1,11 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import type { CSSProperties } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 type Cell = 0 | 1 | 2;
 type Role = 0 | 1 | 2;
 type ConnectionState = "idle" | "connecting" | "open" | "closed";
+type ViewMode = "dark" | "light" | "excel";
+type ThemeStyle = CSSProperties & Record<`--${string}`, string>;
 
 type GameState = {
   board: Cell[][];
@@ -46,6 +49,8 @@ type LeaderboardEntry = {
   wins: number;
 };
 
+type ProfileResponse = PlayerProfile | { message: string };
+
 type ServerMessage =
   | (GameState & { type: "state" })
   | { message: string; type: "error" }
@@ -55,6 +60,57 @@ type ServerMessage =
 const boardSize = 15;
 const localApiBaseUrl = "http://localhost:8080";
 const deployedApiBaseUrl = "https://wax-cracking-backend.onrender.com";
+const viewModes: { label: string; value: ViewMode }[] = [
+  { label: "Dark", value: "dark" },
+  { label: "Light", value: "light" },
+  { label: "Excel", value: "excel" },
+];
+
+const viewTheme: Record<ViewMode, ThemeStyle> = {
+  dark: {
+    "--page-bg": "#18130f",
+    "--page-grid": "transparent",
+    "--panel": "#201812",
+    "--panel-soft": "rgba(255,255,255,0.10)",
+    "--panel-deep": "rgba(0,0,0,0.22)",
+    "--border": "rgba(255,255,255,0.15)",
+    "--text": "#f4f4f5",
+    "--muted": "#a1a1aa",
+    "--faint": "#71717a",
+    "--accent": "#e4b467",
+    "--accent-soft": "rgba(228,180,103,0.16)",
+    "--accent-text": "#20110a",
+  } as ThemeStyle,
+  light: {
+    "--page-bg": "#f6f2ea",
+    "--page-grid": "transparent",
+    "--panel": "#ffffff",
+    "--panel-soft": "rgba(91,67,42,0.07)",
+    "--panel-deep": "rgba(91,67,42,0.08)",
+    "--border": "rgba(91,67,42,0.18)",
+    "--text": "#221a14",
+    "--muted": "#6b625b",
+    "--faint": "#8a8077",
+    "--accent": "#b36b25",
+    "--accent-soft": "rgba(179,107,37,0.13)",
+    "--accent-text": "#fff8ed",
+  } as ThemeStyle,
+  excel: {
+    "--page-bg": "#f3f7f0",
+    "--page-grid":
+      "linear-gradient(rgba(22,101,52,0.10) 1px, transparent 1px), linear-gradient(90deg, rgba(22,101,52,0.10) 1px, transparent 1px)",
+    "--panel": "#ffffff",
+    "--panel-soft": "rgba(22,101,52,0.08)",
+    "--panel-deep": "rgba(22,101,52,0.10)",
+    "--border": "rgba(22,101,52,0.22)",
+    "--text": "#10231a",
+    "--muted": "#486354",
+    "--faint": "#6d8174",
+    "--accent": "#217346",
+    "--accent-soft": "rgba(33,115,70,0.13)",
+    "--accent-text": "#ffffff",
+  } as ThemeStyle,
+};
 
 function makeEmptyBoard() {
   return Array.from({ length: boardSize }, () =>
@@ -185,9 +241,9 @@ function getPlayerName(game: GameState, role: 1 | 2) {
 
 function StatusItem({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg border border-white/15 bg-white/10 px-4 py-3">
-      <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400">{label}</p>
-      <p className="mt-1 text-lg font-semibold text-white">{value}</p>
+    <div className="rounded-lg border border-[var(--border)] bg-[var(--panel-soft)] px-4 py-3">
+      <p className="text-xs font-semibold uppercase tracking-wide text-[var(--faint)]">{label}</p>
+      <p className="mt-1 text-lg font-semibold text-[var(--text)]">{value}</p>
     </div>
   );
 }
@@ -202,6 +258,14 @@ export default function GomokuPage() {
   const [profile, setProfile] = useState<PlayerProfile>(() => initialProfile);
   const [nicknameDraft, setNicknameDraft] = useState(() => initialProfile.nickname);
   const [isLoggedIn, setIsLoggedIn] = useState(() => isProfileReady(initialProfile) && !getInitialRoomCode());
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    if (typeof window === "undefined") {
+      return "dark";
+    }
+    const saved = window.localStorage.getItem("gomokuViewMode");
+    return saved === "light" || saved === "excel" ? saved : "dark";
+  });
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [chatDraft, setChatDraft] = useState("");
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
@@ -241,6 +305,7 @@ export default function GomokuPage() {
   }, [roomCode]);
 
   const myStats = leaderboard.find((entry) => entry.playerId === profile.playerId);
+  const themeStyle = viewTheme[viewMode];
 
   const refreshLeaderboard = useCallback(async () => {
     try {
@@ -269,6 +334,10 @@ export default function GomokuPage() {
       socket.send(JSON.stringify({ ...profile, type: "profile" }));
     }
   }, [isLoggedIn, profile]);
+
+  useEffect(() => {
+    window.localStorage.setItem("gomokuViewMode", viewMode);
+  }, [viewMode]);
 
   useEffect(() => {
     const timerId = window.setTimeout(() => {
@@ -435,15 +504,41 @@ export default function GomokuPage() {
     setChatDraft("");
   }
 
-  function saveNickname() {
+  async function saveNickname() {
     const nickname = sanitizeNickname(nicknameDraft);
-    setNicknameDraft(nickname);
-    setProfile((current) => ({ ...current, nickname }));
-    setIsLoggedIn(true);
-    setNotice(`${nickname} 닉네임으로 로그인했습니다.`);
+    if (isSavingProfile) {
+      return;
+    }
 
-    if (draftCode) {
-      window.setTimeout(() => joinRoom(draftCode, true), 0);
+    setIsSavingProfile(true);
+    try {
+      const response = await fetch(`${getApiBaseUrl()}/api/gomoku/profile`, {
+        body: JSON.stringify({ nickname, playerId: profile.playerId }),
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
+      });
+      const data = (await response.json().catch(() => ({}))) as ProfileResponse;
+      if (!response.ok) {
+        setNotice("message" in data ? data.message : "닉네임 저장에 실패했습니다.");
+        return;
+      }
+
+      const nextProfile = data as PlayerProfile;
+      setNicknameDraft(nextProfile.nickname);
+      setProfile(nextProfile);
+      window.localStorage.setItem("gomokuPlayerId", nextProfile.playerId);
+      window.localStorage.setItem("gomokuNickname", nextProfile.nickname);
+      setIsLoggedIn(true);
+      setNotice(`${nextProfile.nickname} 닉네임으로 로그인했습니다.`);
+      void refreshLeaderboard();
+
+      if (draftCode) {
+        window.setTimeout(() => joinRoom(draftCode, true), 0);
+      }
+    } catch {
+      setNotice(`닉네임 저장 서버(${getApiBaseUrl()})에 연결할 수 없습니다. 백엔드가 켜져 있는지 확인해 주세요.`);
+    } finally {
+      setIsSavingProfile(false);
     }
   }
 
@@ -469,44 +564,52 @@ export default function GomokuPage() {
   ];
 
   return (
-    <main className="min-h-screen bg-[#18130f] px-5 py-8 text-zinc-100 sm:px-8">
+    <main
+      className="min-h-screen bg-[var(--page-bg)] px-5 py-8 text-[var(--text)] sm:px-8"
+      style={{
+        ...themeStyle,
+        backgroundImage: "var(--page-grid)",
+        backgroundSize: viewMode === "excel" ? "28px 28px" : undefined,
+      }}
+    >
       {!isLoggedIn && (
         <div
           aria-modal="true"
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 px-5 backdrop-blur-sm"
           role="dialog"
         >
-          <div className="w-full max-w-md rounded-lg border border-[#e4b467]/45 bg-[#201812] p-6 shadow-2xl shadow-black/40">
-            <p className="text-sm font-semibold text-[#ffd07a]">오목 시작하기</p>
-            <h2 className="mt-2 text-3xl font-black text-white">닉네임을 먼저 정해 주세요</h2>
-            <p className="mt-3 text-sm leading-6 text-zinc-300">
+          <div className="w-full max-w-md rounded-lg border border-[var(--border)] bg-[var(--panel)] p-6 shadow-2xl shadow-black/30">
+            <p className="text-sm font-semibold text-[var(--accent)]">오목 시작하기</p>
+            <h2 className="mt-2 text-3xl font-black text-[var(--text)]">닉네임을 먼저 정해 주세요</h2>
+            <p className="mt-3 text-sm leading-6 text-[var(--muted)]">
               전적, 승률, 랭킹, 채팅 이름에 이 닉네임이 사용됩니다.
             </p>
             {draftCode && (
-              <p className="mt-3 rounded-lg bg-black/25 px-3 py-2 text-sm font-semibold text-zinc-200">
+              <p className="mt-3 rounded-lg bg-[var(--panel-deep)] px-3 py-2 text-sm font-semibold text-[var(--text)]">
                 로그인 후 `{draftCode}` 방에 자동 입장합니다.
               </p>
             )}
             <div className="mt-5 flex gap-2">
               <input
                 autoFocus
-                className="min-w-0 flex-1 rounded-lg border border-white/15 bg-black/25 px-3 py-3 text-sm text-white outline-none transition placeholder:text-zinc-500 focus:border-[#e4b467]"
+                className="min-w-0 flex-1 rounded-lg border border-[var(--border)] bg-[var(--panel-deep)] px-3 py-3 text-sm text-[var(--text)] outline-none transition placeholder:text-[var(--faint)] focus:border-[var(--accent)]"
                 maxLength={16}
                 onChange={(event) => setNicknameDraft(event.target.value)}
                 onKeyDown={(event) => {
                   if (event.key === "Enter") {
-                    saveNickname();
+                    void saveNickname();
                   }
                 }}
                 placeholder="닉네임"
                 value={nicknameDraft}
               />
               <button
-                className="rounded-lg bg-[#e4b467] px-5 py-3 text-sm font-black text-[#20110a] transition hover:bg-[#ffd07a]"
-                onClick={saveNickname}
+                className="rounded-lg bg-[var(--accent)] px-5 py-3 text-sm font-black text-[var(--accent-text)] transition hover:brightness-110 disabled:opacity-55"
+                disabled={isSavingProfile}
+                onClick={() => void saveNickname()}
                 type="button"
               >
-                시작
+                {isSavingProfile ? "저장 중" : "시작"}
               </button>
             </div>
           </div>
@@ -518,20 +621,20 @@ export default function GomokuPage() {
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 px-5 backdrop-blur-sm"
           role="dialog"
         >
-          <div className="w-full max-w-sm rounded-lg border border-[#e4b467]/45 bg-[#201812] p-6 text-center shadow-2xl shadow-black/40">
-            <p className="text-sm font-semibold text-[#ffd07a]">게임 종료</p>
-            <h2 className="mt-2 text-4xl font-black text-white">{winnerTitle}</h2>
-            <p className="mt-3 text-sm leading-6 text-zinc-300">{winnerDetail}</p>
+          <div className="w-full max-w-sm rounded-lg border border-[var(--border)] bg-[var(--panel)] p-6 text-center shadow-2xl shadow-black/30">
+            <p className="text-sm font-semibold text-[var(--accent)]">게임 종료</p>
+            <h2 className="mt-2 text-4xl font-black text-[var(--text)]">{winnerTitle}</h2>
+            <p className="mt-3 text-sm leading-6 text-[var(--muted)]">{winnerDetail}</p>
             <div className="mt-6 grid grid-cols-2 gap-3">
               <button
-                className="rounded-lg border border-white/15 px-4 py-3 text-sm font-bold text-zinc-100 transition hover:border-white/35"
+                className="rounded-lg border border-[var(--border)] px-4 py-3 text-sm font-bold text-[var(--text)] transition hover:brightness-105"
                 onClick={() => setDismissedWinStamp(gameStamp)}
                 type="button"
               >
                 종료
               </button>
               <button
-                className="rounded-lg bg-[#e4b467] px-4 py-3 text-sm font-black text-[#20110a] transition hover:bg-[#ffd07a] disabled:opacity-45"
+                className="rounded-lg bg-[var(--accent)] px-4 py-3 text-sm font-black text-[var(--accent-text)] transition hover:brightness-110 disabled:opacity-45"
                 disabled={!isConnected}
                 onClick={resetGame}
                 type="button"
@@ -543,72 +646,93 @@ export default function GomokuPage() {
         </div>
       )}
       <div className="mx-auto flex w-full max-w-[1500px] flex-col gap-6">
-        <nav className="flex items-center justify-between gap-4">
+        <nav className="flex flex-wrap items-center justify-between gap-4">
           <Link
             href="/"
-            className="rounded-lg border border-white/15 px-4 py-2 text-sm font-semibold text-zinc-200 transition hover:border-white/35 hover:text-white"
+            className="rounded-lg border border-[var(--border)] bg-[var(--panel)] px-4 py-2 text-sm font-semibold text-[var(--text)] transition hover:brightness-105"
           >
             홈으로
           </Link>
-          <span className="text-sm text-zinc-400">실시간 오목</span>
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-semibold text-[var(--muted)]">
+              {viewMode === "excel" ? "Q3_Reconciliation.xlsx" : "실시간 오목"}
+            </span>
+            <div className="flex rounded-lg border border-[var(--border)] bg-[var(--panel)] p-1">
+              {viewModes.map((mode) => (
+                <button
+                  className={`rounded-md px-3 py-1.5 text-xs font-black transition ${
+                    viewMode === mode.value
+                      ? "bg-[var(--accent)] text-[var(--accent-text)]"
+                      : "text-[var(--muted)] hover:bg-[var(--panel-soft)]"
+                  }`}
+                  key={mode.value}
+                  onClick={() => setViewMode(mode.value)}
+                  type="button"
+                >
+                  {mode.label}
+                </button>
+              ))}
+            </div>
+          </div>
         </nav>
 
         <section className="grid gap-5 xl:grid-cols-[260px_minmax(0,1fr)_280px]">
           <aside className="flex flex-col gap-4">
-            <div className="rounded-lg border border-white/15 bg-[#201812] p-4">
+            <div className="rounded-lg border border-[var(--border)] bg-[var(--panel)] p-4">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-sm font-semibold text-zinc-300">닉네임 로그인</p>
-                  <p className="mt-1 text-xs text-zinc-500">전적과 랭킹에 표시됩니다.</p>
+                  <p className="text-sm font-semibold text-[var(--text)]">닉네임 로그인</p>
+                  <p className="mt-1 text-xs text-[var(--faint)]">전적과 랭킹에 표시됩니다.</p>
                 </div>
-                <span className="rounded-full bg-[#e4b467]/15 px-3 py-1 text-xs font-bold text-[#ffd07a]">
+                <span className="rounded-full bg-[var(--accent-soft)] px-3 py-1 text-xs font-bold text-[var(--accent)]">
                   {profile.nickname}
                 </span>
               </div>
               <div className="mt-3 flex gap-2">
                 <input
-                  className="min-w-0 flex-1 rounded-lg border border-white/15 bg-black/25 px-3 py-2 text-sm text-white outline-none transition placeholder:text-zinc-500 focus:border-[#e4b467]"
+                  className="min-w-0 flex-1 rounded-lg border border-[var(--border)] bg-[var(--panel-deep)] px-3 py-2 text-sm text-[var(--text)] outline-none transition placeholder:text-[var(--faint)] focus:border-[var(--accent)]"
                   maxLength={16}
                   onChange={(event) => setNicknameDraft(event.target.value)}
                   onKeyDown={(event) => {
                     if (event.key === "Enter") {
-                      saveNickname();
+                      void saveNickname();
                     }
                   }}
                   placeholder="닉네임"
                   value={nicknameDraft}
                 />
                 <button
-                  className="rounded-lg bg-[#e4b467] px-4 py-2 text-sm font-bold text-[#20110a] transition hover:bg-[#ffd07a]"
-                  onClick={saveNickname}
+                  className="rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-bold text-[var(--accent-text)] transition hover:brightness-110 disabled:opacity-55"
+                  disabled={isSavingProfile}
+                  onClick={() => void saveNickname()}
                   type="button"
                 >
-                  저장
+                  {isSavingProfile ? "저장 중" : "저장"}
                 </button>
               </div>
               <div className="mt-3 grid grid-cols-3 gap-2 text-center">
-                <div className="rounded-lg bg-white/10 px-2 py-2">
-                  <p className="text-xs text-zinc-400">전적</p>
-                  <p className="mt-1 text-sm font-bold text-white">{myStats?.games ?? 0}전</p>
+                <div className="rounded-lg bg-[var(--panel-soft)] px-2 py-2">
+                  <p className="text-xs text-[var(--faint)]">전적</p>
+                  <p className="mt-1 text-sm font-bold text-[var(--text)]">{myStats?.games ?? 0}전</p>
                 </div>
-                <div className="rounded-lg bg-white/10 px-2 py-2">
-                  <p className="text-xs text-zinc-400">승리</p>
-                  <p className="mt-1 text-sm font-bold text-white">{myStats?.wins ?? 0}승</p>
+                <div className="rounded-lg bg-[var(--panel-soft)] px-2 py-2">
+                  <p className="text-xs text-[var(--faint)]">승리</p>
+                  <p className="mt-1 text-sm font-bold text-[var(--text)]">{myStats?.wins ?? 0}승</p>
                 </div>
-                <div className="rounded-lg bg-white/10 px-2 py-2">
-                  <p className="text-xs text-zinc-400">승률</p>
-                  <p className="mt-1 text-sm font-bold text-white">{myStats?.winRate ?? 0}%</p>
+                <div className="rounded-lg bg-[var(--panel-soft)] px-2 py-2">
+                  <p className="text-xs text-[var(--faint)]">승률</p>
+                  <p className="mt-1 text-sm font-bold text-[var(--text)]">{myStats?.winRate ?? 0}%</p>
                 </div>
               </div>
             </div>
 
-            <div className="rounded-lg border border-white/15 bg-[#201812] p-4">
-              <label className="text-sm font-semibold text-zinc-200" htmlFor="room-code">
+            <div className="rounded-lg border border-[var(--border)] bg-[var(--panel)] p-4">
+              <label className="text-sm font-semibold text-[var(--text)]" htmlFor="room-code">
                 초대 코드
               </label>
               <div className="mt-3 flex gap-2">
                 <input
-                  className="min-w-0 flex-1 rounded-lg border border-white/15 bg-black/25 px-3 py-2 text-sm font-semibold uppercase text-white outline-none transition placeholder:text-zinc-500 focus:border-[#e4b467]"
+                  className="min-w-0 flex-1 rounded-lg border border-[var(--border)] bg-[var(--panel-deep)] px-3 py-2 text-sm font-semibold uppercase text-[var(--text)] outline-none transition placeholder:text-[var(--faint)] focus:border-[var(--accent)]"
                   id="room-code"
                   onChange={(event) => setDraftCode(normalizeCode(event.target.value))}
                   onKeyDown={(event) => {
@@ -620,7 +744,7 @@ export default function GomokuPage() {
                   value={draftCode}
                 />
                 <button
-                  className="rounded-lg bg-[#e4b467] px-4 py-2 text-sm font-bold text-[#20110a] transition hover:bg-[#ffd07a]"
+                  className="rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-bold text-[var(--accent-text)] transition hover:brightness-110"
                   onClick={() => joinRoom(draftCode)}
                   type="button"
                 >
@@ -629,14 +753,14 @@ export default function GomokuPage() {
               </div>
               <div className="mt-3 grid grid-cols-2 gap-2">
                 <button
-                  className="rounded-lg border border-white/15 px-3 py-2 text-sm font-semibold text-zinc-100 transition hover:border-white/35"
+                  className="rounded-lg border border-[var(--border)] px-3 py-2 text-sm font-semibold text-[var(--text)] transition hover:brightness-105"
                   onClick={createRoom}
                   type="button"
                 >
                   새 코드
                 </button>
                 <button
-                  className="rounded-lg border border-white/15 px-3 py-2 text-sm font-semibold text-zinc-100 transition hover:border-white/35 disabled:opacity-45"
+                  className="rounded-lg border border-[var(--border)] px-3 py-2 text-sm font-semibold text-[var(--text)] transition hover:brightness-105 disabled:opacity-45"
                   disabled={!roomCode}
                   onClick={copyInviteUrl}
                   type="button"
@@ -653,11 +777,11 @@ export default function GomokuPage() {
               <StatusItem label="인원" value={`${game.players}명 / 관전 ${game.spectators}명`} />
             </div>
 
-            <div className="rounded-lg border border-white/15 bg-[#201812] p-4">
+            <div className="rounded-lg border border-[var(--border)] bg-[var(--panel)] p-4">
               <div className="flex items-center justify-between gap-3">
-                <p className="text-sm font-semibold text-zinc-300">전체 랭킹</p>
+                <p className="text-sm font-semibold text-[var(--text)]">전체 랭킹</p>
                 <button
-                  className="rounded-lg border border-white/15 px-3 py-1.5 text-xs font-bold text-zinc-100 transition hover:border-white/35"
+                  className="rounded-lg border border-[var(--border)] px-3 py-1.5 text-xs font-bold text-[var(--text)] transition hover:brightness-105"
                   onClick={() => void refreshLeaderboard()}
                   type="button"
                 >
@@ -666,7 +790,7 @@ export default function GomokuPage() {
               </div>
               <div className="mt-3 flex max-h-64 flex-col gap-2 overflow-y-auto">
                 {leaderboard.length === 0 ? (
-                  <p className="rounded-lg bg-black/20 px-3 py-5 text-center text-sm text-zinc-500">
+                  <p className="rounded-lg bg-[var(--panel-deep)] px-3 py-5 text-center text-sm text-[var(--faint)]">
                     아직 기록된 승부가 없습니다.
                   </p>
                 ) : (
@@ -674,8 +798,8 @@ export default function GomokuPage() {
                     <div
                       className={`grid grid-cols-[28px_minmax(0,1fr)_76px] items-center gap-2 rounded-lg px-3 py-2 ${
                         entry.playerId === profile.playerId
-                          ? "bg-[#e4b467] text-[#20110a]"
-                          : "bg-white/10 text-zinc-100"
+                          ? "bg-[var(--accent)] text-[var(--accent-text)]"
+                          : "bg-[var(--panel-soft)] text-[var(--text)]"
                       }`}
                       key={entry.playerId}
                     >
@@ -696,7 +820,7 @@ export default function GomokuPage() {
           </aside>
 
           <div className="flex flex-col gap-5">
-            <div className="rounded-lg border border-white/15 bg-[#201812] p-4 shadow-2xl shadow-black/25">
+            <div className="rounded-lg border border-[var(--border)] bg-[var(--panel)] p-4 shadow-2xl shadow-black/20">
               <div className="mx-auto aspect-square w-full max-w-[min(860px,calc(100vh-150px))] rounded-lg border border-[#8c6635] bg-[#d8a24d] p-[5.5%] shadow-[inset_0_0_34px_rgba(91,54,20,0.55)]">
                 <div className="relative h-full w-full">
                   <svg
@@ -780,26 +904,26 @@ export default function GomokuPage() {
           </div>
 
           <aside className="flex flex-col gap-4">
-            <div className="rounded-lg border border-white/15 bg-[#201812] p-4">
-              <p className="text-sm font-semibold text-zinc-300">상태</p>
-              <div className="mt-3 rounded-lg border border-white/10 bg-black/20 p-3">
-                <p className="text-xs font-semibold text-zinc-500">대전 중</p>
+            <div className="rounded-lg border border-[var(--border)] bg-[var(--panel)] p-4">
+              <p className="text-sm font-semibold text-[var(--text)]">상태</p>
+              <div className="mt-3 rounded-lg border border-[var(--border)] bg-[var(--panel-deep)] p-3">
+                <p className="text-xs font-semibold text-[var(--faint)]">대전 중</p>
                 <div className="mt-2 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2">
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-black text-white">{getPlayerName(game, 1)}</p>
-                    <p className="mt-1 text-xs font-semibold text-zinc-500">검은 돌</p>
+                    <p className="truncate text-sm font-black text-[var(--text)]">{getPlayerName(game, 1)}</p>
+                    <p className="mt-1 text-xs font-semibold text-[var(--faint)]">검은 돌</p>
                   </div>
-                  <span className="text-xs font-black text-[#ffd07a]">VS</span>
+                  <span className="text-xs font-black text-[var(--accent)]">VS</span>
                   <div className="min-w-0 text-right">
-                    <p className="truncate text-sm font-black text-white">{getPlayerName(game, 2)}</p>
-                    <p className="mt-1 text-xs font-semibold text-zinc-500">흰 돌</p>
+                    <p className="truncate text-sm font-black text-[var(--text)]">{getPlayerName(game, 2)}</p>
+                    <p className="mt-1 text-xs font-semibold text-[var(--faint)]">흰 돌</p>
                   </div>
                 </div>
               </div>
-              <p className="mt-2 text-lg font-bold text-white">{game.status}</p>
-              {notice && <p className="mt-3 text-sm leading-6 text-[#ffd07a]">{notice}</p>}
+              <p className="mt-2 text-lg font-bold text-[var(--text)]">{game.status}</p>
+              {notice && <p className="mt-3 text-sm leading-6 text-[var(--accent)]">{notice}</p>}
               <button
-                className="mt-4 w-full rounded-lg border border-white/15 px-3 py-2 text-sm font-semibold text-zinc-100 transition hover:border-white/35 disabled:opacity-45"
+                className="mt-4 w-full rounded-lg border border-[var(--border)] px-3 py-2 text-sm font-semibold text-[var(--text)] transition hover:brightness-105 disabled:opacity-45"
                 disabled={!isConnected}
                 onClick={resetGame}
                 type="button"
@@ -808,14 +932,14 @@ export default function GomokuPage() {
               </button>
             </div>
 
-            <div className="rounded-lg border border-white/15 bg-[#201812] p-4">
+            <div className="rounded-lg border border-[var(--border)] bg-[var(--panel)] p-4">
               <div className="flex items-center justify-between gap-3">
-                <p className="text-sm font-semibold text-zinc-300">채팅</p>
-                <p className="text-xs font-semibold text-zinc-500">{chatMessages.length}개</p>
+                <p className="text-sm font-semibold text-[var(--text)]">채팅</p>
+                <p className="text-xs font-semibold text-[var(--faint)]">{chatMessages.length}개</p>
               </div>
-              <div className="mt-3 flex h-48 flex-col gap-2 overflow-y-auto rounded-lg border border-white/10 bg-black/20 p-3">
+              <div className="mt-3 flex h-48 flex-col gap-2 overflow-y-auto rounded-lg border border-[var(--border)] bg-[var(--panel-deep)] p-3">
                 {chatMessages.length === 0 ? (
-                  <p className="my-auto text-center text-sm text-zinc-500">
+                  <p className="my-auto text-center text-sm text-[var(--faint)]">
                     같은 방에 있는 사람과 실시간으로 대화할 수 있어요.
                   </p>
                 ) : (
@@ -823,8 +947,8 @@ export default function GomokuPage() {
                     <div
                       className={`rounded-lg px-3 py-2 ${
                         chat.senderRole === game.you && game.you !== 0
-                          ? "bg-[#e4b467] text-[#20110a]"
-                          : "bg-white/10 text-zinc-100"
+                          ? "bg-[var(--accent)] text-[var(--accent-text)]"
+                          : "bg-[var(--panel-soft)] text-[var(--text)]"
                       }`}
                       key={chat.id}
                     >
@@ -845,7 +969,7 @@ export default function GomokuPage() {
               </div>
               <div className="mt-3 flex gap-2">
                 <input
-                  className="min-w-0 flex-1 rounded-lg border border-white/15 bg-black/25 px-3 py-2 text-sm text-white outline-none transition placeholder:text-zinc-500 focus:border-[#e4b467]"
+                  className="min-w-0 flex-1 rounded-lg border border-[var(--border)] bg-[var(--panel-deep)] px-3 py-2 text-sm text-[var(--text)] outline-none transition placeholder:text-[var(--faint)] focus:border-[var(--accent)]"
                   disabled={!isConnected}
                   maxLength={200}
                   onChange={(event) => setChatDraft(event.target.value)}
@@ -858,7 +982,7 @@ export default function GomokuPage() {
                   value={chatDraft}
                 />
                 <button
-                  className="rounded-lg bg-[#e4b467] px-4 py-2 text-sm font-bold text-[#20110a] transition hover:bg-[#ffd07a] disabled:opacity-45"
+                  className="rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-bold text-[var(--accent-text)] transition hover:brightness-110 disabled:opacity-45"
                   disabled={!isConnected || !chatDraft.trim()}
                   onClick={sendChat}
                   type="button"
@@ -868,7 +992,7 @@ export default function GomokuPage() {
               </div>
             </div>
 
-            <div className="rounded-lg border border-white/15 bg-black/20 p-4 text-sm leading-6 text-zinc-400">
+            <div className="rounded-lg border border-[var(--border)] bg-[var(--panel-deep)] p-4 text-sm leading-6 text-[var(--muted)]">
               같은 초대 코드를 입력한 두 명이 각각 검은 돌과 흰 돌로 배정됩니다. 세 번째부터는 관전자로 들어와요.
             </div>
           </aside>
