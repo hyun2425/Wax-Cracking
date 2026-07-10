@@ -368,7 +368,7 @@ export default function GomokuPage() {
                       >
                         {cell !== 0 && (
                           <span
-                            className={`block aspect-square w-[90%] rounded-full shadow-[0_6px_8px_rgba(0,0,0,0.35)] ${
+                            className={`block aspect-square w-[78%] rounded-full shadow-[0_5px_7px_rgba(0,0,0,0.32)] ${
                               cell === 1
                                 ? "bg-[radial-gradient(circle_at_32%_28%,#5b5b5b_0%,#181818_38%,#050505_74%)]"
                                 : "bg-[radial-gradient(circle_at_32%_28%,#ffffff_0%,#eeeeee_45%,#c9c9c9_82%)]"
