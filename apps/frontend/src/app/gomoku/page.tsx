@@ -195,9 +195,15 @@ function makePlayerId() {
   return `player-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
-function getInitialProfile(): PlayerProfile {
+function getInitialProfile(hasInviteRoom: boolean): PlayerProfile {
   if (typeof window === "undefined") {
     return { nickname: "", playerId: "server" };
+  }
+
+  if (hasInviteRoom) {
+    const playerId = makePlayerId();
+    window.localStorage.setItem("gomokuPlayerId", playerId);
+    return { nickname: "", playerId };
   }
 
   const playerId = window.localStorage.getItem("gomokuPlayerId") ?? makePlayerId();
@@ -249,15 +255,16 @@ function StatusItem({ label, value }: { label: string; value: string }) {
 }
 
 export default function GomokuPage() {
-  const initialProfile = useMemo(() => getInitialProfile(), []);
-  const [draftCode, setDraftCode] = useState(() => getInitialRoomCode());
+  const initialRoomCode = useMemo(() => getInitialRoomCode(), []);
+  const initialProfile = useMemo(() => getInitialProfile(Boolean(initialRoomCode)), [initialRoomCode]);
+  const [draftCode, setDraftCode] = useState(() => initialRoomCode);
   const [roomCode, setRoomCode] = useState("");
   const [game, setGame] = useState<GameState>(() => initialGame());
   const [connection, setConnection] = useState<ConnectionState>("idle");
   const [notice, setNotice] = useState("닉네임 로그인 후 방에 입장해 주세요.");
   const [profile, setProfile] = useState<PlayerProfile>(() => initialProfile);
   const [nicknameDraft, setNicknameDraft] = useState(() => initialProfile.nickname);
-  const [isLoggedIn, setIsLoggedIn] = useState(() => isProfileReady(initialProfile) && !getInitialRoomCode());
+  const [isLoggedIn, setIsLoggedIn] = useState(() => isProfileReady(initialProfile) && !initialRoomCode);
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     if (typeof window === "undefined") {
       return "dark";
