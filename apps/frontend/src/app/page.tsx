@@ -329,6 +329,7 @@ export default function Home() {
             <Link href="/njjey-ver">njjey.ver</Link>
             <Link href="/ruby-gamja-walk-quest">ruby-gamja</Link>
             <Link href="/gomoku">gomoku</Link>
+            <Link href="/catchmind">catchmind</Link>
           </div>
         </nav>
 

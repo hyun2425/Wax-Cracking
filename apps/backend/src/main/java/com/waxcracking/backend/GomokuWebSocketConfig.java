@@ -13,12 +13,16 @@ import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry
 public class GomokuWebSocketConfig implements WebSocketConfigurer {
 
 	private final GomokuWebSocketHandler gomokuWebSocketHandler;
+	private final CatchMindWebSocketHandler catchMindWebSocketHandler;
 
 	@Value("${app.cors.allowed-origin-patterns}")
 	private String allowedOriginPatterns;
 
-	public GomokuWebSocketConfig(GomokuWebSocketHandler gomokuWebSocketHandler) {
+	public GomokuWebSocketConfig(
+			GomokuWebSocketHandler gomokuWebSocketHandler,
+			CatchMindWebSocketHandler catchMindWebSocketHandler) {
 		this.gomokuWebSocketHandler = gomokuWebSocketHandler;
+		this.catchMindWebSocketHandler = catchMindWebSocketHandler;
 	}
 
 	@Override
@@ -29,6 +33,8 @@ public class GomokuWebSocketConfig implements WebSocketConfigurer {
 				.toArray(String[]::new);
 
 		registry.addHandler(gomokuWebSocketHandler, "/ws/gomoku")
+				.setAllowedOriginPatterns(patterns);
+		registry.addHandler(catchMindWebSocketHandler, "/ws/catchmind")
 				.setAllowedOriginPatterns(patterns);
 	}
 }
