@@ -141,6 +141,25 @@ export default function GomokuPage() {
   const socketRef = useRef<WebSocket | null>(null);
 
   const isConnected = connection === "open";
+  const gameStamp = useMemo(() => game.board.map((row) => row.join("")).join("|"), [game.board]);
+  const [dismissedWinStamp, setDismissedWinStamp] = useState("");
+  const showWinnerDialog = game.winner !== 0 && dismissedWinStamp !== gameStamp;
+  const winnerTitle =
+    game.winner === 0
+      ? ""
+      : game.you === game.winner
+        ? "승리!"
+        : game.you === 0
+          ? `${game.winner === 1 ? "검은 돌" : "흰 돌"} 승리!`
+          : "패배";
+  const winnerDetail =
+    game.winner === 0
+      ? ""
+      : game.you === 0
+        ? `${game.winner === 1 ? "검은 돌" : "흰 돌"}이 이겼습니다.`
+        : game.you === game.winner
+          ? "오목을 완성했습니다."
+          : `${game.winner === 1 ? "검은 돌" : "흰 돌"}이 오목을 완성했습니다.`;
   const inviteUrl = useMemo(() => {
     if (typeof window === "undefined" || !roomCode) {
       return "";
@@ -251,6 +270,7 @@ export default function GomokuPage() {
   }
 
   function resetGame() {
+    setDismissedWinStamp("");
     sendMessage({ type: "reset" });
   }
 
@@ -277,6 +297,36 @@ export default function GomokuPage() {
 
   return (
     <main className="min-h-screen bg-[#18130f] px-5 py-8 text-zinc-100 sm:px-8">
+      {showWinnerDialog && (
+        <div
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 px-5 backdrop-blur-sm"
+          role="dialog"
+        >
+          <div className="w-full max-w-sm rounded-lg border border-[#e4b467]/45 bg-[#201812] p-6 text-center shadow-2xl shadow-black/40">
+            <p className="text-sm font-semibold text-[#ffd07a]">게임 종료</p>
+            <h2 className="mt-2 text-4xl font-black text-white">{winnerTitle}</h2>
+            <p className="mt-3 text-sm leading-6 text-zinc-300">{winnerDetail}</p>
+            <div className="mt-6 grid grid-cols-2 gap-3">
+              <button
+                className="rounded-lg border border-white/15 px-4 py-3 text-sm font-bold text-zinc-100 transition hover:border-white/35"
+                onClick={() => setDismissedWinStamp(gameStamp)}
+                type="button"
+              >
+                종료
+              </button>
+              <button
+                className="rounded-lg bg-[#e4b467] px-4 py-3 text-sm font-black text-[#20110a] transition hover:bg-[#ffd07a] disabled:opacity-45"
+                disabled={!isConnected}
+                onClick={resetGame}
+                type="button"
+              >
+                한 판 더
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
         <nav className="flex items-center justify-between gap-4">
           <Link
