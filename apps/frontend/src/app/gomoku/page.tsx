@@ -18,9 +18,18 @@ type GameState = {
   you: Role;
 };
 
+type ChatMessage = {
+  id: string;
+  message: string;
+  sender: string;
+  senderRole: Role;
+  sentAt: number;
+};
+
 type ServerMessage =
   | (GameState & { type: "state" })
-  | { message: string; type: "error" };
+  | { message: string; type: "error" }
+  | { message: string; sender: string; senderRole: Role; sentAt: number; type: "chat" };
 
 const boardSize = 15;
 const localApiBaseUrl = "http://localhost:8080";
@@ -137,7 +146,10 @@ export default function GomokuPage() {
   const [notice, setNotice] = useState(() =>
     getInitialRoomCode() ? "방에 연결하고 있습니다." : "",
   );
+  const [chatDraft, setChatDraft] = useState("");
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [reconnectAttempt, setReconnectAttempt] = useState(0);
+  const chatEndRef = useRef<HTMLDivElement | null>(null);
   const socketRef = useRef<WebSocket | null>(null);
 
   const isConnected = connection === "open";
@@ -199,6 +211,20 @@ export default function GomokuPage() {
         return;
       }
 
+      if (message.type === "chat") {
+        setChatMessages((current) => [
+          ...current.slice(-59),
+          {
+            id: `${message.sentAt}-${current.length}`,
+            message: message.message,
+            sender: message.sender,
+            senderRole: message.senderRole,
+            sentAt: message.sentAt,
+          },
+        ]);
+        return;
+      }
+
       const nextGame: GameState = {
         board: message.board,
         players: message.players,
@@ -233,6 +259,10 @@ export default function GomokuPage() {
     };
   }, [roomCode, reconnectAttempt]);
 
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ block: "end" });
+  }, [chatMessages]);
+
   const sendMessage = useCallback((message: object) => {
     const socket = socketRef.current;
     if (!socket || socket.readyState !== WebSocket.OPEN) {
@@ -254,6 +284,7 @@ export default function GomokuPage() {
     setRoomCode(nextCode);
     setConnection("connecting");
     setGame(initialGame(nextCode));
+    setChatMessages([]);
     setReconnectAttempt((attempt) => attempt + 1);
 
     const url = new URL(window.location.href);
@@ -272,6 +303,16 @@ export default function GomokuPage() {
   function resetGame() {
     setDismissedWinStamp("");
     sendMessage({ type: "reset" });
+  }
+
+  function sendChat() {
+    const message = chatDraft.trim();
+    if (!message) {
+      return;
+    }
+
+    sendMessage({ message: message.slice(0, 200), type: "chat" });
+    setChatDraft("");
   }
 
   async function copyInviteUrl() {
@@ -497,6 +538,66 @@ export default function GomokuPage() {
               >
                 다시 시작
               </button>
+            </div>
+
+            <div className="rounded-lg border border-white/15 bg-[#201812] p-4">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-sm font-semibold text-zinc-300">채팅</p>
+                <p className="text-xs font-semibold text-zinc-500">{chatMessages.length}개</p>
+              </div>
+              <div className="mt-3 flex h-48 flex-col gap-2 overflow-y-auto rounded-lg border border-white/10 bg-black/20 p-3">
+                {chatMessages.length === 0 ? (
+                  <p className="my-auto text-center text-sm text-zinc-500">
+                    같은 방에 있는 사람과 실시간으로 대화할 수 있어요.
+                  </p>
+                ) : (
+                  chatMessages.map((chat) => (
+                    <div
+                      className={`rounded-lg px-3 py-2 ${
+                        chat.senderRole === game.you && game.you !== 0
+                          ? "bg-[#e4b467] text-[#20110a]"
+                          : "bg-white/10 text-zinc-100"
+                      }`}
+                      key={chat.id}
+                    >
+                      <div className="flex items-center justify-between gap-2 text-xs font-bold opacity-75">
+                        <span>{chat.sender}</span>
+                        <span>
+                          {new Date(chat.sentAt).toLocaleTimeString("ko-KR", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </span>
+                      </div>
+                      <p className="mt-1 break-words text-sm leading-5">{chat.message}</p>
+                    </div>
+                  ))
+                )}
+                <div ref={chatEndRef} />
+              </div>
+              <div className="mt-3 flex gap-2">
+                <input
+                  className="min-w-0 flex-1 rounded-lg border border-white/15 bg-black/25 px-3 py-2 text-sm text-white outline-none transition placeholder:text-zinc-500 focus:border-[#e4b467]"
+                  disabled={!isConnected}
+                  maxLength={200}
+                  onChange={(event) => setChatDraft(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      sendChat();
+                    }
+                  }}
+                  placeholder={isConnected ? "메시지 입력" : "방에 연결하면 채팅 가능"}
+                  value={chatDraft}
+                />
+                <button
+                  className="rounded-lg bg-[#e4b467] px-4 py-2 text-sm font-bold text-[#20110a] transition hover:bg-[#ffd07a] disabled:opacity-45"
+                  disabled={!isConnected || !chatDraft.trim()}
+                  onClick={sendChat}
+                  type="button"
+                >
+                  전송
+                </button>
+              </div>
             </div>
 
             <div className="rounded-lg border border-white/15 bg-black/20 p-4 text-sm leading-6 text-zinc-400">

@@ -59,6 +59,11 @@ public class GomokuWebSocketHandler extends TextWebSocketHandler {
 
 		if ("reset".equals(type)) {
 			room.reset();
+			return;
+		}
+
+		if ("chat".equals(type)) {
+			room.chat(session, asText(payload.get("message")));
 		}
 	}
 
@@ -108,6 +113,10 @@ public class GomokuWebSocketHandler extends TextWebSocketHandler {
 			return number.intValue();
 		}
 		return -1;
+	}
+
+	private String asText(Object value) {
+		return value == null ? "" : String.valueOf(value);
 	}
 
 	private final class Room {
@@ -216,6 +225,26 @@ public class GomokuWebSocketHandler extends TextWebSocketHandler {
 			broadcast();
 		}
 
+		private synchronized void chat(WebSocketSession senderSession, String rawMessage) throws IOException {
+			String message = rawMessage == null ? "" : rawMessage.strip();
+			if (message.isBlank()) {
+				return;
+			}
+
+			if (message.length() > 200) {
+				message = message.substring(0, 200);
+			}
+
+			int sender = players.getOrDefault(senderSession.getId(), 0);
+			Map<String, Object> payload = new HashMap<>();
+			payload.put("type", "chat");
+			payload.put("message", message);
+			payload.put("sender", playerName(sender));
+			payload.put("senderRole", sender);
+			payload.put("sentAt", System.currentTimeMillis());
+			sendToRoom(payload);
+		}
+
 		private boolean hasFive(int row, int col, int player) {
 			int[][] directions = { { 1, 0 }, { 0, 1 }, { 1, 1 }, { 1, -1 } };
 			for (int[] direction : directions) {
@@ -250,12 +279,34 @@ public class GomokuWebSocketHandler extends TextWebSocketHandler {
 		}
 
 		private synchronized void broadcast() throws IOException {
+			sendStateToRoom();
+		}
+
+		private synchronized void sendStateToRoom() throws IOException {
 			List<WebSocketSession> disconnected = new ArrayList<>();
 
 			for (WebSocketSession session : sessions.values()) {
 				if (session.isOpen()) {
 					String payload = objectMapper.writeValueAsString(state(session.getId()));
 					session.sendMessage(new TextMessage(payload));
+				} else {
+					disconnected.add(session);
+				}
+			}
+
+			for (WebSocketSession session : disconnected) {
+				leave(session);
+				sessionRooms.remove(session.getId());
+			}
+		}
+
+		private synchronized void sendToRoom(Map<String, Object> payload) throws IOException {
+			List<WebSocketSession> disconnected = new ArrayList<>();
+			String message = objectMapper.writeValueAsString(payload);
+
+			for (WebSocketSession session : sessions.values()) {
+				if (session.isOpen()) {
+					session.sendMessage(new TextMessage(message));
 				} else {
 					disconnected.add(session);
 				}
@@ -300,7 +351,13 @@ public class GomokuWebSocketHandler extends TextWebSocketHandler {
 		}
 
 		private String playerName(int player) {
-			return player == 1 ? "검은 돌" : "흰 돌";
+			if (player == 1) {
+				return "검은 돌";
+			}
+			if (player == 2) {
+				return "흰 돌";
+			}
+			return "관전자";
 		}
 	}
 }
