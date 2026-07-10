@@ -588,9 +588,204 @@ export default function GomokuPage() {
     [11, 3],
     [11, 11],
   ];
-  const excelColumns = Array.from({ length: boardSize }, (_, index) =>
+  const excelColumns = Array.from({ length: 21 }, (_, index) =>
     String.fromCharCode("A".charCodeAt(0) + index),
   );
+  const excelRows = Array.from({ length: 24 }, (_, index) => index + 1);
+  const recentChats = chatMessages.slice(-4);
+
+  function renderExcelCell(rowNumber: number, colIndex: number) {
+    const boardRow = rowNumber - 2;
+    const boardCol = colIndex - 1;
+    const isBoardCell = boardRow >= 0 && boardRow < boardSize && boardCol >= 0 && boardCol < boardSize;
+
+    if (isBoardCell) {
+      const cell = game.board[boardRow][boardCol];
+      return (
+        <button
+          aria-label={getCellLabel(cell, boardRow, boardCol)}
+          className={`flex h-8 min-w-0 items-center justify-center border-b border-r border-[#d9d9d9] px-1 text-[11px] outline-none transition focus-visible:ring-2 focus-visible:ring-[#217346] disabled:cursor-default ${
+            cell === 1
+              ? "bg-[#e2f0d9] font-semibold text-[#217346]"
+              : cell === 2
+                ? "bg-[#fff2cc] font-semibold text-[#7a5a00]"
+                : "bg-white text-transparent hover:bg-[#eef7f1]"
+          }`}
+          disabled={!isConnected || cell !== 0 || game.winner !== 0}
+          key={`${rowNumber}-${colIndex}`}
+          onClick={() => handleMove(boardRow, boardCol)}
+          type="button"
+        >
+          {cell === 1 ? "OK" : cell === 2 ? "REV" : "0"}
+        </button>
+      );
+    }
+
+    const leader = leaderboard[rowNumber - 8];
+    const chat = recentChats[rowNumber - 17];
+    let content = "";
+    let strong = false;
+    let muted = false;
+
+    if (colIndex === 17 && rowNumber === 2) content = "Analyst ID";
+    if (colIndex === 17 && rowNumber === 3) content = "Workbook ID";
+    if (colIndex === 17 && rowNumber === 5) content = "Sync";
+    if (colIndex === 18 && rowNumber === 5) content = connectionLabel;
+    if (colIndex === 17 && rowNumber === 6) content = "Role";
+    if (colIndex === 18 && rowNumber === 6) content = myRoleLabel;
+    if (colIndex === 17 && rowNumber === 7) content = "Users";
+    if (colIndex === 18 && rowNumber === 7) content = peopleLabel;
+    if (colIndex === 17 && rowNumber === 8) {
+      content = "Performance";
+      strong = true;
+    }
+    if (leader && colIndex === 17) content = `${rowNumber - 7}`;
+    if (leader && colIndex === 18) content = leader.nickname;
+    if (leader && colIndex === 19) content = `${leader.wins}/${leader.games}`;
+    if (leader && colIndex === 20) content = `${leader.winRate}%`;
+    if (colIndex === 17 && rowNumber === 16) {
+      content = "Notes";
+      strong = true;
+    }
+    if (chat && colIndex === 17) content = chat.sender;
+    if (chat && colIndex === 18) content = chat.message;
+    if (chat && colIndex === 20) {
+      content = new Date(chat.sentAt).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" });
+      muted = true;
+    }
+    if (colIndex === 17 && rowNumber === 22) content = "Status";
+    if (colIndex === 18 && rowNumber === 22) content = statusText;
+
+    if (colIndex === 18 && rowNumber === 2) {
+      return (
+        <input
+          className="h-8 min-w-0 border-b border-r border-[#d9d9d9] bg-white px-2 text-[12px] outline-none focus:bg-[#f3fff7] focus:ring-1 focus:ring-[#217346]"
+          key={`${rowNumber}-${colIndex}`}
+          maxLength={16}
+          onChange={(event) => setNicknameDraft(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              void saveNickname();
+            }
+          }}
+          value={nicknameDraft}
+        />
+      );
+    }
+
+    if (colIndex === 19 && rowNumber === 2) {
+      return (
+        <button
+          className="h-8 border-b border-r border-[#d9d9d9] bg-[#eef4ef] px-2 text-[11px] font-semibold text-[#217346] hover:bg-[#e2f0d9] disabled:opacity-50"
+          disabled={isSavingProfile}
+          key={`${rowNumber}-${colIndex}`}
+          onClick={() => void saveNickname()}
+          type="button"
+        >
+          Apply
+        </button>
+      );
+    }
+
+    if (colIndex === 18 && rowNumber === 3) {
+      return (
+        <input
+          className="h-8 min-w-0 border-b border-r border-[#d9d9d9] bg-white px-2 text-[12px] uppercase outline-none focus:bg-[#f3fff7] focus:ring-1 focus:ring-[#217346]"
+          key={`${rowNumber}-${colIndex}`}
+          onChange={(event) => setDraftCode(normalizeCode(event.target.value))}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              joinRoom(draftCode);
+            }
+          }}
+          value={draftCode}
+        />
+      );
+    }
+
+    if (colIndex === 19 && rowNumber === 3) {
+      return (
+        <button
+          className="h-8 border-b border-r border-[#d9d9d9] bg-[#eef4ef] px-2 text-[11px] font-semibold text-[#217346] hover:bg-[#e2f0d9]"
+          key={`${rowNumber}-${colIndex}`}
+          onClick={() => joinRoom(draftCode)}
+          type="button"
+        >
+          Open
+        </button>
+      );
+    }
+
+    if (colIndex === 20 && rowNumber === 3) {
+      return (
+        <button
+          className="h-8 border-b border-r border-[#d9d9d9] bg-[#eef4ef] px-2 text-[11px] font-semibold text-[#217346] hover:bg-[#e2f0d9]"
+          key={`${rowNumber}-${colIndex}`}
+          onClick={roomCode ? copyInviteUrl : createRoom}
+          type="button"
+        >
+          {roomCode ? "Share" : "New"}
+        </button>
+      );
+    }
+
+    if (colIndex === 18 && rowNumber === 23) {
+      return (
+        <input
+          className="h-8 min-w-0 border-b border-r border-[#d9d9d9] bg-white px-2 text-[12px] outline-none focus:bg-[#f3fff7] focus:ring-1 focus:ring-[#217346]"
+          disabled={!isConnected}
+          key={`${rowNumber}-${colIndex}`}
+          maxLength={200}
+          onChange={(event) => setChatDraft(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              sendChat();
+            }
+          }}
+          value={chatDraft}
+        />
+      );
+    }
+
+    if (colIndex === 19 && rowNumber === 23) {
+      return (
+        <button
+          className="h-8 border-b border-r border-[#d9d9d9] bg-[#eef4ef] px-2 text-[11px] font-semibold text-[#217346] hover:bg-[#e2f0d9] disabled:opacity-50"
+          disabled={!isConnected || !chatDraft.trim()}
+          key={`${rowNumber}-${colIndex}`}
+          onClick={sendChat}
+          type="button"
+        >
+          Add
+        </button>
+      );
+    }
+
+    if (colIndex === 20 && rowNumber === 23) {
+      return (
+        <button
+          className="h-8 border-b border-r border-[#d9d9d9] bg-[#eef4ef] px-2 text-[11px] font-semibold text-[#217346] hover:bg-[#e2f0d9] disabled:opacity-50"
+          disabled={!isConnected}
+          key={`${rowNumber}-${colIndex}`}
+          onClick={resetGame}
+          type="button"
+        >
+          Refresh
+        </button>
+      );
+    }
+
+    return (
+      <div
+        className={`h-8 min-w-0 truncate border-b border-r border-[#d9d9d9] bg-white px-2 py-1.5 text-[12px] ${
+          strong ? "font-semibold text-[#217346]" : muted ? "text-[#6b7280]" : "text-[#1f2937]"
+        }`}
+        key={`${rowNumber}-${colIndex}`}
+      >
+        {content}
+      </div>
+    );
+  }
 
   return (
     <main
@@ -601,7 +796,7 @@ export default function GomokuPage() {
         backgroundSize: viewMode === "excel" ? "28px 28px" : undefined,
       }}
     >
-      {!isLoggedIn && (
+      {!isLoggedIn && !isExcelMode && (
         <div
           aria-modal="true"
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 px-5 backdrop-blur-sm"
@@ -650,7 +845,7 @@ export default function GomokuPage() {
           </div>
         </div>
       )}
-      {showWinnerDialog && (
+      {showWinnerDialog && !isExcelMode && (
         <div
           aria-modal="true"
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 px-5 backdrop-blur-sm"
@@ -680,6 +875,140 @@ export default function GomokuPage() {
           </div>
         </div>
       )}
+      {isExcelMode ? (
+        <div className="mx-auto flex min-h-[calc(100vh-64px)] w-full max-w-[1920px] flex-col overflow-hidden border border-[#c9c9c9] bg-white text-[#1f2937] shadow-xl shadow-black/10">
+          <div className="flex h-9 items-center bg-[#217346] text-white">
+            <div className="flex w-48 items-center gap-3 px-4 text-lg">
+              <span className="font-bold">▣</span>
+              <span className="text-white/45">↶</span>
+              <span className="text-white/35">↷</span>
+            </div>
+            <div className="flex-1 text-center text-sm font-semibold">통합 문서1 - Excel</div>
+            <div className="mx-4 hidden h-7 w-72 items-center rounded-sm bg-white/35 px-3 text-sm text-[#0f3d25] lg:flex">
+              검색
+            </div>
+            <button
+              className="mr-4 rounded-sm bg-white px-3 py-1 text-xs font-semibold text-[#217346]"
+              onClick={() => void saveNickname()}
+              type="button"
+            >
+              로그인
+            </button>
+            <div className="flex w-32 justify-around text-sm">
+              <span>-</span>
+              <span>□</span>
+              <span>×</span>
+            </div>
+          </div>
+
+          <div className="flex h-10 items-end gap-7 border-b border-[#d0d0d0] bg-[#f3f2f1] px-4 text-sm text-[#333]">
+            {["파일", "홈", "삽입", "페이지 레이아웃", "수식", "데이터", "검토", "보기", "도움말"].map((tab) => (
+              <span className={tab === "홈" ? "border-b-2 border-[#217346] pb-2 font-semibold" : "pb-2"} key={tab}>
+                {tab}
+              </span>
+            ))}
+            <button
+              className="ml-auto mb-1 rounded-sm border border-[#217346]/25 bg-white px-2 py-1 text-xs text-[#217346]"
+              onClick={() => setViewMode("dark")}
+              type="button"
+            >
+              보기 전환
+            </button>
+          </div>
+
+          <div className="grid h-28 grid-cols-[170px_220px_220px_1fr] gap-4 border-b border-[#c9c9c9] bg-[#f3f2f1] px-5 py-2 text-xs text-[#333]">
+            <div>
+              <p className="mb-2 text-center text-[#666]">클립보드</p>
+              <div className="flex gap-3">
+                <span className="text-3xl">▣</span>
+                <div className="space-y-1">
+                  <p>잘라내기</p>
+                  <p>복사</p>
+                  <p>서식 복사</p>
+                </div>
+              </div>
+            </div>
+            <div className="border-l border-[#c8c8c8] pl-4">
+              <p className="mb-2 text-center text-[#666]">글꼴</p>
+              <div className="grid grid-cols-[1fr_48px] gap-2">
+                <div className="border border-[#bcbcbc] bg-white px-2 py-1">맑은 고딕</div>
+                <div className="border border-[#bcbcbc] bg-white px-2 py-1">11</div>
+              </div>
+              <div className="mt-2 flex gap-4 font-semibold">
+                <span>가</span>
+                <span>기</span>
+                <span className="underline">밑</span>
+                <span className="text-[#217346]">▦</span>
+              </div>
+            </div>
+            <div className="border-l border-[#c8c8c8] pl-4">
+              <p className="mb-2 text-center text-[#666]">맞춤</p>
+              <div className="grid grid-cols-4 gap-2 text-lg text-[#555]">
+                <span>☰</span>
+                <span>▤</span>
+                <span>↔</span>
+                <span>↕</span>
+              </div>
+              <p className="mt-2">병합하고 가운데 맞춤</p>
+            </div>
+            <div className="border-l border-[#c8c8c8] pl-4">
+              <p className="mb-2 text-center text-[#666]">스타일 / 셀 / 편집</p>
+              <div className="flex flex-wrap gap-5 text-sm">
+                <span>조건부 서식</span>
+                <span>표 서식</span>
+                <span>삽입</span>
+                <span>삭제</span>
+                <span>자동 합계</span>
+                <span>정렬 및 필터</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid h-9 grid-cols-[130px_1fr] border-b border-[#c9c9c9] bg-[#f8f8f8] text-sm">
+            <div className="border-r border-[#c9c9c9] px-2 py-2">A1</div>
+            <div className="flex items-center gap-3 px-3">
+              <span className="text-[#999]">×</span>
+              <span className="text-[#999]">✓</span>
+              <span className="font-serif italic text-[#666]">fx</span>
+              <div className="min-w-0 flex-1 truncate border border-[#c9c9c9] bg-white px-2 py-1">
+                {'=IF(Sync="Synced",Summary!B2:P16,"Pending")'}
+              </div>
+            </div>
+          </div>
+
+          <div className="min-h-0 flex-1 overflow-auto bg-white">
+            <div
+              className="grid min-w-[1680px]"
+              style={{ gridTemplateColumns: "32px repeat(21, minmax(72px, 1fr))" }}
+            >
+              <div className="sticky left-0 top-0 z-20 border-b border-r border-[#c9c9c9] bg-[#e9e9e9]" />
+              {excelColumns.map((column) => (
+                <div
+                  className="sticky top-0 z-10 border-b border-r border-[#c9c9c9] bg-[#e9e9e9] py-1 text-center text-sm text-[#0f3d25]"
+                  key={column}
+                >
+                  {column}
+                </div>
+              ))}
+              {excelRows.map((rowNumber) => (
+                <div className="contents" key={rowNumber}>
+                  <div className="sticky left-0 z-10 border-b border-r border-[#c9c9c9] bg-[#e9e9e9] py-1 text-center text-sm text-[#0f3d25]">
+                    {rowNumber}
+                  </div>
+                  {excelColumns.map((_, colIndex) => renderExcelCell(rowNumber, colIndex))}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex h-9 items-center gap-2 border-t border-[#c9c9c9] bg-[#f3f2f1] px-3 text-xs text-[#555]">
+            <span className="border-t-2 border-[#217346] bg-white px-5 py-2 font-semibold text-[#217346]">Sheet1</span>
+            <span className="px-3">＋</span>
+            <span className="ml-auto">준비</span>
+            <span className="mx-3">100%</span>
+          </div>
+        </div>
+      ) : (
       <div className="mx-auto flex w-full max-w-[1500px] flex-col gap-6">
         <nav className="flex flex-wrap items-center justify-between gap-4">
           <Link
@@ -690,7 +1019,7 @@ export default function GomokuPage() {
           </Link>
           <div className="flex items-center gap-3">
             <span className="text-sm font-semibold text-[var(--muted)]">
-              {viewMode === "excel" ? "Q3_Reconciliation.xlsx" : "실시간 오목"}
+              실시간 오목
             </span>
             <div className="flex rounded-lg border border-[var(--border)] bg-[var(--panel)] p-1">
               {viewModes.map((mode) => (
@@ -862,65 +1191,7 @@ export default function GomokuPage() {
 
           <div className="flex flex-col gap-5">
             <div className="rounded-lg border border-[var(--border)] bg-[var(--panel)] p-4 shadow-2xl shadow-black/20">
-              {viewMode === "excel" ? (
-                <div className="mx-auto w-full max-w-[min(920px,calc(100vh-118px))] overflow-hidden rounded-sm border border-[#b7c9bd] bg-white text-[#10231a] shadow-sm">
-                  <div className="flex items-center gap-2 border-b border-[#d7e2da] bg-[#f3f7f0] px-3 py-2 text-xs text-[#486354]">
-                    <span className="rounded-sm bg-[#217346] px-2 py-1 font-bold text-white">fx</span>
-                    <div className="min-w-0 flex-1 truncate rounded-sm border border-[#c8d6cc] bg-white px-2 py-1">
-                      =SUM(Q3_Reconciliation!B2:P16)
-                    </div>
-                  </div>
-                  <div
-                    className="grid"
-                    style={{
-                      gridTemplateColumns: "34px repeat(15, minmax(26px, 1fr))",
-                    }}
-                  >
-                    <div className="border-b border-r border-[#d7e2da] bg-[#eef4ef]" />
-                    {excelColumns.map((column) => (
-                      <div
-                        className="border-b border-r border-[#d7e2da] bg-[#eef4ef] py-1 text-center text-[11px] font-semibold text-[#486354]"
-                        key={column}
-                      >
-                        {column}
-                      </div>
-                    ))}
-                    {game.board.map((row, rowIndex) => (
-                      <div className="contents" key={`excel-row-${rowIndex}`}>
-                        <div className="border-b border-r border-[#d7e2da] bg-[#eef4ef] py-1 text-center text-[11px] font-semibold text-[#486354]">
-                          {rowIndex + 1}
-                        </div>
-                        {row.map((cell, colIndex) => (
-                          <button
-                            aria-label={getCellLabel(cell, rowIndex, colIndex)}
-                            className={`flex aspect-[1.35] min-h-7 items-center justify-center border-b border-r border-[#d7e2da] px-1 text-[11px] font-semibold outline-none transition focus-visible:ring-2 focus-visible:ring-[#217346] disabled:cursor-default ${
-                              cell === 1
-                                ? "bg-[#e2f0d9] text-[#217346]"
-                                : cell === 2
-                                  ? "bg-[#fff2cc] text-[#7a5a00]"
-                                  : "bg-white text-transparent hover:bg-[#eef7f1]"
-                            }`}
-                            disabled={!isConnected || cell !== 0 || game.winner !== 0}
-                            key={`excel-${rowIndex}-${colIndex}`}
-                            onClick={() => handleMove(rowIndex, colIndex)}
-                            type="button"
-                          >
-                            {cell === 1 ? "OK" : cell === 2 ? "REV" : "0"}
-                          </button>
-                        ))}
-                      </div>
-                    ))}
-                  </div>
-                  <div className="flex items-center gap-2 border-t border-[#d7e2da] bg-[#f3f7f0] px-3 py-2 text-[11px] text-[#486354]">
-                    <span className="border-b-2 border-[#217346] px-3 py-1 font-bold text-[#217346]">
-                      Summary
-                    </span>
-                    <span className="px-3 py-1">Data</span>
-                    <span className="px-3 py-1">Review</span>
-                  </div>
-                </div>
-              ) : (
-                <div className="mx-auto aspect-square w-full max-w-[min(860px,calc(100vh-150px))] rounded-lg border border-[#8c6635] bg-[#d8a24d] p-[5.5%] shadow-[inset_0_0_34px_rgba(91,54,20,0.55)]">
+              <div className="mx-auto aspect-square w-full max-w-[min(860px,calc(100vh-150px))] rounded-lg border border-[#8c6635] bg-[#d8a24d] p-[5.5%] shadow-[inset_0_0_34px_rgba(91,54,20,0.55)]">
                   <div className="relative h-full w-full">
                     <svg
                       aria-hidden="true"
@@ -998,8 +1269,7 @@ export default function GomokuPage() {
                       )),
                     )}
                   </div>
-                </div>
-              )}
+              </div>
             </div>
           </div>
 
@@ -1114,6 +1384,7 @@ export default function GomokuPage() {
           </aside>
         </section>
       </div>
+      )}
     </main>
   );
 }
