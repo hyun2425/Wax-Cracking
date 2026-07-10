@@ -37,6 +37,8 @@ public class CatchMindWebSocketHandler extends TextWebSocketHandler {
 	};
 	private static final int MAX_PLAYERS = 8;
 	private static final int ROUND_SECONDS = 80;
+	private static final int MAX_GUESS_SCORE = 100;
+	private static final int GUESS_SCORE_STEP = 20;
 	private static final List<String> WORDS = List.of(
 			"우산", "달팽이", "피아노", "비행기", "호랑이", "김밥", "자전거", "눈사람", "로켓", "바나나",
 			"선풍기", "캠핑", "고래", "도서관", "치킨", "마법사", "소방차", "수박", "카메라", "등대",
@@ -140,6 +142,16 @@ public class CatchMindWebSocketHandler extends TextWebSocketHandler {
 			return;
 		}
 
+		if ("continueGame".equals(type)) {
+			room.continueGame(session);
+			return;
+		}
+
+		if ("endGame".equals(type)) {
+			room.endGame(session);
+			return;
+		}
+
 		if ("selectWord".equals(type)) {
 			room.selectWord(session, asInt(payload.get("index")));
 			return;
@@ -222,7 +234,7 @@ public class CatchMindWebSocketHandler extends TextWebSocketHandler {
 		private final Map<String, WebSocketSession> sessions = new LinkedHashMap<>();
 		private final Map<String, Player> players = new LinkedHashMap<>();
 		private final List<Map<String, Object>> strokes = new ArrayList<>();
-		private final Set<String> correctPlayerIds = ConcurrentHashMap.newKeySet();
+		private final Set<String> correctPlayerIds = new LinkedHashSet<>();
 		private final Set<String> usedWordCandidates = new LinkedHashSet<>();
 		private final List<String> turnOrder = new ArrayList<>();
 		private final List<String> wordCandidates = new ArrayList<>();
@@ -235,6 +247,7 @@ public class CatchMindWebSocketHandler extends TextWebSocketHandler {
 		private String status = "방에 입장한 뒤 게임을 시작하세요.";
 		private ScheduledFuture<?> roundTimer;
 		private long roundEndsAt = 0;
+		private boolean drawerScoreAwarded = false;
 		private int round = 0;
 		private int turnIndex = -1;
 
@@ -319,10 +332,51 @@ public class CatchMindWebSocketHandler extends TextWebSocketHandler {
 
 			mode = "liar".equals(requestedMode) ? "liar" : "classic";
 			players.values().forEach(player -> player.score = 0);
+			usedWordCandidates.clear();
+			startTurnCycle();
+		}
+
+		private synchronized void continueGame(WebSocketSession session) throws IOException {
+			if (!session.getId().equals(hostId)) {
+				broadcastNotice("방장만 다음 라운드를 시작할 수 있습니다.");
+				return;
+			}
+
+			if (!"betweenGames".equals(phase)) {
+				return;
+			}
+
+			startTurnCycle();
+		}
+
+		private synchronized void endGame(WebSocketSession session) throws IOException {
+			if (!session.getId().equals(hostId)) {
+				broadcastNotice("방장만 게임을 종료할 수 있습니다.");
+				return;
+			}
+
+			if (!"betweenGames".equals(phase) && !"lobby".equals(phase)) {
+				return;
+			}
+
+			cancelRoundTimer();
+			phase = "finished";
+			drawerId = "";
+			liarId = "";
+			word = "";
+			wordCandidates.clear();
+			strokes.clear();
+			correctPlayerIds.clear();
+			roundEndsAt = 0;
+			status = "게임 종료! 최종 순위를 확인하세요.";
+			broadcastState();
+			broadcastNotice("게임이 종료되었습니다.");
+		}
+
+		private synchronized void startTurnCycle() throws IOException {
 			turnOrder.clear();
 			turnOrder.addAll(players.keySet());
 			Collections.shuffle(turnOrder);
-			usedWordCandidates.clear();
 			turnIndex = -1;
 			round = 0;
 			nextTurn();
@@ -342,6 +396,7 @@ public class CatchMindWebSocketHandler extends TextWebSocketHandler {
 			phase = "drawing";
 			strokes.clear();
 			correctPlayerIds.clear();
+			drawerScoreAwarded = false;
 			List<String> guessers = players.keySet().stream()
 					.filter(playerId -> !playerId.equals(drawerId))
 					.toList();
@@ -394,15 +449,13 @@ public class CatchMindWebSocketHandler extends TextWebSocketHandler {
 			}
 
 			if (normalizeGuess(guess).equals(normalizeGuess(word))) {
+				int rank = correctPlayerIds.size() + 1;
+				int earnedScore = scoreForGuessRank(rank);
 				correctPlayerIds.add(session.getId());
-				player.score += Math.max(1, 5 - correctPlayerIds.size());
-				Player drawer = players.get(drawerId);
-				if (drawer != null) {
-					drawer.score += 1;
-				}
-				status = player.nickname + "님이 정답을 맞혔습니다.";
+				player.score += earnedScore;
+				status = player.nickname + "님이 " + rank + "등으로 정답을 맞혀 +" + earnedScore + "점을 얻었습니다.";
 				broadcastState();
-				broadcastNotice(player.nickname + "님이 정답을 맞혔습니다.");
+				broadcastNotice(player.nickname + "님이 정답을 맞혔습니다. +" + earnedScore + "점");
 				if (allGuessersCorrect()) {
 					finishRound("모든 플레이어가 정답을 맞혔습니다.");
 				}
@@ -426,16 +479,16 @@ public class CatchMindWebSocketHandler extends TextWebSocketHandler {
 			cancelRoundTimer();
 			turnIndex++;
 			if (turnIndex >= turnOrder.size()) {
-				phase = "finished";
+				phase = "betweenGames";
 				drawerId = "";
 				liarId = "";
 				word = "";
 				wordCandidates.clear();
 				strokes.clear();
 				roundEndsAt = 0;
-				status = "게임 종료! 모든 플레이어가 한 번씩 출제했습니다.";
+				status = "모든 플레이어가 한 번씩 출제했습니다. 한 라운드 더 진행할까요?";
 				broadcastState();
-				broadcastNotice("게임이 종료되었습니다.");
+				broadcastNotice("한 라운드가 끝났습니다.");
 				return;
 			}
 
@@ -457,6 +510,7 @@ public class CatchMindWebSocketHandler extends TextWebSocketHandler {
 
 		private synchronized void finishRound(String message) throws IOException {
 			cancelRoundTimer();
+			awardDrawerScore();
 			phase = "revealed";
 			roundEndsAt = 0;
 			status = message;
@@ -507,6 +561,7 @@ public class CatchMindWebSocketHandler extends TextWebSocketHandler {
 			turnOrder.clear();
 			wordCandidates.clear();
 			roundEndsAt = 0;
+			drawerScoreAwarded = false;
 			round = 0;
 			turnIndex = -1;
 			status = nextStatus;
@@ -516,6 +571,25 @@ public class CatchMindWebSocketHandler extends TextWebSocketHandler {
 			return players.keySet().stream()
 					.filter(playerId -> !playerId.equals(drawerId))
 					.allMatch(correctPlayerIds::contains);
+		}
+
+		private int scoreForGuessRank(int rank) {
+			return Math.max(20, MAX_GUESS_SCORE - (rank - 1) * GUESS_SCORE_STEP);
+		}
+
+		private void awardDrawerScore() {
+			if (drawerScoreAwarded || drawerId.isBlank()) {
+				return;
+			}
+
+			Player drawer = players.get(drawerId);
+			if (drawer == null || players.isEmpty()) {
+				return;
+			}
+
+			int earnedScore = Math.round((correctPlayerIds.size() * 100.0f) / players.size());
+			drawer.score += earnedScore;
+			drawerScoreAwarded = true;
 		}
 
 		private List<String> pickWordCandidates() {

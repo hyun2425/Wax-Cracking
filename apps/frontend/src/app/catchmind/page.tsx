@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 type ConnectionState = "idle" | "connecting" | "open" | "closed";
 type GameMode = "classic" | "liar";
-type Phase = "lobby" | "choosing" | "drawing" | "revealed" | "finished";
+type Phase = "lobby" | "choosing" | "drawing" | "revealed" | "betweenGames" | "finished";
 
 type Point = {
   x: number;
@@ -169,6 +169,7 @@ export default function CatchMindPage() {
   const [brushSize, setBrushSize] = useState(6);
   const [reconnectKey, setReconnectKey] = useState(0);
   const [now, setNow] = useState(() => Date.now());
+  const [dismissedScoreStamp, setDismissedScoreStamp] = useState("");
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const socketRef = useRef<WebSocket | null>(null);
   const drawingRef = useRef(false);
@@ -184,6 +185,12 @@ export default function CatchMindPage() {
   const canGuess = isConnected && game.phase === "drawing" && !isDrawer && !hasGuessedCorrect;
   const remainingSeconds =
     game.roundEndsAt > 0 ? Math.max(0, Math.ceil((game.roundEndsAt - now) / 1000)) : 0;
+  const ranking = useMemo(
+    () => [...game.players].sort((left, right) => right.score - left.score || left.nickname.localeCompare(right.nickname)),
+    [game.players],
+  );
+  const scoreStamp = `${game.phase}:${ranking.map((player) => `${player.id}-${player.score}`).join("|")}`;
+  const showScoreDialog = game.phase === "finished" && ranking.length > 0 && dismissedScoreStamp !== scoreStamp;
   const inviteUrl = useMemo(() => {
     if (typeof window === "undefined" || !roomCode) {
       return "";
@@ -348,6 +355,14 @@ export default function CatchMindPage() {
 
   function startRound(nextMode = mode) {
     sendMessage({ mode: nextMode, type: "start" });
+  }
+
+  function continueGame() {
+    sendMessage({ type: "continueGame" });
+  }
+
+  function endGame() {
+    sendMessage({ type: "endGame" });
   }
 
   function selectWord(index: number) {
@@ -540,6 +555,26 @@ export default function CatchMindPage() {
               >
                 게임 시작
               </button>
+              {game.phase === "betweenGames" && (
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  <button
+                    className="rounded-lg bg-[#2563eb] px-3 py-3 text-sm font-black text-white disabled:opacity-45"
+                    disabled={!isConnected || !isHost}
+                    onClick={continueGame}
+                    type="button"
+                  >
+                    한 라운드 더
+                  </button>
+                  <button
+                    className="rounded-lg border border-[#d9d1c3] px-3 py-3 text-sm font-black disabled:opacity-45"
+                    disabled={!isConnected || !isHost}
+                    onClick={endGame}
+                    type="button"
+                  >
+                    종료
+                  </button>
+                </div>
+              )}
               {isConnected && !isHost && (
                 <p className="mt-2 text-xs font-bold text-[#7c7165]">방장만 게임을 시작할 수 있습니다.</p>
               )}
@@ -692,7 +727,7 @@ export default function CatchMindPage() {
                 </button>
                 <button
                   className="rounded-lg border border-[#d9d1c3] px-4 py-2 text-sm font-black disabled:opacity-45"
-                  disabled={!isConnected || game.phase === "lobby"}
+                  disabled={!isConnected || game.phase !== "drawing"}
                   onClick={revealAnswer}
                   type="button"
                 >
@@ -795,6 +830,51 @@ export default function CatchMindPage() {
           </aside>
         </section>
       </div>
+      {showScoreDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 px-4 py-6">
+          <div className="w-full max-w-md rounded-lg border border-[#d9d1c3] bg-white p-5 shadow-2xl">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-sm font-black text-[#2563eb]">최종 순위</p>
+                <h2 className="mt-1 text-2xl font-black">게임 결과</h2>
+              </div>
+              <button
+                className="rounded-lg border border-[#d9d1c3] px-3 py-2 text-sm font-black"
+                onClick={() => setDismissedScoreStamp(scoreStamp)}
+                type="button"
+              >
+                닫기
+              </button>
+            </div>
+            <div className="mt-4 flex flex-col gap-2">
+              {ranking.map((player, index) => (
+                <div
+                  className={`grid grid-cols-[40px_minmax(0,1fr)_80px] items-center gap-3 rounded-lg px-3 py-3 ${
+                    index === 0 ? "bg-[#fef3c7]" : "bg-[#f3f0e9]"
+                  }`}
+                  key={player.id}
+                >
+                  <span className="text-lg font-black">{index + 1}</span>
+                  <span className="truncate text-sm font-black">{player.nickname}</span>
+                  <span className="text-right text-lg font-black">{player.score}점</span>
+                </div>
+              ))}
+            </div>
+            {isHost && (
+              <button
+                className="mt-4 w-full rounded-lg bg-[#111827] px-4 py-3 text-sm font-black text-white"
+                onClick={() => {
+                  setDismissedScoreStamp(scoreStamp);
+                  startRound();
+                }}
+                type="button"
+              >
+                새 게임 시작
+              </button>
+            )}
+          </div>
+        </div>
+      )}
     </main>
   );
 }
