@@ -196,6 +196,13 @@ public class GomokuWebSocketHandler extends TextWebSocketHandler {
 			}
 
 			board[row][col] = player;
+
+			if (player == 1 && !hasFive(row, col, player) && createsDoubleOpenThree(row, col)) {
+				board[row][col] = 0;
+				sendError(session, "쌍삼 금지 자리입니다. 검은 돌은 열린 3을 두 개 이상 동시에 만들 수 없습니다.");
+				return;
+			}
+
 			moveCount++;
 
 			if (hasFive(row, col, player)) {
@@ -255,6 +262,46 @@ public class GomokuWebSocketHandler extends TextWebSocketHandler {
 					return true;
 				}
 			}
+			return false;
+		}
+
+		private boolean createsDoubleOpenThree(int row, int col) {
+			int[][] directions = { { 1, 0 }, { 0, 1 }, { 1, 1 }, { 1, -1 } };
+			int openThreeCount = 0;
+
+			for (int[] direction : directions) {
+				if (hasOpenThreeInDirection(row, col, direction[0], direction[1])) {
+					openThreeCount++;
+				}
+			}
+
+			return openThreeCount >= 2;
+		}
+
+		private boolean hasOpenThreeInDirection(int row, int col, int rowStep, int colStep) {
+			StringBuilder line = new StringBuilder();
+			for (int offset = -4; offset <= 4; offset++) {
+				int nextRow = row + rowStep * offset;
+				int nextCol = col + colStep * offset;
+				if (nextRow < 0 || nextRow >= BOARD_SIZE || nextCol < 0 || nextCol >= BOARD_SIZE) {
+					line.append('2');
+				} else {
+					line.append(board[nextRow][nextCol]);
+				}
+			}
+
+			String value = line.toString();
+			String[] openThreePatterns = { "01110", "010110", "011010" };
+			for (String pattern : openThreePatterns) {
+				for (int start = 0; start <= value.length() - pattern.length(); start++) {
+					int center = 4;
+					if (start <= center && center < start + pattern.length() &&
+							value.startsWith(pattern, start)) {
+						return true;
+					}
+				}
+			}
+
 			return false;
 		}
 
