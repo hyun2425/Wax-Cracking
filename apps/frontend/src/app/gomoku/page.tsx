@@ -313,6 +313,25 @@ export default function GomokuPage() {
 
   const myStats = leaderboard.find((entry) => entry.playerId === profile.playerId);
   const themeStyle = viewTheme[viewMode];
+  const isExcelMode = viewMode === "excel";
+  const myRoleLabel =
+    game.you === 1 ? "Reviewer A" : game.you === 2 ? "Reviewer B" : isExcelMode ? "Viewer" : stoneName(game.you);
+  const peopleLabel = isExcelMode
+    ? `${game.players} editors / ${game.spectators} viewers`
+    : `${game.players}명 / 관전 ${game.spectators}명`;
+  const statusText = isExcelMode
+    ? game.status
+        .replaceAll("검은 돌", "Reviewer A")
+        .replaceAll("흰 돌", "Reviewer B")
+        .replaceAll("차례", "reviewing")
+        .replaceAll("승리!", "approved")
+    : game.status;
+  const connectionLabel = isExcelMode
+    ? ({ closed: "Offline", connecting: "Syncing", idle: "Ready", open: "Synced" } satisfies Record<
+        ConnectionState,
+        string
+      >)[connection]
+    : getConnectionLabel(connection);
 
   const refreshLeaderboard = useCallback(async () => {
     try {
@@ -569,6 +588,9 @@ export default function GomokuPage() {
     [11, 3],
     [11, 11],
   ];
+  const excelColumns = Array.from({ length: boardSize }, (_, index) =>
+    String.fromCharCode("A".charCodeAt(0) + index),
+  );
 
   return (
     <main
@@ -586,14 +608,20 @@ export default function GomokuPage() {
           role="dialog"
         >
           <div className="w-full max-w-md rounded-lg border border-[var(--border)] bg-[var(--panel)] p-6 shadow-2xl shadow-black/30">
-            <p className="text-sm font-semibold text-[var(--accent)]">오목 시작하기</p>
-            <h2 className="mt-2 text-3xl font-black text-[var(--text)]">닉네임을 먼저 정해 주세요</h2>
+            <p className="text-sm font-semibold text-[var(--accent)]">
+              {isExcelMode ? "Workbook Access" : "오목 시작하기"}
+            </p>
+            <h2 className="mt-2 text-3xl font-black text-[var(--text)]">
+              {isExcelMode ? "Analyst ID를 입력해 주세요" : "닉네임을 먼저 정해 주세요"}
+            </h2>
             <p className="mt-3 text-sm leading-6 text-[var(--muted)]">
-              전적, 승률, 랭킹, 채팅 이름에 이 닉네임이 사용됩니다.
+              {isExcelMode
+                ? "공유 문서 활동과 메모 작성자 이름에 사용됩니다."
+                : "전적, 승률, 랭킹, 채팅 이름에 이 닉네임이 사용됩니다."}
             </p>
             {draftCode && (
               <p className="mt-3 rounded-lg bg-[var(--panel-deep)] px-3 py-2 text-sm font-semibold text-[var(--text)]">
-                로그인 후 `{draftCode}` 방에 자동 입장합니다.
+                {isExcelMode ? `인증 후 ${draftCode} 문서를 엽니다.` : `로그인 후 \`${draftCode}\` 방에 자동 입장합니다.`}
               </p>
             )}
             <div className="mt-5 flex gap-2">
@@ -607,7 +635,7 @@ export default function GomokuPage() {
                     void saveNickname();
                   }
                 }}
-                placeholder="닉네임"
+                placeholder={isExcelMode ? "Analyst" : "닉네임"}
                 value={nicknameDraft}
               />
               <button
@@ -616,7 +644,7 @@ export default function GomokuPage() {
                 onClick={() => void saveNickname()}
                 type="button"
               >
-                {isSavingProfile ? "저장 중" : "시작"}
+                {isSavingProfile ? "저장 중" : isExcelMode ? "Open" : "시작"}
               </button>
             </div>
           </div>
@@ -688,8 +716,12 @@ export default function GomokuPage() {
             <div className="rounded-lg border border-[var(--border)] bg-[var(--panel)] p-4">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-sm font-semibold text-[var(--text)]">닉네임 로그인</p>
-                  <p className="mt-1 text-xs text-[var(--faint)]">전적과 랭킹에 표시됩니다.</p>
+                  <p className="text-sm font-semibold text-[var(--text)]">
+                    {isExcelMode ? "Analyst ID" : "닉네임 로그인"}
+                  </p>
+                  <p className="mt-1 text-xs text-[var(--faint)]">
+                    {isExcelMode ? "Workbook activity profile" : "전적과 랭킹에 표시됩니다."}
+                  </p>
                 </div>
                 <span className="rounded-full bg-[var(--accent-soft)] px-3 py-1 text-xs font-bold text-[var(--accent)]">
                   {profile.nickname}
@@ -705,7 +737,7 @@ export default function GomokuPage() {
                       void saveNickname();
                     }
                   }}
-                  placeholder="닉네임"
+                  placeholder={isExcelMode ? "Analyst" : "닉네임"}
                   value={nicknameDraft}
                 />
                 <button
@@ -714,7 +746,7 @@ export default function GomokuPage() {
                   onClick={() => void saveNickname()}
                   type="button"
                 >
-                  {isSavingProfile ? "저장 중" : "저장"}
+                  {isSavingProfile ? "저장 중" : isExcelMode ? "Apply" : "저장"}
                 </button>
               </div>
               <div className="mt-3 grid grid-cols-3 gap-2 text-center">
@@ -735,7 +767,7 @@ export default function GomokuPage() {
 
             <div className="rounded-lg border border-[var(--border)] bg-[var(--panel)] p-4">
               <label className="text-sm font-semibold text-[var(--text)]" htmlFor="room-code">
-                초대 코드
+                {isExcelMode ? "Workbook ID" : "초대 코드"}
               </label>
               <div className="mt-3 flex gap-2">
                 <input
@@ -755,7 +787,7 @@ export default function GomokuPage() {
                   onClick={() => joinRoom(draftCode)}
                   type="button"
                 >
-                  입장
+                  {isExcelMode ? "Open" : "입장"}
                 </button>
               </div>
               <div className="mt-3 grid grid-cols-2 gap-2">
@@ -764,7 +796,7 @@ export default function GomokuPage() {
                   onClick={createRoom}
                   type="button"
                 >
-                  새 코드
+                  {isExcelMode ? "New ID" : "새 코드"}
                 </button>
                 <button
                   className="rounded-lg border border-[var(--border)] px-3 py-2 text-sm font-semibold text-[var(--text)] transition hover:brightness-105 disabled:opacity-45"
@@ -772,33 +804,35 @@ export default function GomokuPage() {
                   onClick={copyInviteUrl}
                   type="button"
                 >
-                  링크 복사
+                  {isExcelMode ? "Share" : "링크 복사"}
                 </button>
               </div>
             </div>
 
             <div className="grid gap-3">
-              <StatusItem label="연결" value={getConnectionLabel(connection)} />
-              <StatusItem label="방 코드" value={roomCode || "-"} />
-              <StatusItem label="내 돌" value={stoneName(game.you)} />
-              <StatusItem label="인원" value={`${game.players}명 / 관전 ${game.spectators}명`} />
+              <StatusItem label={isExcelMode ? "Sync" : "연결"} value={connectionLabel} />
+              <StatusItem label={isExcelMode ? "Doc ID" : "방 코드"} value={roomCode || "-"} />
+              <StatusItem label={isExcelMode ? "Role" : "내 돌"} value={myRoleLabel} />
+              <StatusItem label={isExcelMode ? "Users" : "인원"} value={peopleLabel} />
             </div>
 
             <div className="rounded-lg border border-[var(--border)] bg-[var(--panel)] p-4">
               <div className="flex items-center justify-between gap-3">
-                <p className="text-sm font-semibold text-[var(--text)]">전체 랭킹</p>
+                <p className="text-sm font-semibold text-[var(--text)]">
+                  {isExcelMode ? "Performance" : "전체 랭킹"}
+                </p>
                 <button
                   className="rounded-lg border border-[var(--border)] px-3 py-1.5 text-xs font-bold text-[var(--text)] transition hover:brightness-105"
                   onClick={() => void refreshLeaderboard()}
                   type="button"
                 >
-                  새로고침
+                  {isExcelMode ? "Refresh" : "새로고침"}
                 </button>
               </div>
               <div className="mt-3 flex max-h-64 flex-col gap-2 overflow-y-auto">
                 {leaderboard.length === 0 ? (
                   <p className="rounded-lg bg-[var(--panel-deep)] px-3 py-5 text-center text-sm text-[var(--faint)]">
-                    아직 기록된 승부가 없습니다.
+                    {isExcelMode ? "No completed review cycles yet." : "아직 기록된 승부가 없습니다."}
                   </p>
                 ) : (
                   leaderboard.map((entry, index) => (
@@ -828,106 +862,171 @@ export default function GomokuPage() {
 
           <div className="flex flex-col gap-5">
             <div className="rounded-lg border border-[var(--border)] bg-[var(--panel)] p-4 shadow-2xl shadow-black/20">
-              <div className="mx-auto aspect-square w-full max-w-[min(860px,calc(100vh-150px))] rounded-lg border border-[#8c6635] bg-[#d8a24d] p-[5.5%] shadow-[inset_0_0_34px_rgba(91,54,20,0.55)]">
-                <div className="relative h-full w-full">
-                  <svg
-                    aria-hidden="true"
-                    className="absolute inset-0 h-full w-full overflow-visible"
-                    preserveAspectRatio="none"
-                    viewBox="0 0 100 100"
+              {viewMode === "excel" ? (
+                <div className="mx-auto w-full max-w-[min(920px,calc(100vh-118px))] overflow-hidden rounded-sm border border-[#b7c9bd] bg-white text-[#10231a] shadow-sm">
+                  <div className="flex items-center gap-2 border-b border-[#d7e2da] bg-[#f3f7f0] px-3 py-2 text-xs text-[#486354]">
+                    <span className="rounded-sm bg-[#217346] px-2 py-1 font-bold text-white">fx</span>
+                    <div className="min-w-0 flex-1 truncate rounded-sm border border-[#c8d6cc] bg-white px-2 py-1">
+                      =SUM(Q3_Reconciliation!B2:P16)
+                    </div>
+                  </div>
+                  <div
+                    className="grid"
+                    style={{
+                      gridTemplateColumns: "34px repeat(15, minmax(26px, 1fr))",
+                    }}
                   >
-                    <defs>
-                      <linearGradient id="gomokuWood" x1="0" x2="1" y1="0" y2="1">
-                        <stop offset="0%" stopColor="#f1c56a" />
-                        <stop offset="48%" stopColor="#d8a24d" />
-                        <stop offset="100%" stopColor="#bd7f35" />
-                      </linearGradient>
-                    </defs>
-                    <rect fill="url(#gomokuWood)" height="100" width="100" x="0" y="0" />
-                    {linePositions.map((position, index) => (
-                      <g key={position}>
-                        <line
-                          stroke="#2c2118"
-                          strokeLinecap="square"
-                          strokeWidth={index === 0 || index === boardSize - 1 ? 0.72 : 0.42}
-                          x1={position}
-                          x2={position}
-                          y1="0"
-                          y2="100"
-                        />
-                        <line
-                          stroke="#2c2118"
-                          strokeLinecap="square"
-                          strokeWidth={index === 0 || index === boardSize - 1 ? 0.72 : 0.42}
-                          x1="0"
-                          x2="100"
-                          y1={position}
-                          y2={position}
-                        />
-                      </g>
-                    ))}
-                  </svg>
-
-                  {starPoints.map(([row, col]) => (
-                    <span
-                      aria-hidden="true"
-                      className="absolute z-0 aspect-square w-[1.55%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#2c2118]"
-                      key={`${row}-${col}`}
-                      style={{
-                        left: `${(col / (boardSize - 1)) * 100}%`,
-                        top: `${(row / (boardSize - 1)) * 100}%`,
-                      }}
-                    />
-                  ))}
-
-                  {game.board.map((row, rowIndex) =>
-                    row.map((cell, colIndex) => (
-                      <button
-                        aria-label={getCellLabel(cell, rowIndex, colIndex)}
-                        className="absolute z-10 flex aspect-square w-[8.4%] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-transparent outline-none transition focus-visible:ring-2 focus-visible:ring-[#b33d21] disabled:cursor-default"
-                        disabled={!isConnected || cell !== 0 || game.winner !== 0}
-                        key={`${rowIndex}-${colIndex}`}
-                        onClick={() => handleMove(rowIndex, colIndex)}
-                        style={{
-                          left: `${(colIndex / (boardSize - 1)) * 100}%`,
-                          top: `${(rowIndex / (boardSize - 1)) * 100}%`,
-                        }}
+                    <div className="border-b border-r border-[#d7e2da] bg-[#eef4ef]" />
+                    {excelColumns.map((column) => (
+                      <div
+                        className="border-b border-r border-[#d7e2da] bg-[#eef4ef] py-1 text-center text-[11px] font-semibold text-[#486354]"
+                        key={column}
                       >
-                        {cell !== 0 && (
-                          <span
-                            className={`block aspect-square w-[78%] rounded-full shadow-[0_5px_7px_rgba(0,0,0,0.32)] ${
+                        {column}
+                      </div>
+                    ))}
+                    {game.board.map((row, rowIndex) => (
+                      <div className="contents" key={`excel-row-${rowIndex}`}>
+                        <div className="border-b border-r border-[#d7e2da] bg-[#eef4ef] py-1 text-center text-[11px] font-semibold text-[#486354]">
+                          {rowIndex + 1}
+                        </div>
+                        {row.map((cell, colIndex) => (
+                          <button
+                            aria-label={getCellLabel(cell, rowIndex, colIndex)}
+                            className={`flex aspect-[1.35] min-h-7 items-center justify-center border-b border-r border-[#d7e2da] px-1 text-[11px] font-semibold outline-none transition focus-visible:ring-2 focus-visible:ring-[#217346] disabled:cursor-default ${
                               cell === 1
-                                ? "bg-[radial-gradient(circle_at_32%_28%,#5b5b5b_0%,#181818_38%,#050505_74%)]"
-                                : "bg-[radial-gradient(circle_at_32%_28%,#ffffff_0%,#eeeeee_45%,#c9c9c9_82%)]"
+                                ? "bg-[#e2f0d9] text-[#217346]"
+                                : cell === 2
+                                  ? "bg-[#fff2cc] text-[#7a5a00]"
+                                  : "bg-white text-transparent hover:bg-[#eef7f1]"
                             }`}
-                          />
-                        )}
-                      </button>
-                    )),
-                  )}
+                            disabled={!isConnected || cell !== 0 || game.winner !== 0}
+                            key={`excel-${rowIndex}-${colIndex}`}
+                            onClick={() => handleMove(rowIndex, colIndex)}
+                            type="button"
+                          >
+                            {cell === 1 ? "OK" : cell === 2 ? "REV" : "0"}
+                          </button>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-2 border-t border-[#d7e2da] bg-[#f3f7f0] px-3 py-2 text-[11px] text-[#486354]">
+                    <span className="border-b-2 border-[#217346] px-3 py-1 font-bold text-[#217346]">
+                      Summary
+                    </span>
+                    <span className="px-3 py-1">Data</span>
+                    <span className="px-3 py-1">Review</span>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="mx-auto aspect-square w-full max-w-[min(860px,calc(100vh-150px))] rounded-lg border border-[#8c6635] bg-[#d8a24d] p-[5.5%] shadow-[inset_0_0_34px_rgba(91,54,20,0.55)]">
+                  <div className="relative h-full w-full">
+                    <svg
+                      aria-hidden="true"
+                      className="absolute inset-0 h-full w-full overflow-visible"
+                      preserveAspectRatio="none"
+                      viewBox="0 0 100 100"
+                    >
+                      <defs>
+                        <linearGradient id="gomokuWood" x1="0" x2="1" y1="0" y2="1">
+                          <stop offset="0%" stopColor="#f1c56a" />
+                          <stop offset="48%" stopColor="#d8a24d" />
+                          <stop offset="100%" stopColor="#bd7f35" />
+                        </linearGradient>
+                      </defs>
+                      <rect fill="url(#gomokuWood)" height="100" width="100" x="0" y="0" />
+                      {linePositions.map((position, index) => (
+                        <g key={position}>
+                          <line
+                            stroke="#2c2118"
+                            strokeLinecap="square"
+                            strokeWidth={index === 0 || index === boardSize - 1 ? 0.72 : 0.42}
+                            x1={position}
+                            x2={position}
+                            y1="0"
+                            y2="100"
+                          />
+                          <line
+                            stroke="#2c2118"
+                            strokeLinecap="square"
+                            strokeWidth={index === 0 || index === boardSize - 1 ? 0.72 : 0.42}
+                            x1="0"
+                            x2="100"
+                            y1={position}
+                            y2={position}
+                          />
+                        </g>
+                      ))}
+                    </svg>
+
+                    {starPoints.map(([row, col]) => (
+                      <span
+                        aria-hidden="true"
+                        className="absolute z-0 aspect-square w-[1.55%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#2c2118]"
+                        key={`${row}-${col}`}
+                        style={{
+                          left: `${(col / (boardSize - 1)) * 100}%`,
+                          top: `${(row / (boardSize - 1)) * 100}%`,
+                        }}
+                      />
+                    ))}
+
+                    {game.board.map((row, rowIndex) =>
+                      row.map((cell, colIndex) => (
+                        <button
+                          aria-label={getCellLabel(cell, rowIndex, colIndex)}
+                          className="absolute z-10 flex aspect-square w-[8.4%] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-transparent outline-none transition focus-visible:ring-2 focus-visible:ring-[#b33d21] disabled:cursor-default"
+                          disabled={!isConnected || cell !== 0 || game.winner !== 0}
+                          key={`${rowIndex}-${colIndex}`}
+                          onClick={() => handleMove(rowIndex, colIndex)}
+                          style={{
+                            left: `${(colIndex / (boardSize - 1)) * 100}%`,
+                            top: `${(rowIndex / (boardSize - 1)) * 100}%`,
+                          }}
+                        >
+                          {cell !== 0 && (
+                            <span
+                              className={`block aspect-square w-[78%] rounded-full shadow-[0_5px_7px_rgba(0,0,0,0.32)] ${
+                                cell === 1
+                                  ? "bg-[radial-gradient(circle_at_32%_28%,#5b5b5b_0%,#181818_38%,#050505_74%)]"
+                                  : "bg-[radial-gradient(circle_at_32%_28%,#ffffff_0%,#eeeeee_45%,#c9c9c9_82%)]"
+                              }`}
+                            />
+                          )}
+                        </button>
+                      )),
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
           <aside className="flex flex-col gap-4">
             <div className="rounded-lg border border-[var(--border)] bg-[var(--panel)] p-4">
-              <p className="text-sm font-semibold text-[var(--text)]">상태</p>
+              <p className="text-sm font-semibold text-[var(--text)]">{isExcelMode ? "Review Status" : "상태"}</p>
               <div className="mt-3 rounded-lg border border-[var(--border)] bg-[var(--panel-deep)] p-3">
-                <p className="text-xs font-semibold text-[var(--faint)]">대전 중</p>
+                <p className="text-xs font-semibold text-[var(--faint)]">
+                  {isExcelMode ? "Assigned Reviewers" : "대전 중"}
+                </p>
                 <div className="mt-2 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2">
                   <div className="min-w-0">
                     <p className="truncate text-sm font-black text-[var(--text)]">{getPlayerName(game, 1)}</p>
-                    <p className="mt-1 text-xs font-semibold text-[var(--faint)]">검은 돌</p>
+                    <p className="mt-1 text-xs font-semibold text-[var(--faint)]">
+                      {isExcelMode ? "Reviewer A" : "검은 돌"}
+                    </p>
                   </div>
                   <span className="text-xs font-black text-[var(--accent)]">VS</span>
                   <div className="min-w-0 text-right">
                     <p className="truncate text-sm font-black text-[var(--text)]">{getPlayerName(game, 2)}</p>
-                    <p className="mt-1 text-xs font-semibold text-[var(--faint)]">흰 돌</p>
+                    <p className="mt-1 text-xs font-semibold text-[var(--faint)]">
+                      {isExcelMode ? "Reviewer B" : "흰 돌"}
+                    </p>
                   </div>
                 </div>
               </div>
-              <p className="mt-2 text-lg font-bold text-[var(--text)]">{game.status}</p>
+              <p className="mt-2 text-lg font-bold text-[var(--text)]">{statusText}</p>
               {notice && <p className="mt-3 text-sm leading-6 text-[var(--accent)]">{notice}</p>}
               <button
                 className="mt-4 w-full rounded-lg border border-[var(--border)] px-3 py-2 text-sm font-semibold text-[var(--text)] transition hover:brightness-105 disabled:opacity-45"
@@ -935,19 +1034,19 @@ export default function GomokuPage() {
                 onClick={resetGame}
                 type="button"
               >
-                다시 시작
+                {isExcelMode ? "Reload Sheet" : "다시 시작"}
               </button>
             </div>
 
             <div className="rounded-lg border border-[var(--border)] bg-[var(--panel)] p-4">
               <div className="flex items-center justify-between gap-3">
-                <p className="text-sm font-semibold text-[var(--text)]">채팅</p>
+                <p className="text-sm font-semibold text-[var(--text)]">{isExcelMode ? "Notes" : "채팅"}</p>
                 <p className="text-xs font-semibold text-[var(--faint)]">{chatMessages.length}개</p>
               </div>
               <div className="mt-3 flex h-48 flex-col gap-2 overflow-y-auto rounded-lg border border-[var(--border)] bg-[var(--panel-deep)] p-3">
                 {chatMessages.length === 0 ? (
                   <p className="my-auto text-center text-sm text-[var(--faint)]">
-                    같은 방에 있는 사람과 실시간으로 대화할 수 있어요.
+                    {isExcelMode ? "Shared notes appear here." : "같은 방에 있는 사람과 실시간으로 대화할 수 있어요."}
                   </p>
                 ) : (
                   chatMessages.map((chat) => (
@@ -985,7 +1084,15 @@ export default function GomokuPage() {
                       sendChat();
                     }
                   }}
-                  placeholder={isConnected ? "메시지 입력" : "방에 연결하면 채팅 가능"}
+                  placeholder={
+                    isConnected
+                      ? isExcelMode
+                        ? "Add note"
+                        : "메시지 입력"
+                      : isExcelMode
+                        ? "Sync workbook first"
+                        : "방에 연결하면 채팅 가능"
+                  }
                   value={chatDraft}
                 />
                 <button
@@ -994,13 +1101,15 @@ export default function GomokuPage() {
                   onClick={sendChat}
                   type="button"
                 >
-                  전송
+                  {isExcelMode ? "Add" : "전송"}
                 </button>
               </div>
             </div>
 
             <div className="rounded-lg border border-[var(--border)] bg-[var(--panel-deep)] p-4 text-sm leading-6 text-[var(--muted)]">
-              같은 초대 코드를 입력한 두 명이 각각 검은 돌과 흰 돌로 배정됩니다. 세 번째부터는 관전자로 들어와요.
+              {isExcelMode
+                ? "Shared workbook access is limited to two editors. Additional users join as viewers."
+                : "같은 초대 코드를 입력한 두 명이 각각 검은 돌과 흰 돌로 배정됩니다. 세 번째부터는 관전자로 들어와요."}
             </div>
           </aside>
         </section>
