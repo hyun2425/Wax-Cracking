@@ -316,6 +316,19 @@ export default function GomokuPage() {
   const isExcelMode = viewMode === "excel";
   const myRoleLabel =
     game.you === 1 ? "Reviewer A" : game.you === 2 ? "Reviewer B" : isExcelMode ? "Viewer" : stoneName(game.you);
+  const myMarkerLabel =
+    game.you === 1 ? "OK / green" : game.you === 2 ? "REV / yellow" : isExcelMode ? "Read only" : stoneName(game.you);
+  const turnLabel = game.winner
+    ? `${game.winner === 1 ? "Reviewer A" : "Reviewer B"} approved`
+    : game.turn === 1
+      ? "Reviewer A reviewing"
+      : "Reviewer B reviewing";
+  const opponentLabel =
+    game.you === 1
+      ? getPlayerName(game, 2)
+      : game.you === 2
+        ? getPlayerName(game, 1)
+        : `${getPlayerName(game, 1)} / ${getPlayerName(game, 2)}`;
   const peopleLabel = isExcelMode
     ? `${game.players} editors / ${game.spectators} viewers`
     : `${game.players}명 / 관전 ${game.spectators}명`;
@@ -621,8 +634,8 @@ export default function GomokuPage() {
       );
     }
 
-    const leader = leaderboard[rowNumber - 8];
-    const chat = recentChats[rowNumber - 17];
+    const leader = leaderboard[rowNumber - 13];
+    const chat = recentChats[rowNumber - 19];
     let content = "";
     let strong = false;
     let muted = false;
@@ -633,28 +646,35 @@ export default function GomokuPage() {
     if (colIndex === 18 && rowNumber === 5) content = connectionLabel;
     if (colIndex === 17 && rowNumber === 6) content = "Role";
     if (colIndex === 18 && rowNumber === 6) content = myRoleLabel;
-    if (colIndex === 17 && rowNumber === 7) content = "Users";
-    if (colIndex === 18 && rowNumber === 7) content = peopleLabel;
-    if (colIndex === 17 && rowNumber === 8) {
+    if (colIndex === 17 && rowNumber === 7) content = "Marker";
+    if (colIndex === 18 && rowNumber === 7) content = myMarkerLabel;
+    if (colIndex === 17 && rowNumber === 8) content = "Current";
+    if (colIndex === 18 && rowNumber === 8) content = turnLabel;
+    if (colIndex === 17 && rowNumber === 9) content = "Against";
+    if (colIndex === 18 && rowNumber === 9) content = opponentLabel;
+    if (colIndex === 17 && rowNumber === 10) content = "Users";
+    if (colIndex === 18 && rowNumber === 10) content = peopleLabel;
+    if (colIndex === 17 && rowNumber === 12) {
       content = "Performance";
       strong = true;
     }
-    if (leader && colIndex === 17) content = `${rowNumber - 7}`;
-    if (leader && colIndex === 18) content = leader.nickname;
-    if (leader && colIndex === 19) content = `${leader.wins}/${leader.games}`;
-    if (leader && colIndex === 20) content = `${leader.winRate}%`;
-    if (colIndex === 17 && rowNumber === 16) {
+    if (leader && rowNumber >= 13 && colIndex === 17) content = `${rowNumber - 12}`;
+    if (leader && rowNumber >= 13 && colIndex === 18) content = leader.nickname;
+    if (leader && rowNumber >= 13 && colIndex === 19) content = `${leader.wins}/${leader.games}`;
+    if (leader && rowNumber >= 13 && colIndex === 20) content = `${leader.winRate}%`;
+    if (colIndex === 17 && rowNumber === 18) {
       content = "Notes";
       strong = true;
     }
-    if (chat && colIndex === 17) content = chat.sender;
-    if (chat && colIndex === 18) content = chat.message;
-    if (chat && colIndex === 20) {
+    if (chat && rowNumber >= 19 && colIndex === 17) content = chat.sender;
+    if (chat && rowNumber >= 19 && colIndex === 18) content = chat.message;
+    if (chat && rowNumber >= 19 && colIndex === 20) {
       content = new Date(chat.sentAt).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" });
       muted = true;
     }
-    if (colIndex === 17 && rowNumber === 22) content = "Status";
-    if (colIndex === 18 && rowNumber === 22) content = statusText;
+    if (colIndex === 17 && rowNumber === 23) content = "New note";
+    if (colIndex === 17 && rowNumber === 24) content = "Status";
+    if (colIndex === 18 && rowNumber === 24) content = statusText;
 
     if (colIndex === 18 && rowNumber === 2) {
       return (
