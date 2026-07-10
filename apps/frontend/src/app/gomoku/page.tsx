@@ -131,19 +131,22 @@ function makePlayerId() {
 
 function getInitialProfile(): PlayerProfile {
   if (typeof window === "undefined") {
-    return { nickname: "이름 없는 고수", playerId: "server" };
+    return { nickname: "", playerId: "server" };
   }
 
   const playerId = window.localStorage.getItem("gomokuPlayerId") ?? makePlayerId();
-  const nickname = window.localStorage.getItem("gomokuNickname") ?? "이름 없는 고수";
+  const nickname = window.localStorage.getItem("gomokuNickname") ?? "";
   window.localStorage.setItem("gomokuPlayerId", playerId);
-  window.localStorage.setItem("gomokuNickname", nickname);
   return { nickname, playerId };
 }
 
 function sanitizeNickname(value: string) {
   const next = value.trim().replace(/\s+/g, " ");
   return (next || "이름 없는 고수").slice(0, 16);
+}
+
+function isProfileReady(profile: PlayerProfile) {
+  return profile.nickname.trim().length > 0;
 }
 
 function getConnectionLabel(connection: ConnectionState) {
@@ -176,17 +179,15 @@ function StatusItem({ label, value }: { label: string; value: string }) {
 }
 
 export default function GomokuPage() {
+  const initialProfile = useMemo(() => getInitialProfile(), []);
   const [draftCode, setDraftCode] = useState(() => getInitialRoomCode());
-  const [roomCode, setRoomCode] = useState(() => getInitialRoomCode());
-  const [game, setGame] = useState<GameState>(() => initialGame(getInitialRoomCode()));
-  const [connection, setConnection] = useState<ConnectionState>(() =>
-    getInitialRoomCode() ? "connecting" : "idle",
-  );
-  const [notice, setNotice] = useState(() =>
-    getInitialRoomCode() ? "방에 연결하고 있습니다." : "",
-  );
-  const [profile, setProfile] = useState<PlayerProfile>(() => getInitialProfile());
-  const [nicknameDraft, setNicknameDraft] = useState(() => getInitialProfile().nickname);
+  const [roomCode, setRoomCode] = useState("");
+  const [game, setGame] = useState<GameState>(() => initialGame());
+  const [connection, setConnection] = useState<ConnectionState>("idle");
+  const [notice, setNotice] = useState("닉네임 로그인 후 방에 입장해 주세요.");
+  const [profile, setProfile] = useState<PlayerProfile>(() => initialProfile);
+  const [nicknameDraft, setNicknameDraft] = useState(() => initialProfile.nickname);
+  const [isLoggedIn, setIsLoggedIn] = useState(() => isProfileReady(initialProfile) && !getInitialRoomCode());
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [chatDraft, setChatDraft] = useState("");
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
@@ -245,13 +246,15 @@ export default function GomokuPage() {
   useEffect(() => {
     profileRef.current = profile;
     window.localStorage.setItem("gomokuPlayerId", profile.playerId);
-    window.localStorage.setItem("gomokuNickname", profile.nickname);
+    if (profile.nickname.trim()) {
+      window.localStorage.setItem("gomokuNickname", profile.nickname);
+    }
 
     const socket = socketRef.current;
-    if (socket?.readyState === WebSocket.OPEN) {
+    if (isLoggedIn && socket?.readyState === WebSocket.OPEN) {
       socket.send(JSON.stringify({ ...profile, type: "profile" }));
     }
-  }, [profile]);
+  }, [isLoggedIn, profile]);
 
   useEffect(() => {
     const timerId = window.setTimeout(() => {
@@ -263,6 +266,10 @@ export default function GomokuPage() {
 
   useEffect(() => {
     if (!roomCode) {
+      return;
+    }
+
+    if (!isLoggedIn) {
       return;
     }
 
@@ -349,7 +356,7 @@ export default function GomokuPage() {
       window.clearTimeout(timeoutId);
       socket.close();
     };
-  }, [refreshLeaderboard, roomCode, reconnectAttempt]);
+  }, [isLoggedIn, refreshLeaderboard, roomCode, reconnectAttempt]);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ block: "end" });
@@ -365,10 +372,16 @@ export default function GomokuPage() {
     socket.send(JSON.stringify(message));
   }, []);
 
-  function joinRoom(code: string) {
+  function joinRoom(code: string, allowAfterLogin = false) {
     const nextCode = normalizeCode(code);
     if (!nextCode) {
       setNotice("초대 코드를 입력해 주세요.");
+      return;
+    }
+
+    if (!isLoggedIn && !allowAfterLogin) {
+      setDraftCode(nextCode);
+      setNotice("먼저 닉네임으로 로그인해 주세요.");
       return;
     }
 
@@ -411,7 +424,12 @@ export default function GomokuPage() {
     const nickname = sanitizeNickname(nicknameDraft);
     setNicknameDraft(nickname);
     setProfile((current) => ({ ...current, nickname }));
+    setIsLoggedIn(true);
     setNotice(`${nickname} 닉네임으로 로그인했습니다.`);
+
+    if (draftCode) {
+      window.setTimeout(() => joinRoom(draftCode, true), 0);
+    }
   }
 
   async function copyInviteUrl() {
@@ -437,6 +455,48 @@ export default function GomokuPage() {
 
   return (
     <main className="min-h-screen bg-[#18130f] px-5 py-8 text-zinc-100 sm:px-8">
+      {!isLoggedIn && (
+        <div
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 px-5 backdrop-blur-sm"
+          role="dialog"
+        >
+          <div className="w-full max-w-md rounded-lg border border-[#e4b467]/45 bg-[#201812] p-6 shadow-2xl shadow-black/40">
+            <p className="text-sm font-semibold text-[#ffd07a]">오목 시작하기</p>
+            <h2 className="mt-2 text-3xl font-black text-white">닉네임을 먼저 정해 주세요</h2>
+            <p className="mt-3 text-sm leading-6 text-zinc-300">
+              전적, 승률, 랭킹, 채팅 이름에 이 닉네임이 사용됩니다.
+            </p>
+            {draftCode && (
+              <p className="mt-3 rounded-lg bg-black/25 px-3 py-2 text-sm font-semibold text-zinc-200">
+                로그인 후 `{draftCode}` 방에 자동 입장합니다.
+              </p>
+            )}
+            <div className="mt-5 flex gap-2">
+              <input
+                autoFocus
+                className="min-w-0 flex-1 rounded-lg border border-white/15 bg-black/25 px-3 py-3 text-sm text-white outline-none transition placeholder:text-zinc-500 focus:border-[#e4b467]"
+                maxLength={16}
+                onChange={(event) => setNicknameDraft(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    saveNickname();
+                  }
+                }}
+                placeholder="닉네임"
+                value={nicknameDraft}
+              />
+              <button
+                className="rounded-lg bg-[#e4b467] px-5 py-3 text-sm font-black text-[#20110a] transition hover:bg-[#ffd07a]"
+                onClick={saveNickname}
+                type="button"
+              >
+                시작
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {showWinnerDialog && (
         <div
           aria-modal="true"

@@ -11,12 +11,18 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api")
 public class HealthController {
 
+	private final GomokuStatsService statsService;
+
+	public HealthController(GomokuStatsService statsService) {
+		this.statsService = statsService;
+	}
+
 	@GetMapping("/health")
 	public Map<String, String> health() {
 		return Map.of(
 				"status", "ok",
 				"service", "wax-cracking-backend",
-				"database", "disabled",
+				"database", statsService.isDatabaseEnabled() ? "postgres" : "memory",
 				"gomoku", "websocket-enabled",
 				"timestamp", Instant.now().toString());
 	}
