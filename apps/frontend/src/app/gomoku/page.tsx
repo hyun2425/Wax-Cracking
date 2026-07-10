@@ -467,7 +467,7 @@ export default function GomokuPage() {
           </div>
         </div>
       )}
-      <div className="mx-auto flex w-full max-w-[1800px] flex-col gap-6">
+      <div className="mx-auto flex w-full max-w-[1500px] flex-col gap-6">
         <nav className="flex items-center justify-between gap-4">
           <Link
             href="/"
@@ -478,7 +478,7 @@ export default function GomokuPage() {
           <span className="text-sm text-zinc-400">실시간 오목</span>
         </nav>
 
-        <section className="grid gap-5 xl:grid-cols-[280px_minmax(0,1fr)_300px]">
+        <section className="grid gap-5 xl:grid-cols-[260px_minmax(0,1fr)_280px]">
           <aside className="flex flex-col gap-4">
             <div className="rounded-lg border border-white/15 bg-[#201812] p-4">
               <div className="flex items-center justify-between gap-3">
@@ -622,7 +622,7 @@ export default function GomokuPage() {
 
           <div className="flex flex-col gap-5">
             <div className="rounded-lg border border-white/15 bg-[#201812] p-4 shadow-2xl shadow-black/25">
-              <div className="mx-auto aspect-square w-full max-w-[1200px] rounded-lg border border-[#8c6635] bg-[#d8a24d] p-[5.5%] shadow-[inset_0_0_34px_rgba(91,54,20,0.55)]">
+              <div className="mx-auto aspect-square w-full max-w-[min(860px,calc(100vh-150px))] rounded-lg border border-[#8c6635] bg-[#d8a24d] p-[5.5%] shadow-[inset_0_0_34px_rgba(91,54,20,0.55)]">
                 <div className="relative h-full w-full">
                   <svg
                     aria-hidden="true"
@@ -636,18 +636,8 @@ export default function GomokuPage() {
                         <stop offset="48%" stopColor="#d8a24d" />
                         <stop offset="100%" stopColor="#bd7f35" />
                       </linearGradient>
-                      <pattern id="gomokuGrain" height="9" patternUnits="userSpaceOnUse" width="9">
-                        <path
-                          d="M 0 4 C 2 2, 5 2, 9 4"
-                          fill="none"
-                          opacity="0.18"
-                          stroke="#8b5a24"
-                          strokeWidth="0.25"
-                        />
-                      </pattern>
                     </defs>
                     <rect fill="url(#gomokuWood)" height="100" width="100" x="0" y="0" />
-                    <rect fill="url(#gomokuGrain)" height="100" width="100" x="0" y="0" />
                     {linePositions.map((position, index) => (
                       <g key={position}>
                         <line
