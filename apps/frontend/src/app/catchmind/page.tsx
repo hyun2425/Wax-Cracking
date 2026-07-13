@@ -5,7 +5,16 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 type ConnectionState = "idle" | "connecting" | "open" | "closed";
 type GameMode = "classic" | "liar";
-type Phase = "lobby" | "choosing" | "drawing" | "revealed" | "betweenGames" | "finished";
+type Phase =
+  | "lobby"
+  | "choosing"
+  | "drawing"
+  | "revealed"
+  | "betweenGames"
+  | "finished"
+  | "liarDrawing"
+  | "voting"
+  | "liarRevealed";
 
 type Point = {
   x: number;
@@ -26,6 +35,7 @@ type Player = {
 };
 
 type GameState = {
+  category: string;
   correctPlayerIds: string[];
   drawerId: string;
   drawerName: string;
@@ -40,7 +50,12 @@ type GameState = {
   round: number;
   status: string;
   strokes: Stroke[];
+  turnEndsAt: number;
   turnOrder: string[];
+  myVote: string;
+  votesCast: number;
+  voteCounts?: Record<string, number>;
+  winnerTeam: string;
   word: string;
   wordCandidates: string[];
   you: string;
@@ -117,6 +132,7 @@ function getInitialNickname() {
 
 function initialGame(room = ""): GameState {
   return {
+    category: "",
     correctPlayerIds: [],
     drawerId: "",
     drawerName: "",
@@ -130,7 +146,12 @@ function initialGame(room = ""): GameState {
     round: 0,
     status: "방을 만들거나 초대 코드를 입력하세요.",
     strokes: [],
+    turnEndsAt: 0,
     turnOrder: [],
+    myVote: "",
+    votesCast: 0,
+    voteCounts: {},
+    winnerTeam: "",
     word: "",
     wordCandidates: [],
     you: "",
@@ -181,10 +202,15 @@ export default function CatchMindPage() {
   const isDrawer = game.you !== "" && game.drawerId === game.you;
   const isHost = game.you !== "" && game.hostId === game.you;
   const hasGuessedCorrect = game.correctPlayerIds.includes(game.you);
-  const canDraw = isConnected && game.phase === "drawing" && isDrawer;
+  const isLiarMode = game.mode === "liar";
+  const canDraw =
+    isConnected &&
+    ((game.phase === "drawing" && isDrawer) || (game.phase === "liarDrawing" && isDrawer));
   const canGuess = isConnected && game.phase === "drawing" && !isDrawer && !hasGuessedCorrect;
   const remainingSeconds =
     game.roundEndsAt > 0 ? Math.max(0, Math.ceil((game.roundEndsAt - now) / 1000)) : 0;
+  const turnRemainingSeconds =
+    game.turnEndsAt > 0 ? Math.max(0, Math.ceil((game.turnEndsAt - now) / 1000)) : 0;
   const ranking = useMemo(
     () => [...game.players].sort((left, right) => right.score - left.score || left.nickname.localeCompare(right.nickname)),
     [game.players],
@@ -230,13 +256,13 @@ export default function CatchMindPage() {
   }, [game.strokes, redrawCanvas]);
 
   useEffect(() => {
-    if (game.roundEndsAt <= 0) {
+    if (game.roundEndsAt <= 0 && game.turnEndsAt <= 0) {
       return;
     }
 
     const timerId = window.setInterval(() => setNow(Date.now()), 250);
     return () => window.clearInterval(timerId);
-  }, [game.roundEndsAt]);
+  }, [game.roundEndsAt, game.turnEndsAt]);
 
   const sendMessage = useCallback((message: object) => {
     const socket = socketRef.current;
@@ -377,6 +403,10 @@ export default function CatchMindPage() {
     sendMessage({ type: "reveal" });
   }
 
+  function vote(targetId: string) {
+    sendMessage({ targetId, type: "vote" });
+  }
+
   async function copyInviteUrl() {
     if (!inviteUrl) {
       setNotice("먼저 방을 만들어 주세요.");
@@ -449,7 +479,7 @@ export default function CatchMindPage() {
   const modeDescription =
     mode === "classic"
       ? "방장이 시작하면 랜덤 순서로 한 명씩 출제하고, 출제자는 후보 3개 중 하나를 고릅니다."
-      : "한 명은 제시어 대신 라이어 표시를 받습니다. 그림과 추리를 함께 보세요.";
+      : "3명 이상에서 시작합니다. 한 명은 카테고리만 받고, 모두가 5초씩 같은 캔버스에 이어 그린 뒤 라이어를 투표합니다.";
 
   return (
     <main className="min-h-screen bg-[#f7f4ee] text-[#171411]">
@@ -549,7 +579,7 @@ export default function CatchMindPage() {
               <p className="mt-3 text-sm leading-6 text-[#6f685e]">{modeDescription}</p>
               <button
                 className="mt-4 w-full rounded-lg bg-[#111827] px-4 py-3 text-sm font-black text-white disabled:opacity-45"
-                disabled={!isConnected || !isHost || !["lobby", "finished"].includes(game.phase)}
+                disabled={!isConnected || !isHost || !["lobby", "finished", "liarRevealed"].includes(game.phase)}
                 onClick={() => startRound()}
                 type="button"
               >
@@ -599,7 +629,9 @@ export default function CatchMindPage() {
                         <p className="truncate text-sm font-black">{player.nickname}</p>
                         <p className="text-xs font-bold text-[#7c7165]">
                           {player.id === game.drawerId
-                            ? "출제자"
+                            ? isLiarMode
+                              ? "그리는 중"
+                              : "출제자"
                             : game.correctPlayerIds.includes(player.id)
                               ? "정답"
                               : player.id === game.hostId
@@ -621,13 +653,24 @@ export default function CatchMindPage() {
             <div className="rounded-lg border border-[#d9d1c3] bg-white p-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <p className="text-sm font-black text-[#6f685e]">제시어</p>
-                  <h1 className="mt-1 text-3xl font-black">
-                    {game.word || (game.phase === "choosing" ? "출제자 선택 중" : "라운드 대기 중")}
-                  </h1>
+                  <p className="text-sm font-black text-[#6f685e]">
+                    {isLiarMode ? "라이어 캐치마인드" : "제시어"}
+                  </p>
+                  {isLiarMode && game.isLiar && ["liarDrawing", "voting"].includes(game.phase) ? (
+                    <div className="mt-2 rounded-lg bg-[#fee2e2] p-4 text-[#991b1b]">
+                      <h1 className="text-2xl font-black">당신은 라이어입니다.</h1>
+                      <p className="mt-2 text-sm font-bold">정답은 알 수 없습니다.</p>
+                      <p className="mt-2 text-lg font-black">카테고리 : {game.category || "-"}</p>
+                      <p className="mt-2 text-sm font-bold">정체를 숨기며 그림을 이어 그리세요.</p>
+                    </div>
+                  ) : (
+                    <h1 className="mt-1 text-3xl font-black">
+                      {game.word || (game.phase === "choosing" ? "출제자 선택 중" : "라운드 대기 중")}
+                    </h1>
+                  )}
                 </div>
                 <div className="text-right">
-                  <p className="text-sm font-bold text-[#6f685e]">출제자</p>
+                  <p className="text-sm font-bold text-[#6f685e]">{isLiarMode ? "현재 차례" : "출제자"}</p>
                   <p className="text-lg font-black">{game.drawerName || "-"}</p>
                 </div>
               </div>
@@ -658,10 +701,21 @@ export default function CatchMindPage() {
                   />
                 </div>
               )}
-              {game.isLiar && game.phase === "drawing" && (
-                <p className="mt-3 rounded-lg bg-[#fee2e2] px-3 py-2 text-sm font-black text-[#991b1b]">
-                  당신은 라이어입니다. 제시어를 모르는 상태로 자연스럽게 참여하세요.
-                </p>
+              {game.phase === "liarDrawing" && (
+                <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                  <div className="h-3 overflow-hidden rounded-full bg-[#f3f0e9] sm:col-span-2">
+                    <div
+                      className="h-full rounded-full bg-[#2563eb] transition-all"
+                      style={{ width: `${Math.max(0, Math.min(100, (remainingSeconds / 90) * 100))}%` }}
+                    />
+                  </div>
+                  <p className="rounded-lg bg-[#eff6ff] px-3 py-2 text-sm font-black text-[#1d4ed8]">
+                    전체 남은 시간 {remainingSeconds}초
+                  </p>
+                  <p className="rounded-lg bg-[#fff7ed] px-3 py-2 text-sm font-black text-[#9a3412]">
+                    이번 차례 {turnRemainingSeconds}초
+                  </p>
+                </div>
               )}
               {hasGuessedCorrect && game.phase === "drawing" && (
                 <p className="mt-3 rounded-lg bg-[#dcfce7] px-3 py-2 text-sm font-black text-[#166534]">
@@ -727,11 +781,11 @@ export default function CatchMindPage() {
                 </button>
                 <button
                   className="rounded-lg border border-[#d9d1c3] px-4 py-2 text-sm font-black disabled:opacity-45"
-                  disabled={!isConnected || game.phase !== "drawing"}
+                  disabled={!isConnected || !["drawing", "liarDrawing"].includes(game.phase)}
                   onClick={revealAnswer}
                   type="button"
                 >
-                  정답 공개
+                  {game.phase === "liarDrawing" ? "투표 시작" : "정답 공개"}
                 </button>
               </div>
             </div>
@@ -755,19 +809,74 @@ export default function CatchMindPage() {
                 </div>
                 <div className="rounded-lg bg-[#f3f0e9] p-3">
                   <p className="text-xs font-bold text-[#6f685e]">남은 시간</p>
-                  <p className="mt-1 text-sm font-black">{game.phase === "drawing" ? `${remainingSeconds}초` : "-"}</p>
+                  <p className="mt-1 text-sm font-black">
+                    {["drawing", "liarDrawing"].includes(game.phase) ? `${remainingSeconds}초` : "-"}
+                  </p>
                 </div>
                 <div className="rounded-lg bg-[#f3f0e9] p-3">
-                  <p className="text-xs font-bold text-[#6f685e]">정답자</p>
+                  <p className="text-xs font-bold text-[#6f685e]">{isLiarMode ? "투표" : "정답자"}</p>
                   <p className="mt-1 text-sm font-black">
-                    {game.correctPlayerIds.length}/{Math.max(0, game.players.length - 1)}
+                    {isLiarMode
+                      ? `${game.votesCast}/${game.players.length}`
+                      : `${game.correctPlayerIds.length}/${Math.max(0, game.players.length - 1)}`}
                   </p>
                 </div>
               </div>
             </div>
 
             <div className="flex min-h-[520px] flex-col rounded-lg border border-[#d9d1c3] bg-white p-4">
-              <p className="text-sm font-black">정답 입력 및 채팅</p>
+              <p className="text-sm font-black">
+                {game.phase === "voting" ? "라이어 투표" : game.phase === "liarRevealed" ? "투표 결과" : "정답 입력 및 채팅"}
+              </p>
+              {game.phase === "voting" && (
+                <div className="mt-3 flex flex-col gap-2">
+                  <p className="rounded-lg bg-[#fef3c7] px-3 py-3 text-sm font-black text-[#92400e]">
+                    정답은 아직 공개되지 않습니다. 라이어라고 생각하는 사람을 고르세요.
+                  </p>
+                  {game.players.map((player) => (
+                    <button
+                      className={`rounded-lg border px-3 py-3 text-left text-sm font-black ${
+                        game.myVote === player.id
+                          ? "border-[#2563eb] bg-[#eff6ff] text-[#1d4ed8]"
+                          : "border-[#d9d1c3] bg-[#f3f0e9]"
+                      }`}
+                      key={player.id}
+                      onClick={() => vote(player.id)}
+                      type="button"
+                    >
+                      {player.nickname}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {game.phase === "liarRevealed" && (
+                <div className="mt-3 flex flex-col gap-2">
+                  <div className="rounded-lg bg-[#eff6ff] px-3 py-3">
+                    <p className="text-xs font-black text-[#1d4ed8]">정답</p>
+                    <p className="mt-1 text-2xl font-black">{game.word}</p>
+                    <p className="mt-1 text-sm font-bold text-[#4b5563]">카테고리: {game.category}</p>
+                  </div>
+                  <div className="rounded-lg bg-[#fee2e2] px-3 py-3">
+                    <p className="text-xs font-black text-[#991b1b]">라이어</p>
+                    <p className="mt-1 text-xl font-black">{game.liarName || "-"}</p>
+                  </div>
+                  <div className="rounded-lg bg-[#f3f0e9] px-3 py-3">
+                    <p className="text-xs font-black text-[#6f685e]">승리</p>
+                    <p className="mt-1 text-xl font-black">
+                      {game.winnerTeam === "citizens" ? "일반 플레이어 승리" : "라이어 승리"}
+                    </p>
+                  </div>
+                  {game.players.map((player) => (
+                    <div
+                      className="grid grid-cols-[minmax(0,1fr)_48px] rounded-lg bg-[#f3f0e9] px-3 py-2 text-sm font-bold"
+                      key={player.id}
+                    >
+                      <span className="truncate">{player.nickname}</span>
+                      <span className="text-right">{game.voteCounts?.[player.id] ?? 0}표</span>
+                    </div>
+                  ))}
+                </div>
+              )}
               <div className="mt-3 flex flex-1 flex-col gap-2 overflow-y-auto rounded-lg border border-[#e7dfd3] bg-[#fffdf8] p-3">
                 {chatMessages.length === 0 ? (
                   <p className="my-auto text-center text-sm text-[#7c7165]">
@@ -807,7 +916,9 @@ export default function CatchMindPage() {
                     }
                   }}
                   placeholder={
-                    hasGuessedCorrect
+                    isLiarMode
+                      ? "라이어 모드에서는 투표로 진행합니다"
+                      : hasGuessedCorrect
                       ? "이미 정답을 맞혔습니다"
                       : isDrawer
                         ? "출제자는 정답을 입력할 수 없습니다"

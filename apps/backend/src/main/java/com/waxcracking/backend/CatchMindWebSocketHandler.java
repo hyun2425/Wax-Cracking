@@ -37,6 +37,8 @@ public class CatchMindWebSocketHandler extends TextWebSocketHandler {
 	};
 	private static final int MAX_PLAYERS = 8;
 	private static final int ROUND_SECONDS = 80;
+	private static final int LIAR_ROUND_SECONDS = 90;
+	private static final int LIAR_TURN_SECONDS = 5;
 	private static final int MAX_GUESS_SCORE = 100;
 	private static final int GUESS_SCORE_STEP = 20;
 	private static final List<String> WORDS = List.of(
@@ -100,6 +102,28 @@ public class CatchMindWebSocketHandler extends TextWebSocketHandler {
 			"자석", "돋보기", "온도계", "저울", "현미경", "실험관", "비커", "자명종", "호루라기", "벨",
 			"피리", "바이올린", "첼로", "트럼펫", "색소폰", "하모니카", "탬버린", "실로폰", "오르간", "메트로놈",
 			"침", "약", "붕대", "주사기", "체온계", "목발", "휠체어", "구급상자", "마스크팩", "반창고");
+	private static final List<LiarWord> LIAR_WORDS = List.of(
+			new LiarWord("강아지", "동물"), new LiarWord("고양이", "동물"), new LiarWord("코끼리", "동물"),
+			new LiarWord("기린", "동물"), new LiarWord("펭귄", "동물"), new LiarWord("토끼", "동물"),
+			new LiarWord("상어", "동물"), new LiarWord("문어", "동물"), new LiarWord("악어", "동물"),
+			new LiarWord("햄버거", "음식"), new LiarWord("피자", "음식"), new LiarWord("라면", "음식"),
+			new LiarWord("떡볶이", "음식"), new LiarWord("초밥", "음식"), new LiarWord("김밥", "음식"),
+			new LiarWord("아이스크림", "음식"), new LiarWord("케이크", "음식"), new LiarWord("수박", "음식"),
+			new LiarWord("자동차", "탈것"), new LiarWord("비행기", "탈것"), new LiarWord("기차", "탈것"),
+			new LiarWord("자전거", "탈것"), new LiarWord("버스", "탈것"), new LiarWord("로켓", "탈것"),
+			new LiarWord("잠수함", "탈것"), new LiarWord("헬리콥터", "탈것"), new LiarWord("택시", "탈것"),
+			new LiarWord("우산", "물건"), new LiarWord("카메라", "물건"), new LiarWord("노트북", "물건"),
+			new LiarWord("스마트폰", "물건"), new LiarWord("열쇠", "물건"), new LiarWord("가위", "물건"),
+			new LiarWord("시계", "물건"), new LiarWord("안경", "물건"), new LiarWord("책", "물건"),
+			new LiarWord("학교", "장소"), new LiarWord("병원", "장소"), new LiarWord("공항", "장소"),
+			new LiarWord("도서관", "장소"), new LiarWord("영화관", "장소"), new LiarWord("해변", "장소"),
+			new LiarWord("놀이터", "장소"), new LiarWord("식당", "장소"), new LiarWord("마트", "장소"),
+			new LiarWord("축구", "운동"), new LiarWord("야구", "운동"), new LiarWord("농구", "운동"),
+			new LiarWord("수영", "운동"), new LiarWord("스키", "운동"), new LiarWord("볼링", "운동"),
+			new LiarWord("골프", "운동"), new LiarWord("양궁", "운동"), new LiarWord("권투", "운동"),
+			new LiarWord("의사", "직업"), new LiarWord("경찰", "직업"), new LiarWord("소방관", "직업"),
+			new LiarWord("선생님", "직업"), new LiarWord("요리사", "직업"), new LiarWord("화가", "직업"),
+			new LiarWord("가수", "직업"), new LiarWord("파일럿", "직업"), new LiarWord("우주비행사", "직업"));
 
 	private final ObjectMapper objectMapper = new ObjectMapper();
 	private final ScheduledExecutorService timerExecutor = Executors.newSingleThreadScheduledExecutor();
@@ -172,6 +196,11 @@ public class CatchMindWebSocketHandler extends TextWebSocketHandler {
 			return;
 		}
 
+		if ("vote".equals(type)) {
+			room.vote(session, asText(payload.get("targetId")));
+			return;
+		}
+
 		if ("reveal".equals(type)) {
 			room.reveal();
 		}
@@ -238,15 +267,20 @@ public class CatchMindWebSocketHandler extends TextWebSocketHandler {
 		private final Set<String> usedWordCandidates = new LinkedHashSet<>();
 		private final List<String> turnOrder = new ArrayList<>();
 		private final List<String> wordCandidates = new ArrayList<>();
+		private final Map<String, String> liarVotes = new LinkedHashMap<>();
 		private String mode = "classic";
 		private String phase = "lobby";
 		private String word = "";
+		private String category = "";
 		private String drawerId = "";
 		private String hostId = "";
 		private String liarId = "";
+		private String winnerTeam = "";
 		private String status = "방에 입장한 뒤 게임을 시작하세요.";
 		private ScheduledFuture<?> roundTimer;
+		private ScheduledFuture<?> turnTimer;
 		private long roundEndsAt = 0;
+		private long turnEndsAt = 0;
 		private boolean drawerScoreAwarded = false;
 		private int round = 0;
 		private int turnIndex = -1;
@@ -320,8 +354,13 @@ public class CatchMindWebSocketHandler extends TextWebSocketHandler {
 				return;
 			}
 
-			if (!"lobby".equals(phase) && !"finished".equals(phase)) {
+			if (!"lobby".equals(phase) && !"finished".equals(phase) && !"liarRevealed".equals(phase)) {
 				broadcastNotice("이미 게임이 진행 중입니다.");
+				return;
+			}
+
+			if ("liar".equals(requestedMode) && players.size() < 3) {
+				broadcastNotice("라이어 캐치마인드는 3명 이상 입장하면 시작할 수 있습니다.");
 				return;
 			}
 
@@ -333,6 +372,10 @@ public class CatchMindWebSocketHandler extends TextWebSocketHandler {
 			mode = "liar".equals(requestedMode) ? "liar" : "classic";
 			players.values().forEach(player -> player.score = 0);
 			usedWordCandidates.clear();
+			if ("liar".equals(mode)) {
+				startLiarGame();
+				return;
+			}
 			startTurnCycle();
 		}
 
@@ -364,10 +407,14 @@ public class CatchMindWebSocketHandler extends TextWebSocketHandler {
 			drawerId = "";
 			liarId = "";
 			word = "";
+			category = "";
+			winnerTeam = "";
 			wordCandidates.clear();
 			strokes.clear();
 			correctPlayerIds.clear();
+			liarVotes.clear();
 			roundEndsAt = 0;
+			turnEndsAt = 0;
 			status = "게임 종료! 최종 순위를 확인하세요.";
 			broadcastState();
 			broadcastNotice("게임이 종료되었습니다.");
@@ -380,6 +427,33 @@ public class CatchMindWebSocketHandler extends TextWebSocketHandler {
 			turnIndex = -1;
 			round = 0;
 			nextTurn();
+		}
+
+		private synchronized void startLiarGame() throws IOException {
+			cancelRoundTimer();
+			cancelTurnTimer();
+			List<String> playerIds = new ArrayList<>(players.keySet());
+			Collections.shuffle(playerIds);
+			liarId = playerIds.get(ThreadLocalRandom.current().nextInt(playerIds.size()));
+			LiarWord selected = LIAR_WORDS.get(ThreadLocalRandom.current().nextInt(LIAR_WORDS.size()));
+			word = selected.word();
+			category = selected.category();
+			winnerTeam = "";
+			turnOrder.clear();
+			turnOrder.addAll(playerIds);
+			turnIndex = -1;
+			round = 1;
+			strokes.clear();
+			correctPlayerIds.clear();
+			wordCandidates.clear();
+			liarVotes.clear();
+			phase = "liarDrawing";
+			roundEndsAt = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(LIAR_ROUND_SECONDS);
+			status = "라이어를 숨긴 채 모두가 함께 그림을 이어 그립니다.";
+			nextLiarTurn();
+			scheduleLiarRoundTimer();
+			broadcastState();
+			broadcastNotice("라이어 캐치마인드가 시작되었습니다.");
 		}
 
 		private synchronized void selectWord(WebSocketSession session, int index) throws IOException {
@@ -411,6 +485,21 @@ public class CatchMindWebSocketHandler extends TextWebSocketHandler {
 		}
 
 		private synchronized void draw(WebSocketSession session, Map<String, Object> stroke) throws IOException {
+			if ("liarDrawing".equals(phase)) {
+				if (!session.getId().equals(drawerId)) {
+					return;
+				}
+
+				Map<String, Object> payload = new HashMap<>(stroke);
+				payload.put("type", "draw");
+				strokes.add(payload);
+				if (strokes.size() > 1200) {
+					strokes.remove(0);
+				}
+				sendToRoom(payload);
+				return;
+			}
+
 			if (!"drawing".equals(phase) || !session.getId().equals(drawerId)) {
 				return;
 			}
@@ -425,6 +514,16 @@ public class CatchMindWebSocketHandler extends TextWebSocketHandler {
 		}
 
 		private synchronized void clear(WebSocketSession session) throws IOException {
+			if ("liarDrawing".equals(phase)) {
+				if (!session.getId().equals(drawerId) && !session.getId().equals(hostId)) {
+					return;
+				}
+
+				strokes.clear();
+				sendToRoom(Map.of("type", "clear"));
+				return;
+			}
+
 			if (!"drawing".equals(phase) || !session.getId().equals(drawerId)) {
 				return;
 			}
@@ -470,8 +569,27 @@ public class CatchMindWebSocketHandler extends TextWebSocketHandler {
 		}
 
 		private synchronized void reveal() throws IOException {
+			if ("liarDrawing".equals(phase)) {
+				startVoting();
+				return;
+			}
+
 			if ("drawing".equals(phase) || "choosing".equals(phase)) {
 				finishRound("정답 공개: " + word);
+			}
+		}
+
+		private synchronized void vote(WebSocketSession session, String targetId) throws IOException {
+			if (!"voting".equals(phase) || !players.containsKey(session.getId()) || !players.containsKey(targetId)) {
+				return;
+			}
+
+			liarVotes.put(session.getId(), targetId);
+			status = "투표 진행 중: " + liarVotes.size() + "/" + players.size();
+			broadcastState();
+
+			if (liarVotes.size() >= players.size()) {
+				revealLiarResult();
 			}
 		}
 
@@ -528,6 +646,72 @@ public class CatchMindWebSocketHandler extends TextWebSocketHandler {
 			}, 4, TimeUnit.SECONDS);
 		}
 
+		private synchronized void nextLiarTurn() throws IOException {
+			if (!"liarDrawing".equals(phase) || turnOrder.isEmpty()) {
+				return;
+			}
+
+			turnIndex = (turnIndex + 1) % turnOrder.size();
+			drawerId = turnOrder.get(turnIndex);
+			Player drawer = players.get(drawerId);
+			turnEndsAt = Math.min(
+					roundEndsAt,
+					System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(LIAR_TURN_SECONDS));
+			status = (drawer == null ? "플레이어" : drawer.nickname) + "님 차례입니다. 5초 동안 그리세요.";
+			scheduleLiarTurnTimer();
+			broadcastState();
+		}
+
+		private synchronized void startVoting() throws IOException {
+			cancelRoundTimer();
+			cancelTurnTimer();
+			phase = "voting";
+			drawerId = "";
+			turnEndsAt = 0;
+			roundEndsAt = 0;
+			liarVotes.clear();
+			status = "그림이 완성되었습니다. 라이어라고 생각하는 사람에게 투표하세요.";
+			broadcastState();
+			broadcastNotice("투표를 시작합니다. 정답은 아직 공개되지 않습니다.");
+		}
+
+		private synchronized void revealLiarResult() throws IOException {
+			cancelRoundTimer();
+			cancelTurnTimer();
+			phase = "liarRevealed";
+			drawerId = "";
+			turnEndsAt = 0;
+			roundEndsAt = 0;
+			String accusedId = mostVotedPlayerId();
+			boolean citizensWin = liarId.equals(accusedId);
+			winnerTeam = citizensWin ? "citizens" : "liar";
+			Player liar = players.get(liarId);
+			Player accused = players.get(accusedId);
+			status = citizensWin
+					? "일반 플레이어 승리! 라이어를 찾아냈습니다."
+					: "라이어 승리! 라이어가 들키지 않았습니다.";
+			broadcastState();
+			broadcastNotice("정답은 " + word + "입니다. 라이어는 "
+					+ (liar == null ? "-" : liar.nickname) + "님입니다. 최다 지목: "
+					+ (accused == null ? "-" : accused.nickname));
+		}
+
+		private String mostVotedPlayerId() {
+			return players.keySet().stream()
+					.max((left, right) -> Integer.compare(voteCount(left), voteCount(right)))
+					.orElse("");
+		}
+
+		private int voteCount(String playerId) {
+			int count = 0;
+			for (String targetId : liarVotes.values()) {
+				if (playerId.equals(targetId)) {
+					count++;
+				}
+			}
+			return count;
+		}
+
 		private void scheduleRoundTimer() {
 			cancelRoundTimer();
 			roundTimer = timerExecutor.schedule(() -> {
@@ -542,6 +726,39 @@ public class CatchMindWebSocketHandler extends TextWebSocketHandler {
 			}, ROUND_SECONDS, TimeUnit.SECONDS);
 		}
 
+		private void scheduleLiarRoundTimer() {
+			cancelRoundTimer();
+			roundTimer = timerExecutor.schedule(() -> {
+				try {
+					synchronized (Room.this) {
+						if ("liarDrawing".equals(phase)) {
+							startVoting();
+						}
+					}
+				} catch (IOException ignored) {
+				}
+			}, LIAR_ROUND_SECONDS, TimeUnit.SECONDS);
+		}
+
+		private void scheduleLiarTurnTimer() {
+			cancelTurnTimer();
+			long delayMillis = Math.max(250, turnEndsAt - System.currentTimeMillis());
+			turnTimer = timerExecutor.schedule(() -> {
+				try {
+					synchronized (Room.this) {
+						if ("liarDrawing".equals(phase)) {
+							if (System.currentTimeMillis() >= roundEndsAt) {
+								startVoting();
+							} else {
+								nextLiarTurn();
+							}
+						}
+					}
+				} catch (IOException ignored) {
+				}
+			}, delayMillis, TimeUnit.MILLISECONDS);
+		}
+
 		private void cancelRoundTimer() {
 			if (roundTimer != null) {
 				roundTimer.cancel(false);
@@ -549,18 +766,30 @@ public class CatchMindWebSocketHandler extends TextWebSocketHandler {
 			}
 		}
 
+		private void cancelTurnTimer() {
+			if (turnTimer != null) {
+				turnTimer.cancel(false);
+				turnTimer = null;
+			}
+		}
+
 		private synchronized void resetGame(String nextStatus) {
 			cancelRoundTimer();
+			cancelTurnTimer();
 			phase = "lobby";
 			drawerId = "";
 			liarId = "";
 			word = "";
+			category = "";
+			winnerTeam = "";
 			strokes.clear();
 			correctPlayerIds.clear();
+			liarVotes.clear();
 			usedWordCandidates.clear();
 			turnOrder.clear();
 			wordCandidates.clear();
 			roundEndsAt = 0;
+			turnEndsAt = 0;
 			drawerScoreAwarded = false;
 			round = 0;
 			turnIndex = -1;
@@ -659,6 +888,7 @@ public class CatchMindWebSocketHandler extends TextWebSocketHandler {
 			payload.put("phase", phase);
 			payload.put("round", round);
 			payload.put("roundEndsAt", roundEndsAt);
+			payload.put("turnEndsAt", turnEndsAt);
 			payload.put("status", status);
 			payload.put("hostId", hostId);
 			payload.put("players", playerList());
@@ -668,11 +898,27 @@ public class CatchMindWebSocketHandler extends TextWebSocketHandler {
 			payload.put("strokes", strokes);
 			payload.put("correctPlayerIds", new ArrayList<>(correctPlayerIds));
 			payload.put("turnOrder", turnOrder);
+			payload.put("category", "");
+			payload.put("myVote", liarVotes.getOrDefault(sessionId, ""));
+			payload.put("votesCast", liarVotes.size());
+			payload.put("winnerTeam", winnerTeam);
 
 			if ("choosing".equals(phase) && sessionId.equals(drawerId)) {
 				payload.put("wordCandidates", wordCandidates);
 			} else {
 				payload.put("wordCandidates", List.of());
+			}
+
+			if ("liarDrawing".equals(phase) || "voting".equals(phase) || "liarRevealed".equals(phase)) {
+				boolean isCurrentLiar = sessionId.equals(liarId);
+				payload.put("isLiar", isCurrentLiar);
+				payload.put("word", isCurrentLiar && !"liarRevealed".equals(phase) ? "" : word);
+				payload.put("category", category);
+				if ("liarRevealed".equals(phase)) {
+					payload.put("liarName", players.containsKey(liarId) ? players.get(liarId).nickname : "");
+					payload.put("voteCounts", voteCounts());
+				}
+				return payload;
 			}
 
 			if ("drawing".equals(phase) || "revealed".equals(phase)) {
@@ -690,6 +936,14 @@ public class CatchMindWebSocketHandler extends TextWebSocketHandler {
 			}
 
 			return payload;
+		}
+
+		private Map<String, Integer> voteCounts() {
+			Map<String, Integer> result = new HashMap<>();
+			for (String playerId : players.keySet()) {
+				result.put(playerId, voteCount(playerId));
+			}
+			return result;
 		}
 
 		private List<Map<String, Object>> playerList() {
@@ -717,5 +971,8 @@ public class CatchMindWebSocketHandler extends TextWebSocketHandler {
 			this.nickname = nickname;
 			this.score = score;
 		}
+	}
+
+	private record LiarWord(String word, String category) {
 	}
 }
