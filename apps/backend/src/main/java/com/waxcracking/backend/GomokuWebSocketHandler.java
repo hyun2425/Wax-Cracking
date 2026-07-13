@@ -89,7 +89,7 @@ public class GomokuWebSocketHandler extends TextWebSocketHandler {
 		}
 
 		room.leave(session);
-		if (room.isEmpty()) {
+		if (room.canBeRemoved()) {
 			rooms.remove(room.code());
 		} else {
 			room.broadcast();
@@ -137,6 +137,8 @@ public class GomokuWebSocketHandler extends TextWebSocketHandler {
 		private final Map<String, WebSocketSession> sessions = new HashMap<>();
 		private final Map<String, Integer> players = new HashMap<>();
 		private final Map<String, PlayerProfile> profiles = new HashMap<>();
+		private final Map<Integer, PlayerProfile> seatProfiles = new HashMap<>();
+		private final Map<String, Integer> playerRoles = new HashMap<>();
 		private int turn = 1;
 		private int winner = 0;
 		private int moveCount = 0;
@@ -153,34 +155,40 @@ public class GomokuWebSocketHandler extends TextWebSocketHandler {
 
 		private synchronized void join(WebSocketSession session) {
 			sessions.put(session.getId(), session);
-			int player = nextAvailablePlayer();
-			players.put(session.getId(), player);
-			if (player > 0) {
-				profiles.put(session.getId(), new PlayerProfile("session-" + session.getId(), playerName(player)));
-			}
-			if (players.containsValue(1) && players.containsValue(2)) {
-				if (winner == 0 && moveCount == 0) {
-					status = "두 명이 연결됐습니다. 검은 돌부터 시작하세요.";
-				} else if (winner == 0) {
-					status = playerName(turn) + " 차례입니다.";
-				}
+			players.put(session.getId(), 0);
+			if (winner == 0 && moveCount > 0) {
+				status = "진행 중인 판입니다. 닉네임과 PIN으로 로그인하면 이어서 둘 수 있습니다.";
 			}
 		}
 
 		private synchronized void leave(WebSocketSession session) {
 			sessions.remove(session.getId());
 			Integer player = players.remove(session.getId());
-			profiles.remove(session.getId());
+			PlayerProfile profile = profiles.remove(session.getId());
 			if (player != null && player > 0) {
-				status = playerName(player) + " 플레이어가 나갔습니다. 다시 접속하거나 새 판을 시작하세요.";
+				String name = profile == null ? playerName(player) : profile.nickname();
+				status = name + " 연결이 끊겼습니다. 같은 코드로 다시 들어오면 이어서 둘 수 있습니다.";
 			}
 		}
 
-		private synchronized int nextAvailablePlayer() {
-			if (!players.containsValue(1)) {
+		private synchronized int roleFor(PlayerProfile profile) {
+			Integer existingRole = playerRoles.get(profile.playerId());
+			if (existingRole != null) {
+				return existingRole;
+			}
+			for (Map.Entry<Integer, PlayerProfile> entry : seatProfiles.entrySet()) {
+				if (entry.getValue().nickname().equalsIgnoreCase(profile.nickname())) {
+					playerRoles.values().removeIf(role -> role.equals(entry.getKey()));
+					playerRoles.put(profile.playerId(), entry.getKey());
+					return entry.getKey();
+				}
+			}
+			if (!seatProfiles.containsKey(1)) {
+				playerRoles.put(profile.playerId(), 1);
 				return 1;
 			}
-			if (!players.containsValue(2)) {
+			if (!seatProfiles.containsKey(2)) {
+				playerRoles.put(profile.playerId(), 2);
 				return 2;
 			}
 			return 0;
@@ -188,6 +196,10 @@ public class GomokuWebSocketHandler extends TextWebSocketHandler {
 
 		private synchronized boolean isEmpty() {
 			return sessions.isEmpty();
+		}
+
+		private synchronized boolean canBeRemoved() {
+			return isEmpty() && moveCount == 0 && seatProfiles.isEmpty();
 		}
 
 		private synchronized void move(WebSocketSession session, int row, int col) throws IOException {
@@ -257,11 +269,42 @@ public class GomokuWebSocketHandler extends TextWebSocketHandler {
 
 		private synchronized void profile(WebSocketSession session, String playerId, String nickname, String pin) throws IOException {
 			try {
-				profiles.put(session.getId(), statsService.registerProfile(playerId, nickname, pin));
+				PlayerProfile profile = statsService.registerProfile(playerId, nickname, pin);
+				int role = roleFor(profile);
+				releaseDuplicateSessions(session.getId(), profile.playerId());
+				players.put(session.getId(), role);
+				profiles.put(session.getId(), profile);
+				if (role > 0) {
+					seatProfiles.put(role, profile);
+					if (hasActivePlayers(1, 2)) {
+						status = winner == 0 && moveCount == 0
+								? "두 명이 연결됐습니다. 검은 돌부터 시작하세요."
+								: playerName(turn) + " 차례입니다.";
+					} else if (winner == 0) {
+						status = profile.nickname() + "님이 " + playerName(role) + "로 다시 연결되었습니다.";
+					}
+				}
 			} catch (ProfileLoginException exception) {
 				sendError(session, exception.getMessage());
 			}
 			broadcast();
+		}
+
+		private void releaseDuplicateSessions(String currentSessionId, String playerId) {
+			for (Map.Entry<String, PlayerProfile> entry : new ArrayList<>(profiles.entrySet())) {
+				if (!entry.getKey().equals(currentSessionId) && entry.getValue().playerId().equals(playerId)) {
+					players.put(entry.getKey(), 0);
+				}
+			}
+		}
+
+		private boolean hasActivePlayers(int... roles) {
+			for (int role : roles) {
+				if (!players.containsValue(role)) {
+					return false;
+				}
+			}
+			return true;
 		}
 
 		private synchronized void chat(WebSocketSession senderSession, String rawMessage) throws IOException {
@@ -296,12 +339,7 @@ public class GomokuWebSocketHandler extends TextWebSocketHandler {
 		}
 
 		private PlayerProfile profileForRole(int role) {
-			return players.entrySet().stream()
-					.filter(entry -> entry.getValue() == role)
-					.map(entry -> profiles.get(entry.getKey()))
-					.filter(profile -> profile != null)
-					.findFirst()
-					.orElse(null);
+			return seatProfiles.get(role);
 		}
 
 		private synchronized void sendLeaderboard() throws IOException {
@@ -434,7 +472,6 @@ public class GomokuWebSocketHandler extends TextWebSocketHandler {
 				rows.add(cols);
 			}
 
-			Map<String, Integer> sessionPlayers = new HashMap<>(players);
 			Map<String, Object> payload = new HashMap<>();
 			payload.put("type", "state");
 			payload.put("room", code);
@@ -442,30 +479,31 @@ public class GomokuWebSocketHandler extends TextWebSocketHandler {
 			payload.put("turn", turn);
 			payload.put("winner", winner);
 			payload.put("status", status);
-			payload.put("players", sessionPlayers.values().stream().filter(player -> player > 0).count());
-			payload.put("spectators", sessionPlayers.values().stream().filter(player -> player == 0).count());
+			payload.put("players", activePlayerCount());
+			payload.put("spectators", players.values().stream().filter(player -> player == 0).count());
 			payload.put("you", players.getOrDefault(sessionId, 0));
 			payload.put("nickname", displayName(sessionId));
 			payload.put("roomPlayers", roomPlayers());
 			return payload;
 		}
 
+		private long activePlayerCount() {
+			return players.values().stream()
+					.filter(player -> player > 0)
+					.distinct()
+					.count();
+		}
+
 		private List<Map<String, Object>> roomPlayers() {
 			List<Map<String, Object>> roomPlayers = new ArrayList<>();
 			for (int role = 1; role <= 2; role++) {
-				String nickname = nameForRole(role).orElse("대기 중");
+				PlayerProfile profile = seatProfiles.get(role);
+				String nickname = profile == null ? "대기 중" : profile.nickname();
 				roomPlayers.add(Map.of(
 						"role", role,
 						"nickname", nickname));
 			}
 			return roomPlayers;
-		}
-
-		private Optional<String> nameForRole(int role) {
-			return players.entrySet().stream()
-					.filter(entry -> entry.getValue() == role)
-					.map(entry -> displayName(entry.getKey()))
-					.findFirst();
 		}
 
 		private void sendError(WebSocketSession session, String message) throws IOException {
