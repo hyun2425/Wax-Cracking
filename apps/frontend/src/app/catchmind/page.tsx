@@ -196,6 +196,7 @@ export default function CatchMindPage() {
   const socketRef = useRef<WebSocket | null>(null);
   const drawingRef = useRef(false);
   const activeStrokeRef = useRef<Point[]>([]);
+  const customWordInputRef = useRef<HTMLInputElement | null>(null);
   const gameRef = useRef(game);
   const nicknameRef = useRef(nickname);
 
@@ -397,12 +398,12 @@ export default function CatchMindPage() {
   }
 
   function selectCustomWord() {
-    const customWord = customWordDraft.trim().replace(/\s+/g, " ");
+    const customWord = (customWordInputRef.current?.value ?? customWordDraft).trim().replace(/\s+/g, " ");
     if (!customWord) {
       return;
     }
 
-    sendMessage({ customWord: customWord.slice(0, 20), type: "selectWord" });
+    sendMessage({ customWord: customWord.slice(0, 20), index: -1, type: "selectWord" });
     setCustomWordDraft("");
   }
 
@@ -710,6 +711,7 @@ export default function CatchMindPage() {
                         }
                       }}
                       placeholder="원하는 키워드 직접 입력"
+                      ref={customWordInputRef}
                       value={customWordDraft}
                     />
                     <button
