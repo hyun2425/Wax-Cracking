@@ -25,6 +25,22 @@ a {
   text-decoration: none;
 }
 
+.quiz-input {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 0.9rem;
+  background: rgba(255, 255, 255, 0.06);
+  color: white;
+  font-weight: 700;
+  outline: none;
+  padding: 0.8rem 1rem;
+  width: 100%;
+}
+.quiz-input:focus { border-color: #f5c84c; }
+.quiz-primary, .quiz-secondary { border-radius: 0.9rem; font-weight: 800; padding: 0.75rem 1rem; }
+.quiz-primary { background: #f5c84c; color: #111827; }
+.quiz-primary:disabled, .quiz-secondary:disabled { cursor: not-allowed; opacity: .4; }
+.quiz-secondary { background: rgba(255,255,255,.08); color: white; }
+
 .wax-scene {
   perspective: 900px;
 }

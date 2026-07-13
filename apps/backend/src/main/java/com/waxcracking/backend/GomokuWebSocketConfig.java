@@ -14,15 +14,18 @@ public class GomokuWebSocketConfig implements WebSocketConfigurer {
 
 	private final GomokuWebSocketHandler gomokuWebSocketHandler;
 	private final CatchMindWebSocketHandler catchMindWebSocketHandler;
+	private final PeopleQuizWebSocketHandler peopleQuizWebSocketHandler;
 
 	@Value("${app.cors.allowed-origin-patterns}")
 	private String allowedOriginPatterns;
 
 	public GomokuWebSocketConfig(
 			GomokuWebSocketHandler gomokuWebSocketHandler,
-			CatchMindWebSocketHandler catchMindWebSocketHandler) {
+			CatchMindWebSocketHandler catchMindWebSocketHandler,
+			PeopleQuizWebSocketHandler peopleQuizWebSocketHandler) {
 		this.gomokuWebSocketHandler = gomokuWebSocketHandler;
 		this.catchMindWebSocketHandler = catchMindWebSocketHandler;
+		this.peopleQuizWebSocketHandler = peopleQuizWebSocketHandler;
 	}
 
 	@Override
@@ -35,6 +38,8 @@ public class GomokuWebSocketConfig implements WebSocketConfigurer {
 		registry.addHandler(gomokuWebSocketHandler, "/ws/gomoku")
 				.setAllowedOriginPatterns(patterns);
 		registry.addHandler(catchMindWebSocketHandler, "/ws/catchmind")
+				.setAllowedOriginPatterns(patterns);
+		registry.addHandler(peopleQuizWebSocketHandler, "/ws/people-quiz")
 				.setAllowedOriginPatterns(patterns);
 	}
 }
