@@ -330,7 +330,7 @@ export default function Home() {
             <Link href="/ruby-gamja-walk-quest">ruby-gamja</Link>
             <Link href="/gomoku">gomoku</Link>
             <Link href="/catchmind">catchmind</Link>
-            <Link href="/people-quiz">people quiz</Link>
+            <Link href="/people-quiz">인물 퀴즈</Link>
           </div>
         </nav>
 
