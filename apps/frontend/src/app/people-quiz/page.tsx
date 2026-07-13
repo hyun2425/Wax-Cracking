@@ -3,7 +3,7 @@ import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 
 type Player={id:string;name:string;score:number}; type Chat={sender:string;message:string;system:boolean};
-type State={room:string;hostId:string;you:string;category:string;categories:string[];round:number;solved:boolean;players:Player[];messages:Chat[];imageUrl?:string;questionCategory?:string;answer?:string};
+type State={room:string;hostId:string;you:string;category:string;categories:string[];round:number;solved:boolean;players:Player[];messages:Chat[];imageUrl?:string;questionCategory?:string;answer?:string;sourceUrl?:string;license?:string};
 const initial:State={room:"",hostId:"",you:"",category:"전체",categories:["전체","과학","리더","예술"],round:0,solved:false,players:[],messages:[]};
 const api=()=>{const env=process.env.NEXT_PUBLIC_API_BASE_URL;if(env)return env.replace(/\/$/,"");return location.hostname==="localhost"?"http://localhost:8080":"https://wax-cracking-backend.onrender.com"};
 const code=()=>Array.from({length:6},()=>"ABCDEFGHJKLMNPQRSTUVWXYZ23456789"[Math.floor(Math.random()*32)]).join("");
