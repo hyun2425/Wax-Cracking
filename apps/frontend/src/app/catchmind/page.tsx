@@ -186,6 +186,7 @@ export default function CatchMindPage() {
   const [notice, setNotice] = useState("닉네임을 정하고 방에 입장하세요.");
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [guessDraft, setGuessDraft] = useState("");
+  const [customWordDraft, setCustomWordDraft] = useState("");
   const [brushColor, setBrushColor] = useState(colors[0]);
   const [brushSize, setBrushSize] = useState(6);
   const [reconnectKey, setReconnectKey] = useState(0);
@@ -393,6 +394,16 @@ export default function CatchMindPage() {
 
   function selectWord(index: number) {
     sendMessage({ index, type: "selectWord" });
+  }
+
+  function selectCustomWord() {
+    const customWord = customWordDraft.trim().replace(/\s+/g, " ");
+    if (!customWord) {
+      return;
+    }
+
+    sendMessage({ customWord: customWord.slice(0, 20), type: "selectWord" });
+    setCustomWordDraft("");
   }
 
   function clearCanvas() {
@@ -675,17 +686,41 @@ export default function CatchMindPage() {
                 </div>
               </div>
               {game.phase === "choosing" && isDrawer && (
-                <div className="mt-4 grid gap-2 sm:grid-cols-3">
-                  {game.wordCandidates.map((candidate, index) => (
+                <div className="mt-4 grid gap-3">
+                  <div className="grid gap-2 sm:grid-cols-3">
+                    {game.wordCandidates.map((candidate, index) => (
+                      <button
+                        className="rounded-lg border border-[#2563eb] bg-[#eff6ff] px-4 py-4 text-lg font-black text-[#1d4ed8] transition hover:bg-[#dbeafe]"
+                        key={candidate}
+                        onClick={() => selectWord(index)}
+                        type="button"
+                      >
+                        {candidate}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="grid gap-2 rounded-lg border border-[#d9d1c3] bg-[#fffdf8] p-3 sm:grid-cols-[minmax(0,1fr)_auto]">
+                    <input
+                      className="min-w-0 rounded-lg border border-[#d9d1c3] px-3 py-3 text-sm font-bold outline-none focus:border-[#2563eb]"
+                      maxLength={20}
+                      onChange={(event) => setCustomWordDraft(event.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") {
+                          selectCustomWord();
+                        }
+                      }}
+                      placeholder="원하는 키워드 직접 입력"
+                      value={customWordDraft}
+                    />
                     <button
-                      className="rounded-lg border border-[#2563eb] bg-[#eff6ff] px-4 py-4 text-lg font-black text-[#1d4ed8] transition hover:bg-[#dbeafe]"
-                      key={candidate}
-                      onClick={() => selectWord(index)}
+                      className="rounded-lg bg-[#111827] px-4 py-3 text-sm font-black text-white disabled:opacity-45"
+                      disabled={!customWordDraft.trim()}
+                      onClick={selectCustomWord}
                       type="button"
                     >
-                      {candidate}
+                      직접 출제
                     </button>
-                  ))}
+                  </div>
                 </div>
               )}
               {game.phase === "choosing" && !isDrawer && (

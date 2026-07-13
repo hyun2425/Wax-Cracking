@@ -177,7 +177,7 @@ public class CatchMindWebSocketHandler extends TextWebSocketHandler {
 		}
 
 		if ("selectWord".equals(type)) {
-			room.selectWord(session, asInt(payload.get("index")));
+			room.selectWord(session, asInt(payload.get("index")), asText(payload.get("customWord")));
 			return;
 		}
 
@@ -456,16 +456,24 @@ public class CatchMindWebSocketHandler extends TextWebSocketHandler {
 			broadcastNotice("라이어 캐치마인드가 시작되었습니다.");
 		}
 
-		private synchronized void selectWord(WebSocketSession session, int index) throws IOException {
+		private synchronized void selectWord(WebSocketSession session, int index, String rawCustomWord) throws IOException {
 			if (!"choosing".equals(phase) || !session.getId().equals(drawerId)) {
 				return;
 			}
 
-			if (index < 0 || index >= wordCandidates.size()) {
-				return;
+			String selectedWord = "";
+			String customWord = sanitizeCustomWord(rawCustomWord);
+			if (!customWord.isBlank()) {
+				selectedWord = customWord;
+				usedWordCandidates.add(selectedWord);
+			} else {
+				if (index < 0 || index >= wordCandidates.size()) {
+					return;
+				}
+				selectedWord = wordCandidates.get(index);
 			}
 
-			word = wordCandidates.get(index);
+			word = selectedWord;
 			wordCandidates.clear();
 			phase = "drawing";
 			strokes.clear();
@@ -482,6 +490,18 @@ public class CatchMindWebSocketHandler extends TextWebSocketHandler {
 			scheduleRoundTimer();
 			broadcastState();
 			broadcastNotice("그리기가 시작되었습니다.");
+		}
+
+		private String sanitizeCustomWord(String rawCustomWord) {
+			if (rawCustomWord == null) {
+				return "";
+			}
+
+			String normalized = rawCustomWord.strip().replaceAll("\\s+", " ");
+			if (normalized.length() > 20) {
+				normalized = normalized.substring(0, 20);
+			}
+			return normalized;
 		}
 
 		private synchronized void draw(WebSocketSession session, Map<String, Object> stroke) throws IOException {
