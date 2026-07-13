@@ -3,7 +3,7 @@ package com.waxcracking.backend;
 import java.util.List;
 import java.util.Map;
 
-import com.waxcracking.backend.GomokuStatsService.DuplicateNicknameException;
+import com.waxcracking.backend.GomokuStatsService.ProfileLoginException;
 import com.waxcracking.backend.GomokuStatsService.PlayerProfile;
 
 import org.springframework.web.bind.annotation.GetMapping;
@@ -32,15 +32,15 @@ public class GomokuStatsController {
 
 	@PostMapping("/profile")
 	public PlayerProfile profile(@RequestBody ProfileRequest request) {
-		return statsService.registerProfile(request.playerId(), request.nickname());
+		return statsService.registerProfile(request.playerId(), request.nickname(), request.pin());
 	}
 
-	@ExceptionHandler(DuplicateNicknameException.class)
+	@ExceptionHandler(ProfileLoginException.class)
 	@ResponseStatus(HttpStatus.CONFLICT)
-	public Map<String, String> duplicateNickname(DuplicateNicknameException exception) {
+	public Map<String, String> profileLoginError(ProfileLoginException exception) {
 		return Map.of("message", exception.getMessage());
 	}
 
-	public record ProfileRequest(String playerId, String nickname) {
+	public record ProfileRequest(String playerId, String nickname, String pin) {
 	}
 }

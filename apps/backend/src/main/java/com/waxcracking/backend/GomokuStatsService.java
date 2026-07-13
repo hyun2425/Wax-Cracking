@@ -3,6 +3,8 @@ package com.waxcracking.backend;
 import java.net.URI;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -40,33 +42,23 @@ public class GomokuStatsService {
 
 	public PlayerProfile profile(String playerId, String nickname) {
 		try {
-			return registerProfile(playerId, nickname);
-		} catch (DuplicateNicknameException exception) {
+			return registerProfile(playerId, nickname, "");
+		} catch (ProfileLoginException exception) {
 			return new PlayerProfile(sanitizeId(playerId), sanitizeNickname(nickname));
 		}
 	}
 
-	public PlayerProfile registerProfile(String playerId, String nickname) {
+	public PlayerProfile registerProfile(String playerId, String nickname, String pin) {
 		String safeId = sanitizeId(playerId);
 		String safeNickname = sanitizeNickname(nickname);
+		String safePin = sanitizePin(pin);
+		String pinHash = hashPin(safeNickname, safePin);
 
 		if (databaseEnabled) {
-			if (nicknameTakenInDatabase(safeId, safeNickname)) {
-				throw new DuplicateNicknameException(safeNickname);
-			}
-			upsertProfile(safeId, safeNickname);
-			return new PlayerProfile(safeId, safeNickname);
+			return registerProfileInDatabase(safeId, safeNickname, pinHash);
 		}
 
-		if (nicknameTakenInMemory(safeId, safeNickname)) {
-			throw new DuplicateNicknameException(safeNickname);
-		}
-		stats.compute(safeId, (id, current) -> {
-			MutableStats next = current == null ? new MutableStats(id, safeNickname) : current;
-			next.nickname = safeNickname;
-			return next;
-		});
-		return new PlayerProfile(safeId, safeNickname);
+		return registerProfileInMemory(safeId, safeNickname, pinHash);
 	}
 
 	public void recordGame(PlayerProfile winner, PlayerProfile loser) {
@@ -120,61 +112,134 @@ public class GomokuStatsService {
 					create table if not exists gomoku_players (
 						player_id varchar(64) primary key,
 						nickname varchar(16) not null,
+						pin_hash varchar(64),
 						games integer not null default 0,
 						wins integer not null default 0,
 						losses integer not null default 0,
 						updated_at timestamp not null default now()
 					)
 					""");
+			statement.execute("alter table gomoku_players add column if not exists pin_hash varchar(64)");
 			return true;
 		} catch (SQLException exception) {
 			return false;
 		}
 	}
 
-	private void upsertProfile(String playerId, String nickname) {
+	private PlayerProfile registerProfileInDatabase(String playerId, String nickname, String pinHash) {
+		String findByNickname = """
+				select player_id, pin_hash
+				from gomoku_players
+				where lower(nickname) = lower(?)
+				for update
+				""";
+
+		try (Connection connection = DriverManager.getConnection(jdbcUrl, databaseProperties)) {
+			connection.setAutoCommit(false);
+			try (PreparedStatement statement = connection.prepareStatement(findByNickname)) {
+				statement.setString(1, nickname);
+				try (ResultSet resultSet = statement.executeQuery()) {
+					if (resultSet.next()) {
+						String currentPlayerId = resultSet.getString("player_id");
+						String currentPinHash = resultSet.getString("pin_hash");
+						if (currentPinHash != null && !currentPinHash.equals(pinHash)) {
+							connection.rollback();
+							throw new ProfileLoginException("PIN이 맞지 않습니다.");
+						}
+
+						claimDatabaseProfile(connection, currentPlayerId, playerId, nickname, pinHash);
+						connection.commit();
+						return new PlayerProfile(playerId, nickname);
+					}
+				}
+			}
+
+			upsertProfile(connection, playerId, nickname, pinHash);
+			connection.commit();
+			return new PlayerProfile(playerId, nickname);
+		} catch (SQLException exception) {
+			throw new ProfileLoginException("프로필 저장에 실패했습니다.");
+		}
+	}
+
+	private void claimDatabaseProfile(
+			Connection connection,
+			String currentPlayerId,
+			String nextPlayerId,
+			String nickname,
+			String pinHash
+	) throws SQLException {
+		if (!currentPlayerId.equals(nextPlayerId)) {
+			try (PreparedStatement cleanup = connection.prepareStatement("""
+					delete from gomoku_players
+					where player_id = ?
+						and games = 0
+					""")) {
+				cleanup.setString(1, nextPlayerId);
+				cleanup.executeUpdate();
+			}
+		}
+
+		try (PreparedStatement statement = connection.prepareStatement("""
+				update gomoku_players
+				set player_id = ?,
+					nickname = ?,
+					pin_hash = ?,
+					updated_at = now()
+				where player_id = ?
+				""")) {
+			statement.setString(1, nextPlayerId);
+			statement.setString(2, nickname);
+			statement.setString(3, pinHash);
+			statement.setString(4, currentPlayerId);
+			statement.executeUpdate();
+		}
+	}
+
+	private void upsertProfile(Connection connection, String playerId, String nickname, String pinHash) throws SQLException {
 		String sql = """
-				insert into gomoku_players (player_id, nickname)
-				values (?, ?)
+				insert into gomoku_players (player_id, nickname, pin_hash)
+				values (?, ?, ?)
 				on conflict (player_id) do update
 				set nickname = excluded.nickname,
+					pin_hash = excluded.pin_hash,
 					updated_at = now()
 				""";
 
-		try (Connection connection = DriverManager.getConnection(jdbcUrl, databaseProperties);
-				PreparedStatement statement = connection.prepareStatement(sql)) {
+		try (PreparedStatement statement = connection.prepareStatement(sql)) {
 			statement.setString(1, playerId);
 			statement.setString(2, nickname);
+			statement.setString(3, pinHash);
 			statement.executeUpdate();
-		} catch (SQLException exception) {
-			stats.computeIfAbsent(playerId, id -> new MutableStats(id, nickname));
 		}
 	}
 
-	private boolean nicknameTakenInDatabase(String playerId, String nickname) {
-		String sql = """
-				select 1
-				from gomoku_players
-				where lower(nickname) = lower(?)
-					and player_id <> ?
-				limit 1
-				""";
+	private PlayerProfile registerProfileInMemory(String playerId, String nickname, String pinHash) {
+		MutableStats existing = stats.values().stream()
+				.filter(stat -> stat.nickname.equalsIgnoreCase(nickname))
+				.findFirst()
+				.orElse(null);
 
-		try (Connection connection = DriverManager.getConnection(jdbcUrl, databaseProperties);
-				PreparedStatement statement = connection.prepareStatement(sql)) {
-			statement.setString(1, nickname);
-			statement.setString(2, playerId);
-			try (ResultSet resultSet = statement.executeQuery()) {
-				return resultSet.next();
+		if (existing != null) {
+			if (existing.pinHash != null && !existing.pinHash.equals(pinHash)) {
+				throw new ProfileLoginException("PIN이 맞지 않습니다.");
 			}
-		} catch (SQLException exception) {
-			return false;
-		}
-	}
 
-	private boolean nicknameTakenInMemory(String playerId, String nickname) {
-		return stats.values().stream()
-				.anyMatch(stat -> !stat.playerId.equals(playerId) && stat.nickname.equalsIgnoreCase(nickname));
+			stats.remove(existing.playerId);
+			existing.playerId = playerId;
+			existing.nickname = nickname;
+			existing.pinHash = pinHash;
+			stats.put(playerId, existing);
+			return new PlayerProfile(playerId, nickname);
+		}
+
+		stats.compute(playerId, (id, current) -> {
+			MutableStats next = current == null ? new MutableStats(id, nickname) : current;
+			next.nickname = nickname;
+			next.pinHash = pinHash;
+			return next;
+		});
+		return new PlayerProfile(playerId, nickname);
 	}
 
 	private void recordGameInDatabase(PlayerProfile winner, PlayerProfile loser) {
@@ -286,15 +351,37 @@ public class GomokuStatsService {
 		return safe.substring(0, Math.min(16, safe.length()));
 	}
 
+	private String sanitizePin(String value) {
+		String safe = value == null ? "" : value.replaceAll("[^0-9]", "");
+		if (safe.length() < 4 || safe.length() > 8) {
+			throw new ProfileLoginException("PIN은 숫자 4~8자리로 입력해 주세요.");
+		}
+		return safe;
+	}
+
+	private String hashPin(String nickname, String pin) {
+		try {
+			MessageDigest digest = MessageDigest.getInstance("SHA-256");
+			byte[] hash = digest.digest((nickname.toLowerCase() + ":" + pin).getBytes(StandardCharsets.UTF_8));
+			StringBuilder builder = new StringBuilder();
+			for (byte value : hash) {
+				builder.append(String.format("%02x", value));
+			}
+			return builder.toString();
+		} catch (NoSuchAlgorithmException exception) {
+			throw new ProfileLoginException("PIN 처리에 실패했습니다.");
+		}
+	}
+
 	public record PlayerProfile(String playerId, String nickname) {
 	}
 
 	public record PlayerStats(String playerId, String nickname, int games, int wins, int losses, int winRate) {
 	}
 
-	public static class DuplicateNicknameException extends RuntimeException {
-		public DuplicateNicknameException(String nickname) {
-			super("이미 사용 중인 닉네임입니다: " + nickname);
+	public static class ProfileLoginException extends RuntimeException {
+		public ProfileLoginException(String message) {
+			super(message);
 		}
 	}
 
@@ -336,8 +423,9 @@ public class GomokuStatsService {
 	}
 
 	private static final class MutableStats {
-		private final String playerId;
+		private String playerId;
 		private String nickname;
+		private String pinHash;
 		private int games;
 		private int wins;
 		private int losses;

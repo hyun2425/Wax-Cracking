@@ -212,13 +212,20 @@ function getInitialProfile(hasInviteRoom: boolean): PlayerProfile {
   return { nickname, playerId };
 }
 
+function getInitialPin(hasInviteRoom: boolean) {
+  if (typeof window === "undefined" || hasInviteRoom) {
+    return "";
+  }
+  return window.localStorage.getItem("gomokuPin") ?? "";
+}
+
 function sanitizeNickname(value: string) {
   const next = value.trim().replace(/\s+/g, " ");
   return (next || "이름 없는 고수").slice(0, 16);
 }
 
-function isProfileReady(profile: PlayerProfile) {
-  return profile.nickname.trim().length > 0;
+function isProfileReady(profile: PlayerProfile, pin: string) {
+  return profile.nickname.trim().length > 0 && pin.trim().length >= 4;
 }
 
 function getConnectionLabel(connection: ConnectionState) {
@@ -257,6 +264,7 @@ function StatusItem({ label, value }: { label: string; value: string }) {
 export default function GomokuPage() {
   const initialRoomCode = useMemo(() => getInitialRoomCode(), []);
   const initialProfile = useMemo(() => getInitialProfile(Boolean(initialRoomCode)), [initialRoomCode]);
+  const initialPin = useMemo(() => getInitialPin(Boolean(initialRoomCode)), [initialRoomCode]);
   const [draftCode, setDraftCode] = useState(() => initialRoomCode);
   const [roomCode, setRoomCode] = useState("");
   const [game, setGame] = useState<GameState>(() => initialGame());
@@ -264,7 +272,8 @@ export default function GomokuPage() {
   const [notice, setNotice] = useState("닉네임 로그인 후 방에 입장해 주세요.");
   const [profile, setProfile] = useState<PlayerProfile>(() => initialProfile);
   const [nicknameDraft, setNicknameDraft] = useState(() => initialProfile.nickname);
-  const [isLoggedIn, setIsLoggedIn] = useState(() => isProfileReady(initialProfile) && !initialRoomCode);
+  const [pinDraft, setPinDraft] = useState(() => initialPin);
+  const [isLoggedIn, setIsLoggedIn] = useState(() => isProfileReady(initialProfile, initialPin) && !initialRoomCode);
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     if (typeof window === "undefined") {
       return "dark";
@@ -279,6 +288,7 @@ export default function GomokuPage() {
   const [reconnectAttempt, setReconnectAttempt] = useState(0);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
   const profileRef = useRef(profile);
+  const pinRef = useRef(pinDraft);
   const socketRef = useRef<WebSocket | null>(null);
 
   const isConnected = connection === "open";
@@ -363,16 +373,20 @@ export default function GomokuPage() {
 
   useEffect(() => {
     profileRef.current = profile;
+    pinRef.current = pinDraft;
     window.localStorage.setItem("gomokuPlayerId", profile.playerId);
     if (profile.nickname.trim()) {
       window.localStorage.setItem("gomokuNickname", profile.nickname);
     }
+    if (pinDraft.trim().length >= 4) {
+      window.localStorage.setItem("gomokuPin", pinDraft);
+    }
 
     const socket = socketRef.current;
     if (isLoggedIn && socket?.readyState === WebSocket.OPEN) {
-      socket.send(JSON.stringify({ ...profile, type: "profile" }));
+      socket.send(JSON.stringify({ ...profile, pin: pinRef.current, type: "profile" }));
     }
-  }, [isLoggedIn, profile]);
+  }, [isLoggedIn, pinDraft, profile]);
 
   useEffect(() => {
     window.localStorage.setItem("gomokuViewMode", viewMode);
@@ -410,7 +424,7 @@ export default function GomokuPage() {
       window.clearTimeout(timeoutId);
       setConnection("open");
       setNotice("연결되었습니다. 상대도 같은 초대 코드로 들어오면 바로 같이 둘 수 있어요.");
-      socket.send(JSON.stringify({ ...profileRef.current, type: "profile" }));
+      socket.send(JSON.stringify({ ...profileRef.current, pin: pinRef.current, type: "profile" }));
     };
 
     socket.onmessage = (event) => {
@@ -545,6 +559,12 @@ export default function GomokuPage() {
 
   async function saveNickname() {
     const nickname = sanitizeNickname(nicknameDraft);
+    const pin = pinDraft.replace(/[^0-9]/g, "").slice(0, 8);
+    setPinDraft(pin);
+    if (pin.length < 4) {
+      setNotice("PIN은 숫자 4~8자리로 입력해 주세요.");
+      return;
+    }
     if (isSavingProfile) {
       return;
     }
@@ -552,7 +572,7 @@ export default function GomokuPage() {
     setIsSavingProfile(true);
     try {
       const response = await fetch(`${getApiBaseUrl()}/api/gomoku/profile`, {
-        body: JSON.stringify({ nickname, playerId: profile.playerId }),
+        body: JSON.stringify({ nickname, pin, playerId: profile.playerId }),
         headers: { "Content-Type": "application/json" },
         method: "POST",
       });
@@ -567,6 +587,7 @@ export default function GomokuPage() {
       setProfile(nextProfile);
       window.localStorage.setItem("gomokuPlayerId", nextProfile.playerId);
       window.localStorage.setItem("gomokuNickname", nextProfile.nickname);
+      window.localStorage.setItem("gomokuPin", pin);
       setIsLoggedIn(true);
       setNotice(`${nextProfile.nickname} 닉네임으로 로그인했습니다.`);
       void refreshLeaderboard();
@@ -642,6 +663,7 @@ export default function GomokuPage() {
 
     if (colIndex === 17 && rowNumber === 2) content = "Analyst ID";
     if (colIndex === 17 && rowNumber === 3) content = "Workbook ID";
+    if (colIndex === 17 && rowNumber === 4) content = "PIN";
     if (colIndex === 17 && rowNumber === 5) content = "Sync";
     if (colIndex === 18 && rowNumber === 5) content = connectionLabel;
     if (colIndex === 17 && rowNumber === 6) content = "Role";
@@ -733,6 +755,24 @@ export default function GomokuPage() {
         >
           Open
         </button>
+      );
+    }
+
+    if (colIndex === 18 && rowNumber === 4) {
+      return (
+        <input
+          className="h-8 min-w-0 border-b border-r border-[#d9d9d9] bg-white px-2 text-[12px] outline-none focus:bg-[#f3fff7] focus:ring-1 focus:ring-[#217346]"
+          key={`${rowNumber}-${colIndex}`}
+          maxLength={8}
+          onChange={(event) => setPinDraft(event.target.value.replace(/[^0-9]/g, "").slice(0, 8))}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              void saveNickname();
+            }
+          }}
+          type="password"
+          value={pinDraft}
+        />
       );
     }
 
@@ -839,7 +879,7 @@ export default function GomokuPage() {
                 {isExcelMode ? `인증 후 ${draftCode} 문서를 엽니다.` : `로그인 후 \`${draftCode}\` 방에 자동 입장합니다.`}
               </p>
             )}
-            <div className="mt-5 flex gap-2">
+            <div className="mt-5 grid gap-2 sm:grid-cols-[minmax(0,1fr)_120px_auto]">
               <input
                 autoFocus
                 className="min-w-0 flex-1 rounded-lg border border-[var(--border)] bg-[var(--panel-deep)] px-3 py-3 text-sm text-[var(--text)] outline-none transition placeholder:text-[var(--faint)] focus:border-[var(--accent)]"
@@ -852,6 +892,20 @@ export default function GomokuPage() {
                 }}
                 placeholder={isExcelMode ? "Analyst" : "닉네임"}
                 value={nicknameDraft}
+              />
+              <input
+                className="min-w-0 rounded-lg border border-[var(--border)] bg-[var(--panel-deep)] px-3 py-3 text-sm text-[var(--text)] outline-none transition placeholder:text-[var(--faint)] focus:border-[var(--accent)]"
+                inputMode="numeric"
+                maxLength={8}
+                onChange={(event) => setPinDraft(event.target.value.replace(/[^0-9]/g, "").slice(0, 8))}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    void saveNickname();
+                  }
+                }}
+                placeholder="PIN 4~8"
+                type="password"
+                value={pinDraft}
               />
               <button
                 className="rounded-lg bg-[var(--accent)] px-5 py-3 text-sm font-black text-[var(--accent-text)] transition hover:brightness-110 disabled:opacity-55"
@@ -1088,9 +1142,9 @@ export default function GomokuPage() {
                   {profile.nickname}
                 </span>
               </div>
-              <div className="mt-3 flex gap-2">
+              <div className="mt-3 grid gap-2">
                 <input
-                  className="min-w-0 flex-1 rounded-lg border border-[var(--border)] bg-[var(--panel-deep)] px-3 py-2 text-sm text-[var(--text)] outline-none transition placeholder:text-[var(--faint)] focus:border-[var(--accent)]"
+                  className="min-w-0 rounded-lg border border-[var(--border)] bg-[var(--panel-deep)] px-3 py-2 text-sm text-[var(--text)] outline-none transition placeholder:text-[var(--faint)] focus:border-[var(--accent)]"
                   maxLength={16}
                   onChange={(event) => setNicknameDraft(event.target.value)}
                   onKeyDown={(event) => {
@@ -1100,6 +1154,20 @@ export default function GomokuPage() {
                   }}
                   placeholder={isExcelMode ? "Analyst" : "닉네임"}
                   value={nicknameDraft}
+                />
+                <input
+                  className="min-w-0 rounded-lg border border-[var(--border)] bg-[var(--panel-deep)] px-3 py-2 text-sm text-[var(--text)] outline-none transition placeholder:text-[var(--faint)] focus:border-[var(--accent)]"
+                  inputMode="numeric"
+                  maxLength={8}
+                  onChange={(event) => setPinDraft(event.target.value.replace(/[^0-9]/g, "").slice(0, 8))}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      void saveNickname();
+                    }
+                  }}
+                  placeholder="PIN 4~8자리"
+                  type="password"
+                  value={pinDraft}
                 />
                 <button
                   className="rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-bold text-[var(--accent-text)] transition hover:brightness-110 disabled:opacity-55"
