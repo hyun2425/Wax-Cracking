@@ -28,14 +28,28 @@ public class PeopleQuizWebSocketHandler extends TextWebSocketHandler {
   private static String clean(String s){return Normalizer.normalize(s,Normalizer.Form.NFKC).replaceAll("\\s+","").toLowerCase(Locale.ROOT);}
   private record Question(String answer,String category,String hint,String imageUrl,String sourceUrl,String license) {}
   private record Player(String id,String name,int score) {}
+  /** Photo files are bundled with the frontend; each filename is the answer. */
   private static final List<Question> QUESTIONS=List.of(
-    new Question("아이유","연예인","본명은 이지은인 가수이자 배우","https://commons.wikimedia.org/wiki/Special:FilePath/IU%20the%20Korean%20Singer.jpg","https://commons.wikimedia.org/wiki/File:IU_the_Korean_Singer.jpg","CC BY-SA 3.0 · Modamoda"),
-    new Question("박보검","연예인","드라마 구르미 그린 달빛에 출연한 배우","https://commons.wikimedia.org/wiki/Special:FilePath/Park%20Bogum.png","https://commons.wikimedia.org/wiki/File:Park_Bogum.png","CC BY 3.0"),
-    new Question("손예진","연예인","드라마 사랑의 불시착에 출연한 배우","https://commons.wikimedia.org/wiki/Special:FilePath/Son%20Ye-jin.png","https://commons.wikimedia.org/wiki/File:Son_Ye-jin.png","CC BY-SA 2.0 · Korea.net / 한국문화정보원"),
-    new Question("김혜수","연예인","청룡영화상 진행자로도 잘 알려진 배우","https://commons.wikimedia.org/wiki/Special:FilePath/Kim%20Hye-Soo.jpg","https://commons.wikimedia.org/wiki/File:Kim_Hye-Soo.jpg","CC BY 4.0"),
-    new Question("한소희","연예인","드라마 부부의 세계로 주목받은 배우","https://commons.wikimedia.org/wiki/Special:FilePath/20250525%20Han%20Sohee%2001.jpg","https://commons.wikimedia.org/wiki/File:20250525_Han_Sohee_01.jpg","CC BY 3.0 · 티비텐 TV10"),
-    new Question("이병헌","연예인","영화 내부자들과 드라마 오징어 게임에 출연한 배우","https://commons.wikimedia.org/wiki/Special:FilePath/Lee%20Byung-hun.jpg","https://commons.wikimedia.org/wiki/File:Lee_Byung-hun.jpg","CC BY-SA 2.0 · christian razukas")
+    localQuestion("권나라", "배우 겸 가수로 활동했습니다."),
+    localQuestion("기안84", "웹툰 작가이자 예능인입니다."),
+    localQuestion("나영석", "여러 여행 예능을 연출한 PD입니다."),
+    localQuestion("민지", "뉴진스의 멤버입니다."),
+    localQuestion("뷔", "BTS의 멤버입니다."),
+    localQuestion("아이유", "본명은 이지은인 가수 겸 배우입니다."),
+    localQuestion("안유진", "아이브의 리더입니다."),
+    localQuestion("원희", "아일릿의 멤버입니다."),
+    localQuestion("이종석", "드라마 피노키오에 출연한 배우입니다."),
+    localQuestion("장원영", "아이브의 멤버입니다."),
+    localQuestion("장항준", "영화와 예능에서 활동하는 감독입니다."),
+    localQuestion("재현", "NCT의 멤버입니다."),
+    localQuestion("침착맨", "웹툰 작가 출신의 인터넷 방송인입니다."),
+    localQuestion("필릭스", "스트레이 키즈의 멤버입니다."),
+    localQuestion("화사", "마마무의 멤버입니다.")
   );
+
+  private static Question localQuestion(String answer, String hint) {
+    return new Question(answer, "연예인", hint, "/people-quiz/" + answer + ".jpg", "", "사용자 제공 사진");
+  }
   private final class Room {
     final String code; final Map<String,WebSocketSession> sessions=new LinkedHashMap<>();final Map<String,Player> players=new LinkedHashMap<>();final List<Map<String,Object>> chat=new ArrayList<>(); final Set<Question> used=new HashSet<>();String host="",category="전체";Question question;boolean solved;int round;
     Room(String c){code=c;} synchronized void join(WebSocketSession s){sessions.put(s.getId(),s);players.put(s.getId(),new Player(s.getId(),"Player "+players.size()+1,0));if(host.isBlank())host=s.getId();}
