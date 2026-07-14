@@ -48,16 +48,35 @@ public class PeopleQuizWebSocketHandler extends TextWebSocketHandler {
     localQuestion("재현", "NCT의 멤버입니다."),
     localQuestion("침착맨", "웹툰 작가 출신의 인터넷 방송인입니다."),
     localQuestion("필릭스", "스트레이 키즈의 멤버입니다."),
-    localQuestion("화사", "마마무의 멤버입니다.")
+    localQuestion("화사", "마마무의 멤버입니다."),
+    localQuestion("강하늘"), localQuestion("고윤정"), localQuestion("공유"),
+    localQuestion("김고은"), localQuestion("김무열"), localQuestion("김혜수"),
+    localQuestion("남주혁"), localQuestion("노윤서"), localQuestion("레이"),
+    localQuestion("박명수"), localQuestion("변우석"), localQuestion("사쿠라"),
+    localQuestion("손흥민"), localQuestion("안효섭"), localQuestion("원이"),
+    localQuestion("윈터"), localQuestion("유식"), localQuestion("유재석"),
+    localQuestion("이광수"), localQuestion("이영지"), localQuestion("이은지"),
+    localQuestion("이재용"), localQuestion("재서", "사진 속 인물의 이름을 맞혀보세요.", "png"), localQuestion("전지현"),
+    localQuestion("지코"), localQuestion("찰스엔터"), localQuestion("채원"),
+    localQuestion("최우식"), localQuestion("카더가든"), localQuestion("카리나"),
+    localQuestion("킹키")
   );
 
+  private static Question localQuestion(String answer) {
+    return localQuestion(answer, "사진 속 인물의 이름을 맞혀보세요.");
+  }
+
   private static Question localQuestion(String answer, String hint) {
+    return localQuestion(answer, hint, "jpg");
+  }
+
+  private static Question localQuestion(String answer, String hint, String extension) {
     String aliases = switch (answer) {
       case "권나라" -> "신예진,예진";
       case "재현" -> "정재현";
       default -> "";
     };
-    return new Question(answer, aliases, "연예인", hint, "/people-quiz/" + answer + ".jpg", "", "사용자 제공 사진");
+    return new Question(answer, aliases, "연예인", hint, "/people-quiz/" + answer + "." + extension, "", "사용자 제공 사진");
   }
   private final class Room {
     final String code; final Map<String,WebSocketSession> sessions=new LinkedHashMap<>();final Map<String,Player> players=new LinkedHashMap<>();final List<Map<String,Object>> chat=new ArrayList<>(); final Set<Question> used=new HashSet<>();String host="",category="전체";Question question;boolean solved;int round;int hintLevel;
