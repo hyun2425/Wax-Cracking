@@ -331,6 +331,8 @@ export default function Home() {
             <Link href="/gomoku">gomoku</Link>
             <Link href="/catchmind">catchmind</Link>
             <Link href="/people-quiz">인물 퀴즈</Link>
+            <Link href="/initial-quiz">초성 퀴즈</Link>
+            <Link href="/dinner-vote">회식 메뉴</Link>
           </div>
         </nav>
 

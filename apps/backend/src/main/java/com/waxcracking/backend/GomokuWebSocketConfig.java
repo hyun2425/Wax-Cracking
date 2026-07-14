@@ -15,6 +15,7 @@ public class GomokuWebSocketConfig implements WebSocketConfigurer {
 	private final GomokuWebSocketHandler gomokuWebSocketHandler;
 	private final CatchMindWebSocketHandler catchMindWebSocketHandler;
 	private final PeopleQuizWebSocketHandler peopleQuizWebSocketHandler;
+	private final DinnerVoteWebSocketHandler dinnerVoteWebSocketHandler;
 
 	@Value("${app.cors.allowed-origin-patterns}")
 	private String allowedOriginPatterns;
@@ -22,10 +23,12 @@ public class GomokuWebSocketConfig implements WebSocketConfigurer {
 	public GomokuWebSocketConfig(
 			GomokuWebSocketHandler gomokuWebSocketHandler,
 			CatchMindWebSocketHandler catchMindWebSocketHandler,
-			PeopleQuizWebSocketHandler peopleQuizWebSocketHandler) {
+			PeopleQuizWebSocketHandler peopleQuizWebSocketHandler,
+			DinnerVoteWebSocketHandler dinnerVoteWebSocketHandler) {
 		this.gomokuWebSocketHandler = gomokuWebSocketHandler;
 		this.catchMindWebSocketHandler = catchMindWebSocketHandler;
 		this.peopleQuizWebSocketHandler = peopleQuizWebSocketHandler;
+		this.dinnerVoteWebSocketHandler = dinnerVoteWebSocketHandler;
 	}
 
 	@Override
@@ -40,6 +43,8 @@ public class GomokuWebSocketConfig implements WebSocketConfigurer {
 		registry.addHandler(catchMindWebSocketHandler, "/ws/catchmind")
 				.setAllowedOriginPatterns(patterns);
 		registry.addHandler(peopleQuizWebSocketHandler, "/ws/people-quiz")
+				.setAllowedOriginPatterns(patterns);
+		registry.addHandler(dinnerVoteWebSocketHandler, "/ws/dinner-vote")
 				.setAllowedOriginPatterns(patterns);
 	}
 }
