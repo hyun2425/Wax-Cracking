@@ -26,7 +26,7 @@ public class PeopleQuizWebSocketHandler extends TextWebSocketHandler {
   @Override public void afterConnectionClosed(WebSocketSession s, CloseStatus x) throws IOException { Room r=rooms.get(sessionRooms.remove(s.getId()));if(r!=null){r.leave(s);if(r.sessions.isEmpty())rooms.remove(r.code);else r.broadcast();} }
   private String roomCode(URI u){String raw=u==null?"":UriComponentsBuilder.fromUri(u).build().getQueryParams().getFirst("room");String c=(raw==null?"":raw).replaceAll("[^A-Za-z0-9]","").toUpperCase(Locale.ROOT);return c.isBlank()?"LOBBY":c.substring(0,Math.min(12,c.length()));}
   private static String clean(String s){return Normalizer.normalize(s,Normalizer.Form.NFKC).replaceAll("\\s+","").toLowerCase(Locale.ROOT);}
-  private record Question(String answer,String category,String hint,String imageUrl,String sourceUrl,String license) {}
+  private record Question(String answer,String aliases,String category,String hint,String imageUrl,String sourceUrl,String license) {}
   private record Player(String id,String name,int score) {}
   /** Photo files are bundled with the frontend; each filename is the answer. */
   private static final List<Question> QUESTIONS=List.of(
@@ -48,7 +48,12 @@ public class PeopleQuizWebSocketHandler extends TextWebSocketHandler {
   );
 
   private static Question localQuestion(String answer, String hint) {
-    return new Question(answer, "연예인", hint, "/people-quiz/" + answer + ".jpg", "", "사용자 제공 사진");
+    String aliases = switch (answer) {
+      case "권나라" -> "신예진,예진";
+      case "재현" -> "정재현";
+      default -> "";
+    };
+    return new Question(answer, aliases, "연예인", hint, "/people-quiz/" + answer + ".jpg", "", "사용자 제공 사진");
   }
   private final class Room {
     final String code; final Map<String,WebSocketSession> sessions=new LinkedHashMap<>();final Map<String,Player> players=new LinkedHashMap<>();final List<Map<String,Object>> chat=new ArrayList<>(); final Set<Question> used=new HashSet<>();String host="",category="전체";Question question;boolean solved;int round;
@@ -57,7 +62,8 @@ public class PeopleQuizWebSocketHandler extends TextWebSocketHandler {
     synchronized void profile(WebSocketSession s,String n)throws IOException{Player p=players.get(s.getId());if(p!=null&&!n.isBlank())players.put(p.id(),new Player(p.id(),n.strip().substring(0,Math.min(16,n.strip().length())),p.score()));broadcast();}
     synchronized void category(WebSocketSession s,String c)throws IOException{if(host.equals(s.getId())){category="연예인";question=null;solved=false;broadcast();}}
     synchronized void start(WebSocketSession s)throws IOException{if(!host.equals(s.getId()))return;List<Question> pool=QUESTIONS.stream().filter(q->"전체".equals(category)||q.category().equals(category)).filter(q->!used.contains(q)).toList();if(pool.isEmpty()){used.clear();pool=QUESTIONS.stream().filter(q->"전체".equals(category)||q.category().equals(category)).toList();}question=pool.get(new Random().nextInt(pool.size()));used.add(question);solved=false;round++;chat.clear();note(round+"번째 문제를 시작합니다. 가장 먼저 정답을 맞히면 100점!");broadcast();}
-    synchronized void guess(WebSocketSession s,String a)throws IOException{if(question==null||solved)return;Player p=players.get(s.getId());if(p==null||a.isBlank())return;if(clean(a).equals(clean(question.answer()))){solved=true;players.put(p.id(),new Player(p.id(),p.name(),p.score()+100));note(p.name()+" got it first! +100");broadcast();}else chat(s,a);}
+    synchronized void guess(WebSocketSession s,String a)throws IOException{if(question==null||solved)return;Player p=players.get(s.getId());if(p==null||a.isBlank())return;if(isCorrectAnswer(a)){solved=true;players.put(p.id(),new Player(p.id(),p.name(),p.score()+100));note(p.name()+"님이 가장 먼저 정답을 맞혔습니다! +100점");broadcast();}else chat(s,a);}
+    private boolean isCorrectAnswer(String guess) { String normalized=clean(guess); return clean(question.answer()).equals(normalized) || Arrays.stream(question.aliases().split(",")).filter(alias->!alias.isBlank()).map(PeopleQuizWebSocketHandler::clean).anyMatch(normalized::equals); }
     synchronized void chat(WebSocketSession s,String m)throws IOException{Player p=players.get(s.getId());if(p==null||m.isBlank())return;chat.add(Map.of("sender",p.name(),"message",m.strip().substring(0,Math.min(100,m.strip().length())),"system",false));broadcast();}
     synchronized void hint(WebSocketSession s)throws IOException{if(host.equals(s.getId())&&question!=null){chat.add(Map.of("sender","HINT","message",question.hint(),"system",true));broadcast();}}
     synchronized void reveal(WebSocketSession s)throws IOException{if(host.equals(s.getId())&&question!=null){solved=true;broadcast();}}
