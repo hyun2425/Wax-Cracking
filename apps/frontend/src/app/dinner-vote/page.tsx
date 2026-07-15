@@ -17,6 +17,9 @@ const restaurantGuide: Record<string, Restaurant[]> = {
   "회·해산물": [
     { name: "범수산", note: "강남대로84길 · 회·해산물" },
   ],
+  "장어·보양식": [
+    { name: "화담장어 강남점", note: "사임당로 · 민물장어" },
+  ],
   "족발·보쌈": [
     { name: "뽕족 강남역본점", note: "테헤란로4길 · 족발·막국수" },
   ],
@@ -26,12 +29,15 @@ const restaurantGuide: Record<string, Restaurant[]> = {
     { name: "신도세기 강남역점", note: "서초대로78길 · 돼지고기" },
     { name: "교대이층집 강남역점", note: "강남대로78길 · 꽃삼겹" },
     { name: "반갑다하대포 강남역점", note: "강남역권 · 숙성 돼지고기" },
+    { name: "풍년참숯갈비 강남점", note: "서초대로74길 · 돼지갈비" },
+    { name: "뼈탄집 강남역점", note: "강남역권 · 돼지고기" },
   ],
   "소고기·갈비": [
     { name: "더하누", note: "서초대로74길 · 한우·한식" },
     { name: "됐소 강남점", note: "강남역권 · 한우·한돈" },
     { name: "청기와타운 강남점", note: "강남대로78길 · 수원왕갈비" },
     { name: "우탭 강남점", note: "서초대로78길 · 숙성 한우" },
+    { name: "도마3", note: "서초대로78길 · 한우 화로구이" },
   ],
   "양고기": [
     { name: "고메램 강남점", note: "강남역권 · 양고기" },
@@ -40,6 +46,7 @@ const restaurantGuide: Record<string, Restaurant[]> = {
   "중식": [
     { name: "초선과여포", note: "서초대로78길 · 중식" },
     { name: "딘타이펑 강남역점", note: "서초대로73길 · 딤섬" },
+    { name: "현화림 서초본점", note: "강남역권 · 중식" },
   ],
   "양식": [
     { name: "알렉스루카", note: "강남대로 · 모던 비스트로" },
@@ -81,6 +88,37 @@ const secondStopsByDistrict: Record<string, Restaurant[]> = {
     { name: "생활맥주 강남역점", note: "수제맥주·치킨 · 가벼운 2차" },
     { name: "오늘와인한잔 강남우성점", note: "와인·하이볼 · 2개 층 좌석" },
   ],
+};
+const verifiedSecondStopsByDistrict: Record<string, Restaurant[]> = {
+  gangnam11: [
+    { name: "오늘와인한잔 강남우성점", note: "와인·하이볼" },
+    { name: "생활맥주 강남역점", note: "수제맥주·치킨" },
+    { name: "시선 강남점", note: "캐주얼 이자카야" },
+  ],
+  gangnam45: [
+    { name: "이자카야나무 삼성타운점", note: "룸형 이자카야" },
+    { name: "카이키 강남", note: "다이닝 사카바" },
+    { name: "느린마을양조장&펍 강남점", note: "막걸리·한식 안주" },
+  ],
+  yeoksam: [
+    { name: "카이키 강남", note: "다이닝 사카바" },
+    { name: "생활맥주 강남역점", note: "수제맥주·치킨" },
+    { name: "오늘와인한잔 강남우성점", note: "와인·하이볼" },
+  ],
+};
+void secondStopsByDistrict;
+const selectedDistrictByRestaurant: Record<string, string> = {
+  "범수산": "gangnam11",
+  "뽕족 강남역본점": "gangnam11",
+  "화담장어 강남점": "yeoksam",
+  "더하누": "gangnam45",
+  "됐소 강남점": "gangnam45",
+  "청기와타운 강남점": "gangnam45",
+  "우탭 강남점": "gangnam45",
+  "도마3": "gangnam45",
+  "풍년참숯갈비 강남점": "gangnam45",
+  "뼈탄집 강남역점": "gangnam45",
+  "현화림 서초본점": "gangnam45",
 };
 const restaurantDistrict: Record<string, string> = {
   "양파이 강남점": "gangnam11", "고메램 강남점": "gangnam11", "세광양대창 강남역중앙점": "gangnam11", "차슈밍": "gangnam11", "가장맛있는족발 강남1호점": "gangnam11", "황해도 족발보쌈": "gangnam11", "족발야시장 신논현역점": "gangnam11", "중화객잔수 강남점": "gangnam11", "청기와타운": "gangnam45", "칸나 닭집": "gangnam45", "칸나칼국수&칸나닭집": "gangnam45", "잡어와묵은지": "gangnam45", "다미선": "gangnam45", "진스시": "gangnam45", "장서는날": "gangnam45", "이자카야나무 삼성타운점": "gangnam45", "창고43 강남점": "gangnam45", "진대감 강남역삼성타운점": "gangnam45", "도정육관 강남본점": "gangnam45", "한성양꼬치 강남2호점": "gangnam45", "양국": "yeoksam", "마노디셰프 강남점": "yeoksam", "일편등심 강남점": "yeoksam", "착한고기 강남역점": "yeoksam", "육랩 강남본점": "yeoksam", "강삼가든": "yeoksam", "육전식당 4호점": "yeoksam", "더막창스": "yeoksam", "청계숲양대창 강남직영점": "yeoksam", "어거스트힐 강남점": "yeoksam",
@@ -163,8 +201,8 @@ export default function DinnerVotePage() {
   const recommendations = winner ? restaurantGuide[winner.name] ?? [] : [];
   function setSelectedRestaurant(restaurant: Restaurant | null) {
     if (restaurant) {
-      const district = restaurantDistrict[restaurant.name] ?? "gangnam45";
-      secondStops.splice(0, secondStops.length, ...secondStopsByDistrict[district].map((place) => ({ ...place, note: `${place.note} · ${restaurant.name} 출발 경로는 지도에서 확인` })));
+      const district = selectedDistrictByRestaurant[restaurant.name] ?? restaurantDistrict[restaurant.name] ?? "gangnam45";
+      secondStops.splice(0, secondStops.length, ...verifiedSecondStopsByDistrict[district].map((place) => ({ ...place, note: `${place.note} · ${restaurant.name} 출발 경로는 지도에서 확인` })));
     }
     setSelectedRestaurantState(restaurant);
   }

@@ -24,6 +24,7 @@ public class DinnerVoteWebSocketHandler extends TextWebSocketHandler {
   private static final TypeReference<Map<String, Object>> MAP = new TypeReference<>() {};
   private static final List<String> DEFAULT_MENUS = List.of(
       "회·해산물",
+      "장어·보양식",
       "족발·보쌈",
       "삼겹살·돼지고기",
       "소고기·갈비",
