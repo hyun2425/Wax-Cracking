@@ -90,6 +90,106 @@ html.dinner-vote-page:not(.dinner-vote-submitted) main > div > section > aside::
   color: #f5e4d4;
 }
 
+/* Dinner vote visual hierarchy: quiet surfaces, one decisive action color. */
+html.dinner-vote-page main {
+  background:
+    radial-gradient(circle at 88% 6%, rgba(59, 130, 246, 0.14), transparent 28rem),
+    linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
+  color: #172033;
+}
+
+html.dinner-vote-page main > div {
+  max-width: 70rem;
+}
+
+html.dinner-vote-page main nav {
+  align-items: center;
+}
+
+html.dinner-vote-page main nav > span {
+  border: 1px solid #dbe4f0;
+  background: #ffffff;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
+}
+
+html.dinner-vote-page .dinner-vote-share {
+  border-radius: 0.75rem;
+  background: #2563eb;
+  box-shadow: 0 6px 14px rgba(37, 99, 235, 0.22);
+}
+
+html.dinner-vote-page header {
+  border-bottom: 1px solid #dbe4f0;
+  padding-bottom: 1.5rem;
+}
+
+html.dinner-vote-page header > div > p:first-child {
+  color: #2563eb;
+}
+
+html.dinner-vote-page header h1 {
+  letter-spacing: -0.045em;
+}
+
+html.dinner-vote-page main > div > section > div,
+html.dinner-vote-page main > div > section + section {
+  border-color: #dbe4f0;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+}
+
+html.dinner-vote-page main > div > section > div > div:first-child button {
+  background: #172033;
+}
+
+html.dinner-vote-page main > div > section > div > div:nth-child(2) > button {
+  border-color: #dbe4f0;
+  background: #ffffff;
+  box-shadow: 0 2px 5px rgba(15, 23, 42, 0.025);
+}
+
+html.dinner-vote-page main > div > section > div > div:nth-child(2) > button:hover {
+  border-color: #93c5fd;
+  background: #eff6ff;
+}
+
+html.dinner-vote-page main > div > section > aside,
+html.dinner-vote-page main > div > section + section > div:last-child {
+  background: linear-gradient(145deg, #172033 0%, #243554 100%);
+  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.16);
+}
+
+html.dinner-vote-page main > div > section > aside button:last-child {
+  background: #2563eb;
+}
+
+html.dinner-vote-page main > div > section + section > div:nth-of-type(1) > article {
+  border-color: #dbe4f0;
+  background: #fbfdff;
+}
+
+@media (max-width: 640px) {
+  html.dinner-vote-page main {
+    padding-top: 1rem;
+  }
+
+  html.dinner-vote-page main nav {
+    gap: 0.5rem;
+  }
+
+  html.dinner-vote-page main nav > span {
+    padding: 0.5rem 0.7rem;
+  }
+
+  html.dinner-vote-page .dinner-vote-share {
+    padding: 0.6rem 0.75rem;
+    font-size: 0.75rem;
+  }
+
+  html.dinner-vote-page header {
+    padding-bottom: 1rem;
+  }
+}
+
 .quiz-input {
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 0.9rem;
