@@ -194,6 +194,38 @@ export default function DinnerVotePage() {
     return () => shareButton.remove();
   }, [room]);
 
+  useEffect(() => {
+    const tone: Record<string, string> = {
+      "오늘 회식, 뭘 먹을까?": "오늘 회식 메뉴를 함께 정해 보세요",
+      "이름 없이 입장해 먹고 싶은 음식 종류 2개를 익명 투표하세요.": "이름을 입력하지 않고, 선호하는 메뉴 두 가지를 익명으로 선택해 주세요.",
+      "새 익명 투표방 만들기": "익명 투표방 만들기",
+      "익명 입장": "투표방 입장하기",
+      "먹고 싶은 음식 종류 2개를 골라요": "선호하는 음식 종류 두 가지를 선택해 주세요",
+      "음식 종류 투표": "메뉴 유형 선택",
+      "내 투표 제출": "투표 결과 확인하기",
+      "현재 순위": "투표 결과",
+      "상위 음식 종류 중 랜덤 선택": "상위 후보 중 무작위 선택",
+      "랜덤으로 고르기": "무작위로 정하기",
+      "예약 가능한 단체 식당을 골라 주세요. 예약 가능 시간과 단체석은 네이버 지도에서 최종 확인합니다.": "선택하신 메뉴에 맞는 식당 후보입니다. 예약 가능 시간과 단체석은 지도에서 최종 확인해 주세요.",
+      "이 식당 선택": "이 식당으로 정하기",
+      "2차는 예약 없이 방문해도 됩니다. 인원·시간에 맞는 곳을 골라 보세요.": "2차 장소는 인원과 분위기에 맞춰 선택해 주세요. 방문 전 영업 정보를 확인하시면 좋습니다.",
+      "네이버 지도 보기": "지도에서 보기",
+    };
+    const rewrite = () => {
+      const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+      let node = walker.nextNode();
+      while (node) {
+        const replacement = tone[node.textContent ?? ""];
+        if (replacement) node.textContent = replacement;
+        node = walker.nextNode();
+      }
+    };
+    const observer = new MutationObserver(rewrite);
+    rewrite();
+    observer.observe(document.body, { childList: true, characterData: true, subtree: true });
+    return () => observer.disconnect();
+  }, []);
+
   const isHost = state.you === state.hostId;
   const canVote = picked.length === 2;
   const hasSubmitted = state.myVotes.length === 2;
