@@ -28,8 +28,6 @@ public class DinnerVoteWebSocketHandler extends TextWebSocketHandler {
       "삼겹살·돼지고기",
       "소고기·갈비",
       "양고기",
-      "곱창·대창",
-      "닭구이·치킨",
       "중식",
       "양식",
       "한식주점·전골");
