@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 
 type Quiz = {
   id: string;
@@ -10,6 +10,15 @@ type Quiz = {
   hint?: string;
   custom?: boolean;
 };
+
+type RoomState = {
+  room: string; hostId: string; you: string; category: string; categories: string[]; round: number; solved: boolean; hintVisible: boolean;
+  initials?: string; questionCategory?: string; hint?: string; answer?: string; players: { id: string; name: string; score: number }[];
+};
+
+const emptyRoom: RoomState = { room: "", hostId: "", you: "", category: "전체", categories: [], round: 0, solved: false, hintVisible: false, players: [] };
+const socketBase = () => (process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ?? (location.hostname === "localhost" ? "http://localhost:8080" : "https://wax-cracking-backend.onrender.com")).replace(/^http/, "ws");
+const makeRoomCode = () => Array.from({ length: 6 }, () => "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"[Math.floor(Math.random() * 32)]).join("");
 
 const STORAGE_KEY = "wax-cracking-initial-quiz-custom";
 const builtInQuizzes: Quiz[] = [
@@ -65,6 +74,24 @@ export default function InitialQuizPage() {
   const [newCategory, setNewCategory] = useState("음식");
   const [newAnswer, setNewAnswer] = useState("");
   const [newHint, setNewHint] = useState("");
+  const [hintOpened, setHintOpened] = useState(false);
+  const [roomCode, setRoomCode] = useState("");
+  const [roomDraft, setRoomDraft] = useState("");
+  const [nickname, setNickname] = useState("");
+  const [roomState, setRoomState] = useState<RoomState>(emptyRoom);
+  const [roomAnswer, setRoomAnswer] = useState("");
+  const [connected, setConnected] = useState(false);
+  const socket = useRef<WebSocket | null>(null);
+
+  useEffect(() => {
+    if (!roomCode) return;
+    const nextSocket = new WebSocket(`${socketBase()}/ws/initial-quiz?room=${roomCode}`);
+    socket.current = nextSocket;
+    nextSocket.onopen = () => { setConnected(true); nextSocket.send(JSON.stringify({ type: "profile", value: nickname || "플레이어" })); };
+    nextSocket.onclose = () => setConnected(false);
+    nextSocket.onmessage = (event) => { const data = JSON.parse(event.data) as RoomState & { type: string }; if (data.type === "state") setRoomState(data); };
+    return () => nextSocket.close();
+  }, [roomCode, nickname]);
 
   const categories = useMemo(
     () => ["전체", ...Array.from(new Set([...builtInQuizzes, ...customQuizzes].map((quiz) => quiz.category)))],
@@ -80,6 +107,23 @@ export default function InitialQuizPage() {
     setAnswer("");
     setResult("idle");
     setShowAnswer(false);
+    setHintOpened(false);
+  }
+
+  function sendRoom(type: string, value = "") {
+    if (socket.current?.readyState === WebSocket.OPEN) socket.current.send(JSON.stringify({ type, value }));
+  }
+
+  function joinRoom(code: string) {
+    const normalized = code.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 12);
+    if (nickname.trim() && normalized) { setRoomCode(normalized); setRoomState(emptyRoom); setRoomAnswer(""); }
+  }
+
+  function submitRoomAnswer(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!roomAnswer.trim()) return;
+    sendRoom("guess", roomAnswer);
+    setRoomAnswer("");
   }
 
   function changeCategory(nextCategory: string) {
@@ -138,6 +182,10 @@ export default function InitialQuizPage() {
           <p className="mt-4 text-base leading-7 text-[#806a5b]">카테고리를 골라 풀고, 우리만의 문제도 직접 출제해 보세요.</p>
         </header>
 
+        <section className="mb-7 rounded-[28px] border border-[#e6c9b6] bg-[#2b211b] p-5 text-white shadow-[0_18px_45px_rgba(123,71,39,0.12)] sm:p-7">
+          {!roomCode ? <div className="grid gap-4 md:grid-cols-[1fr_auto]"><div><p className="text-xs font-black tracking-[.2em] text-[#f5b184]">MULTIPLAYER</p><h2 className="mt-2 text-2xl font-black">친구와 함께 풀기</h2><p className="mt-2 text-sm text-white/65">방 코드를 공유하면 같은 초성 문제를 누가 먼저 맞히는지 겨룰 수 있어요.</p><input className="mt-4 w-full max-w-sm rounded-xl border border-white/15 bg-white/10 px-4 py-3 font-bold outline-none" maxLength={16} onChange={(event) => setNickname(event.target.value)} placeholder="내 닉네임" value={nickname} /></div><div className="flex flex-col justify-center gap-2"><button className="rounded-xl bg-[#f6a26e] px-5 py-3 font-black text-[#2b211b] disabled:opacity-40" disabled={!nickname.trim()} onClick={() => joinRoom(makeRoomCode())} type="button">방 만들기</button><div className="flex gap-2"><input className="w-32 rounded-xl bg-white/10 px-3 py-2 text-sm font-bold outline-none" onChange={(event) => setRoomDraft(event.target.value)} placeholder="방 코드" value={roomDraft} /><button className="rounded-xl border border-white/20 px-4 text-sm font-bold disabled:opacity-40" disabled={!nickname.trim() || !roomDraft.trim()} onClick={() => joinRoom(roomDraft)} type="button">입장</button></div></div></div> : <div><div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs font-black tracking-[.2em] text-[#f5b184]">MULTIPLAYER ROOM</p><h2 className="mt-1 text-2xl font-black">방 코드 <span className="ml-2 tracking-[.22em] text-[#f6a26e]">{roomCode}</span></h2></div><span className="text-sm font-bold text-white/65">{connected ? "실시간 연결됨" : "연결 중..."}</span></div><div className="mt-5 grid gap-4 lg:grid-cols-[1fr_220px]"><div className="rounded-2xl bg-white/10 p-5 text-center"><div className="flex flex-wrap justify-center gap-2">{roomState.categories.map((item) => <button className={`rounded-full px-3 py-1.5 text-xs font-black ${roomState.category === item ? "bg-[#f6a26e] text-[#2b211b]" : "bg-white/10"}`} disabled={roomState.you !== roomState.hostId} key={item} onClick={() => sendRoom("category", item)} type="button">{item}</button>)}</div>{roomState.initials ? <><p className="mt-5 text-xs font-bold text-white/60">{roomState.questionCategory} · {roomState.round}번째 문제</p><p className="mt-3 text-3xl font-black tracking-[.2em] text-[#f6a26e] sm:text-5xl">{roomState.initials}</p>{roomState.hintVisible && <p className="mt-3 text-sm font-bold text-white/75">힌트: {roomState.hint}</p>}{roomState.solved && <p className="mt-3 text-xl font-black text-emerald-300">정답: {roomState.answer}</p>}<form className="mt-5 flex gap-2" onSubmit={submitRoomAnswer}><input className="min-w-0 flex-1 rounded-xl bg-white px-3 py-2 font-bold text-[#2b211b]" disabled={roomState.solved} onChange={(event) => setRoomAnswer(event.target.value)} placeholder="정답 입력" value={roomAnswer} /><button className="rounded-xl bg-[#f6a26e] px-4 font-black text-[#2b211b]">확인</button></form></> : <p className="py-8 text-sm font-bold text-white/60">방장이 게임 시작을 기다리고 있어요.</p>} {roomState.you === roomState.hostId && <div className="mt-4 flex justify-center gap-2"><button className="rounded-xl border border-white/25 px-3 py-2 text-xs font-bold" disabled={!roomState.initials || roomState.solved} onClick={() => sendRoom("hint")} type="button">힌트 공개</button><button className="rounded-xl bg-[#f6a26e] px-3 py-2 text-xs font-black text-[#2b211b]" onClick={() => sendRoom(roomState.initials ? "next" : "start")} type="button">{roomState.initials ? "다음 문제" : "게임 시작"}</button></div>}</div><aside className="rounded-2xl bg-white/10 p-4"><p className="text-xs font-black tracking-widest text-white/60">순위</p><div className="mt-3 space-y-2">{roomState.players.map((player, index) => <div className="flex justify-between rounded-lg bg-black/10 px-3 py-2 text-sm" key={player.id}><span>{index + 1}. {player.name}</span><b>{player.score}</b></div>)}</div></aside></div></div>}
+        </section>
+
         <div className="grid gap-7 lg:grid-cols-[minmax(0,1fr)_340px]">
           <section className="rounded-[28px] border border-[#f0d8c7] bg-white p-5 shadow-[0_18px_45px_rgba(123,71,39,0.09)] sm:p-8">
             <div className="flex flex-wrap gap-2" aria-label="카테고리 선택">
@@ -147,7 +195,7 @@ export default function InitialQuizPage() {
               <div className="mt-10 text-center">
                 <p className="text-sm font-bold text-[#a47f6b]">{currentQuiz.category}{currentQuiz.custom ? " · 내가 만든 문제" : ""}</p>
                 <div className="my-5 rounded-3xl bg-[#fff7f0] px-4 py-9 text-4xl font-black tracking-[.22em] text-[#d46337] sm:text-6xl">{toChoseong(currentQuiz.answer)}</div>
-                <p className="min-h-6 text-sm font-bold text-[#806a5b]">힌트: {currentQuiz.hint || "없음"}</p>
+                {hintOpened ? <p className="min-h-6 text-sm font-bold text-[#806a5b]">힌트: {currentQuiz.hint || "없음"}</p> : <button className="min-h-6 text-sm font-bold text-[#a47f6b] underline underline-offset-4" onClick={() => setHintOpened(true)} type="button">힌트 보기</button>}
               </div>
               <form onSubmit={submitAnswer} className="mt-7 flex gap-2">
                 <input autoComplete="off" className="min-w-0 flex-1 rounded-xl border border-[#ecd5c5] px-4 py-3 font-bold outline-none focus:border-[#d46337]" disabled={showAnswer || result === "correct"} onChange={(event) => setAnswer(event.target.value)} placeholder="정답을 입력하세요" value={answer} />
