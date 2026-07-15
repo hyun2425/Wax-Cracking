@@ -79,7 +79,6 @@ const secondStopsByDistrict: Record<string, Restaurant[]> = {
     { name: "언더그라운드", note: "강남역권 · 맥주·펍" },
     { name: "생활맥주 강남역점", note: "수제맥주·치킨 · 가벼운 2차" },
     { name: "오늘와인한잔 강남우성점", note: "와인·하이볼 · 2개 층 좌석" },
-    { name: "슈퍼스타 코인노래연습장 강남역점", note: "노래방 2차 · 테헤란로1길" },
   ],
   gangnam45: [
     { name: "이자카야나무 삼성타운점", note: "강남역 5번 출구권 · 룸형 이자카야" },
@@ -87,7 +86,6 @@ const secondStopsByDistrict: Record<string, Restaurant[]> = {
     { name: "이자카야 센야 본점", note: "강남역 1~4번 출구권 · 숯불꼬치 이자카야" },
     { name: "생활맥주 강남역점", note: "수제맥주·치킨 · 가벼운 2차" },
     { name: "오늘와인한잔 강남우성점", note: "와인·하이볼 · 2개 층 좌석" },
-    { name: "슈퍼스타 코인노래연습장 강남역점", note: "노래방 2차 · 테헤란로1길" },
   ],
   yeoksam: [
     { name: "이자카야나무 삼성타운점", note: "강남역 5번 출구권 · 룸형 이자카야" },
@@ -95,7 +93,6 @@ const secondStopsByDistrict: Record<string, Restaurant[]> = {
     { name: "이자카야 센야 본점", note: "강남역 1~4번 출구권 · 숯불꼬치 이자카야" },
     { name: "생활맥주 강남역점", note: "수제맥주·치킨 · 가벼운 2차" },
     { name: "오늘와인한잔 강남우성점", note: "와인·하이볼 · 2개 층 좌석" },
-    { name: "슈퍼스타 코인노래연습장 강남역점", note: "노래방 2차 · 테헤란로1길" },
   ],
 };
 const restaurantDistrict: Record<string, string> = {

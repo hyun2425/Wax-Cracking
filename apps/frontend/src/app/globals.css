@@ -152,8 +152,7 @@ html.dinner-vote-page main > div > section > div > div:nth-child(2) > button:hov
   background: #eff6ff;
 }
 
-html.dinner-vote-page main > div > section > aside,
-html.dinner-vote-page main > div > section + section > div:last-child {
+html.dinner-vote-page main > div > section > aside {
   background: linear-gradient(145deg, #172033 0%, #243554 100%);
   box-shadow: 0 16px 36px rgba(15, 23, 42, 0.16);
 }
@@ -165,6 +164,28 @@ html.dinner-vote-page main > div > section > aside button:last-child {
 html.dinner-vote-page main > div > section + section > div:nth-of-type(1) > article {
   border-color: #dbe4f0;
   background: #fbfdff;
+}
+
+html.dinner-vote-page main > div > section + section > div:has(> p) {
+  border: 1px solid #dbe4f0;
+  background: #f1f5f9;
+  box-shadow: none;
+  color: #172033;
+}
+
+html.dinner-vote-page main > div > section + section > div:has(> p) > p {
+  color: #2563eb;
+}
+
+html.dinner-vote-page main > div > section + section > div:has(> p) > h3 {
+  color: #172033;
+}
+
+html.dinner-vote-page main > div > section + section > div:has(> p) article {
+  border: 1px solid #dbe4f0;
+  background: #ffffff;
+  color: #172033;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
 }
 
 @media (max-width: 640px) {
