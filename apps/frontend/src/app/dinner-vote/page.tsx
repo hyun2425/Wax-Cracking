@@ -37,11 +37,11 @@ const restaurantGuide: Record<string, Restaurant[]> = {
     { name: "됐소 강남점", note: "강남역권 · 한우·한돈" },
     { name: "청기와타운 강남점", note: "강남대로78길 · 수원왕갈비" },
     { name: "우탭 강남점", note: "서초대로78길 · 숙성 한우" },
-    { name: "도마3", note: "서초대로78길 · 한우 화로구이" },
+    { name: "도마3", note: "서초대로78길 · 한우 화로구이 · 매주 수요일 휴무" },
   ],
   "양고기": [
     { name: "고메램 강남점", note: "강남역권 · 양고기" },
-    { name: "한성양꼬치 강남2호점", note: "역삼로3길 · 양꼬치·지삼선" },
+    { name: "한성양꼬치 강남점", note: "역삼로3길 · 양꼬치·지삼선" },
   ],
   "중식": [
     { name: "초선과여포", note: "서초대로78길 · 중식" },
@@ -127,8 +127,23 @@ const officeWalkMinutes: Record<string, number> = {
   "잡어와묵은지": 5, "다미선": 6, "진스시": 7, "가장맛있는족발 강남1호점": 7, "황해도 족발보쌈": 8, "족발야시장 신논현역점": 9, "청기와타운": 4, "강삼가든": 8, "육전식당 4호점": 12, "일편등심 강남점": 10, "착한고기 강남역점": 8, "육랩 강남본점": 9, "창고43 강남점": 3, "진대감 강남역삼성타운점": 5, "도정육관 강남본점": 5, "양파이 강남점": 8, "고메램 강남점": 7, "양국": 12, "세광양대창 강남역중앙점": 8, "더막창스": 10, "청계숲양대창 강남직영점": 6, "칸나 닭집": 4, "칸나칼국수&칸나닭집": 4, "중화객잔수 강남점": 8, "차슈밍": 8, "마노디셰프 강남점": 11, "어거스트힐 강남점": 7, "장서는날": 7, "이자카야나무 삼성타운점": 3,
 };
 void officeWalkMinutes;
+const verifiedOfficeWalkMinutes: Record<string, number> = {
+  "한성양꼬치 강남점": 7,
+  "고메램 강남점": 1,
+  "더하누": 3,
+  "됐소 강남점": 1,
+  "청기와타운 강남점": 5,
+  "우탭 강남점": 3,
+  "도마3": 2,
+  "화담장어 강남점": 3,
+  "범수산": 7,
+  "뽕족 강남역본점": 8,
+};
 Object.values(restaurantGuide).flat().forEach((restaurant) => {
-  restaurant.note += " · 인포텍코퍼레이션 출발 경로는 지도에서 확인";
+  const minutes = verifiedOfficeWalkMinutes[restaurant.name];
+  restaurant.note += minutes === undefined
+    ? " · 인포텍코퍼레이션 출발 경로는 지도에서 확인"
+    : ` · 인포텍코퍼레이션에서 도보 ${minutes}분`;
 });
 
 export default function DinnerVotePage() {
