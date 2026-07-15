@@ -25,6 +25,11 @@ a {
   text-decoration: none;
 }
 
+a[href*="map.naver.com"] {
+  background: #e8743b !important;
+  color: #ffffff !important;
+}
+
 .quiz-input {
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 0.9rem;
