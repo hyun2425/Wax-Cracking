@@ -22,7 +22,17 @@ import java.util.concurrent.ConcurrentHashMap;
 @Component
 public class DinnerVoteWebSocketHandler extends TextWebSocketHandler {
   private static final TypeReference<Map<String, Object>> MAP = new TypeReference<>() {};
-  private static final List<String> DEFAULT_MENUS = List.of("Korean BBQ", "Chicken", "Sashimi", "Pork belly", "Chinese food", "Pizza");
+  private static final List<String> DEFAULT_MENUS = List.of(
+      "회·해산물",
+      "족발·보쌈",
+      "삼겹살·돼지고기",
+      "소고기·갈비",
+      "양고기",
+      "곱창·대창",
+      "닭구이·치킨",
+      "중식",
+      "양식",
+      "한식주점·전골");
   private final ObjectMapper json = new ObjectMapper();
   private final Map<String, Room> rooms = new ConcurrentHashMap<>();
   private final Map<String, String> sessionRooms = new ConcurrentHashMap<>();
