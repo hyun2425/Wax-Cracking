@@ -70,6 +70,32 @@ const secondStops: Restaurant[] = [
   { name: "정글", note: "강남역 지오다노골목 · 단체석·예약 가능" },
   { name: "언더그라운드", note: "강남역권 · 맥주·펍 · 단체석 예약 가능" },
 ];
+const secondStopsByDistrict: Record<string, Restaurant[]> = {
+  gangnam11: [
+    { name: "이자카야나무 CGV점", note: "강남역 11번 출구·신논현역 사이 · 이자카야" },
+    { name: "정글", note: "강남역 지오다노골목 · 맥주·호프" },
+    { name: "언더그라운드", note: "강남역권 · 맥주·펍" },
+  ],
+  gangnam45: [
+    { name: "이자카야나무 삼성타운점", note: "강남역 5번 출구권 · 룸형 이자카야" },
+    { name: "이태원천상 강남역점", note: "강남역 6번 출구권 · 가림막 좌석 이자카야" },
+    { name: "이자카야 센야 본점", note: "강남역 1~4번 출구권 · 숯불꼬치 이자카야" },
+  ],
+  yeoksam: [
+    { name: "이자카야나무 삼성타운점", note: "강남역 5번 출구권 · 룸형 이자카야" },
+    { name: "이태원천상 강남역점", note: "강남역 6번 출구권 · 가림막 좌석 이자카야" },
+    { name: "이자카야 센야 본점", note: "강남역 1~4번 출구권 · 숯불꼬치 이자카야" },
+  ],
+};
+const restaurantDistrict: Record<string, string> = {
+  "양파이 강남점": "gangnam11", "고메램 강남점": "gangnam11", "세광양대창 강남역중앙점": "gangnam11", "차슈밍": "gangnam11", "가장맛있는족발 강남1호점": "gangnam11", "황해도 족발보쌈": "gangnam11", "족발야시장 신논현역점": "gangnam11", "중화객잔수 강남점": "gangnam11", "청기와타운": "gangnam45", "칸나 닭집": "gangnam45", "칸나칼국수&칸나닭집": "gangnam45", "잡어와묵은지": "gangnam45", "다미선": "gangnam45", "진스시": "gangnam45", "장서는날": "gangnam45", "이자카야나무 삼성타운점": "gangnam45", "양국": "yeoksam", "마노디셰프 강남점": "yeoksam", "일편등심 강남점": "yeoksam", "착한고기 강남역점": "yeoksam", "육랩 강남본점": "yeoksam", "강삼가든": "yeoksam", "육전식당 4호점": "yeoksam", "더막창스": "yeoksam", "청계숲양대창 강남직영점": "yeoksam", "어거스트힐 강남점": "yeoksam",
+};
+const officeWalkMinutes: Record<string, number> = {
+  "잡어와묵은지": 5, "다미선": 6, "진스시": 7, "가장맛있는족발 강남1호점": 7, "황해도 족발보쌈": 8, "족발야시장 신논현역점": 9, "청기와타운": 4, "강삼가든": 8, "육전식당 4호점": 12, "일편등심 강남점": 10, "착한고기 강남역점": 8, "육랩 강남본점": 9, "양파이 강남점": 8, "고메램 강남점": 7, "양국": 12, "세광양대창 강남역중앙점": 8, "더막창스": 10, "청계숲양대창 강남직영점": 6, "칸나 닭집": 4, "칸나칼국수&칸나닭집": 4, "중화객잔수 강남점": 8, "차슈밍": 8, "마노디셰프 강남점": 11, "어거스트힐 강남점": 7, "장서는날": 7, "이자카야나무 삼성타운점": 3,
+};
+Object.values(restaurantGuide).flat().forEach((restaurant) => {
+  restaurant.note += ` · 인포텍코퍼레이션에서 도보 약 ${officeWalkMinutes[restaurant.name] ?? 8}분`;
+});
 
 export default function DinnerVotePage() {
   const [code, setCode] = useState("");
@@ -79,7 +105,7 @@ export default function DinnerVotePage() {
   const [newMenu, setNewMenu] = useState("");
   const [topCount, setTopCount] = useState(3);
   const [winner, setWinner] = useState<RankedMenu | null>(null);
-  const [selectedRestaurant, setSelectedRestaurant] = useState<Restaurant | null>(null);
+  const [selectedRestaurant, setSelectedRestaurantState] = useState<Restaurant | null>(null);
   const ws = useRef<WebSocket | null>(null);
 
   useEffect(() => {
@@ -97,6 +123,14 @@ export default function DinnerVotePage() {
   const canVote = picked.length === 2;
   const ranked = useMemo(() => state.menus.map((menu, index) => ({ ...menu, rank: index + 1 })), [state.menus]);
   const recommendations = winner ? restaurantGuide[winner.name] ?? [] : [];
+  function setSelectedRestaurant(restaurant: Restaurant | null) {
+    if (restaurant) {
+      const district = restaurantDistrict[restaurant.name] ?? "gangnam45";
+      const walkMinutes = district === "gangnam11" ? [4, 6, 7] : district === "yeoksam" ? [8, 9, 10] : [3, 5, 7];
+      secondStops.splice(0, secondStops.length, ...secondStopsByDistrict[district].map((place, index) => ({ ...place, note: `${place.note} · ${restaurant.name}에서 도보 약 ${walkMinutes[index]}분` })));
+    }
+    setSelectedRestaurantState(restaurant);
+  }
 
   function toggle(id: string) {
     setWinner(null); setSelectedRestaurant(null);
