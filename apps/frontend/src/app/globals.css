@@ -30,6 +30,66 @@ a[href*="map.naver.com"] {
   color: #ffffff !important;
 }
 
+/* Dinner vote: keep each decision stage easy to scan and tap. */
+main:has(a[href*="map.naver.com"]) button,
+main:has(a[href*="map.naver.com"]) a {
+  min-height: 2.75rem;
+}
+
+main:has(a[href*="map.naver.com"]) article {
+  transition: border-color 160ms ease, box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+main:has(a[href*="map.naver.com"]) article:hover {
+  box-shadow: 0 12px 28px rgba(116, 75, 45, 0.12);
+  transform: translateY(-2px);
+}
+
+@media (max-width: 640px) {
+  main:has(a[href*="map.naver.com"]) h1 {
+    font-size: 2rem;
+    line-height: 1.2;
+  }
+
+  main:has(a[href*="map.naver.com"]) h2 {
+    font-size: 1.5rem;
+  }
+}
+
+/* Anonymous vote results stay private until the current participant submits. */
+html.dinner-vote-page:not(.dinner-vote-submitted) main > div > header > div > p,
+html.dinner-vote-page:not(.dinner-vote-submitted) main > div > section > div button span.mt-1.block {
+  display: none;
+}
+
+html.dinner-vote-page:not(.dinner-vote-submitted) main > div > header > div::after {
+  content: "내 투표를 제출하면 전체 순위와 득표 수를 확인할 수 있어요.";
+  display: block;
+  margin-top: 0.5rem;
+  color: #78695d;
+}
+
+html.dinner-vote-page:not(.dinner-vote-submitted) main > div > section > aside {
+  display: flex;
+  min-height: 18rem;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+html.dinner-vote-page:not(.dinner-vote-submitted) main > div > section > aside > * {
+  display: none;
+}
+
+html.dinner-vote-page:not(.dinner-vote-submitted) main > div > section > aside::before {
+  content: "투표 후 공개\A\A두 가지 메뉴를 골라\A내 투표를 제출해 주세요.";
+  white-space: pre-line;
+  font-weight: 800;
+  line-height: 1.65;
+  color: #f5e4d4;
+}
+
 .quiz-input {
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 0.9rem;

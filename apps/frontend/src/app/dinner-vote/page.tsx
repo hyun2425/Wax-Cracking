@@ -108,6 +108,13 @@ export default function DinnerVotePage() {
   const ws = useRef<WebSocket | null>(null);
 
   useEffect(() => {
+    const sharedRoom = new URLSearchParams(window.location.search).get("room")?.toUpperCase().trim();
+    if (!sharedRoom) return;
+    const frame = window.requestAnimationFrame(() => setRoom(sharedRoom));
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
+
+  useEffect(() => {
     if (!room) return;
     const socket = new WebSocket(`${socketBase()}/ws/dinner-vote?room=${room}`);
     ws.current = socket;
@@ -118,8 +125,43 @@ export default function DinnerVotePage() {
     return () => socket.close();
   }, [room]);
 
+  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.add("dinner-vote-page");
+    root.classList.toggle("dinner-vote-submitted", state.myVotes.length === 2);
+    return () => root.classList.remove("dinner-vote-page", "dinner-vote-submitted");
+  }, [state.myVotes]);
+
+  useEffect(() => {
+    if (!room) return;
+    const shareUrl = new URL(window.location.href);
+    shareUrl.searchParams.set("room", room);
+    window.history.replaceState(null, "", shareUrl);
+
+    const nav = document.querySelector("main nav");
+    const shareButton = document.createElement("button");
+    shareButton.type = "button";
+    shareButton.textContent = "방 링크 공유";
+    shareButton.className = "dinner-vote-share rounded-xl bg-[#e8743b] px-4 py-2.5 text-sm font-black text-white";
+    shareButton.onclick = async () => {
+      try {
+        if (navigator.share) await navigator.share({ title: "회식 메뉴 익명 투표", url: shareUrl.toString() });
+        else {
+          if (navigator.clipboard) {
+            await navigator.clipboard.writeText(shareUrl.toString());
+            shareButton.textContent = "링크 복사 완료";
+            window.setTimeout(() => { shareButton.textContent = "방 링크 공유"; }, 1600);
+          } else window.prompt("아래 링크를 복사해 팀원에게 보내세요.", shareUrl.toString());
+        }
+      } catch { /* Sharing can be cancelled without affecting the vote. */ }
+    };
+    nav?.appendChild(shareButton);
+    return () => shareButton.remove();
+  }, [room]);
+
   const isHost = state.you === state.hostId;
   const canVote = picked.length === 2;
+  const hasSubmitted = state.myVotes.length === 2;
   const ranked = useMemo(() => state.menus.map((menu, index) => ({ ...menu, rank: index + 1 })), [state.menus]);
   const recommendations = winner ? restaurantGuide[winner.name] ?? [] : [];
   function setSelectedRestaurant(restaurant: Restaurant | null) {
@@ -137,6 +179,7 @@ export default function DinnerVotePage() {
   }
   function submitVote() { if (canVote) ws.current?.send(JSON.stringify({ type: "vote", menuIds: picked })); }
   function chooseRandom() {
+    if (!hasSubmitted) return;
     const candidates = ranked.slice(0, Math.min(topCount, ranked.length));
     if (!candidates.length) return;
     setWinner(candidates[Math.floor(Math.random() * candidates.length)]);
