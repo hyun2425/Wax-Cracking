@@ -27,15 +27,19 @@ const restaurantGuide: Record<string, Restaurant[]> = {
     { name: "청기와타운", note: "강남역 도보권 · 룸·단체석 · 네이버/캐치테이블 예약" },
     { name: "강삼가든", note: "강남역권 · 단체석 · 테이블링 예약" },
     { name: "육전식당 4호점", note: "역삼권 · 구워주는 삼겹살 · 단체 방문 전 예약 권장" },
+    { name: "도정육관 강남본점", note: "강남역 5번 출구권 · 룸 · 테이블링 예약 가능" },
   ],
   "소고기·갈비": [
     { name: "일편등심 강남점", note: "강남역권 · 최대 14인 단독 룸 · 예약 가능" },
     { name: "착한고기 강남역점", note: "강남역권 · 단체석 · 예약 가능" },
     { name: "육랩 강남본점", note: "강남역 도보권 · 프라이빗 룸·단체석 · 예약 가능" },
+    { name: "창고43 강남점", note: "강남역 4번 출구 앞 · 룸·단체석 · 네이버/캐치테이블 예약" },
+    { name: "진대감 강남역삼성타운점", note: "강남역 5번 출구권 · 차돌삼합 · 테이블링 예약 가능" },
   ],
   "양고기": [
     { name: "양파이 강남점", note: "강남역 11번 출구권 · 룸·단체석 · 예약 가능" },
     { name: "고메램 강남점", note: "강남역 도보권 · 단체석 · 3인 이상 예약 가능" },
+    { name: "한성양꼬치 강남2호점", note: "역삼로3길 · 양꼬치·지삼선 · 테이블링 예약 가능" },
     { name: "양국", note: "역삼역권 · 최대 70석 · 네이버 예약·단체 이용 가능" },
     { name: "육랩 강남본점", note: "강남역 도보권 · 양갈비·갈비살 · 프라이빗 룸 예약 가능" },
   ],
@@ -74,26 +78,36 @@ const secondStopsByDistrict: Record<string, Restaurant[]> = {
     { name: "이자카야나무 CGV점", note: "강남역 11번 출구·신논현역 사이 · 이자카야" },
     { name: "정글", note: "강남역 지오다노골목 · 맥주·호프" },
     { name: "언더그라운드", note: "강남역권 · 맥주·펍" },
+    { name: "생활맥주 강남역점", note: "수제맥주·치킨 · 가벼운 2차" },
+    { name: "오늘와인한잔 강남우성점", note: "와인·하이볼 · 2개 층 좌석" },
+    { name: "슈퍼스타 코인노래연습장 강남역점", note: "노래방 2차 · 테헤란로1길" },
   ],
   gangnam45: [
     { name: "이자카야나무 삼성타운점", note: "강남역 5번 출구권 · 룸형 이자카야" },
     { name: "이태원천상 강남역점", note: "강남역 6번 출구권 · 가림막 좌석 이자카야" },
     { name: "이자카야 센야 본점", note: "강남역 1~4번 출구권 · 숯불꼬치 이자카야" },
+    { name: "생활맥주 강남역점", note: "수제맥주·치킨 · 가벼운 2차" },
+    { name: "오늘와인한잔 강남우성점", note: "와인·하이볼 · 2개 층 좌석" },
+    { name: "슈퍼스타 코인노래연습장 강남역점", note: "노래방 2차 · 테헤란로1길" },
   ],
   yeoksam: [
     { name: "이자카야나무 삼성타운점", note: "강남역 5번 출구권 · 룸형 이자카야" },
     { name: "이태원천상 강남역점", note: "강남역 6번 출구권 · 가림막 좌석 이자카야" },
     { name: "이자카야 센야 본점", note: "강남역 1~4번 출구권 · 숯불꼬치 이자카야" },
+    { name: "생활맥주 강남역점", note: "수제맥주·치킨 · 가벼운 2차" },
+    { name: "오늘와인한잔 강남우성점", note: "와인·하이볼 · 2개 층 좌석" },
+    { name: "슈퍼스타 코인노래연습장 강남역점", note: "노래방 2차 · 테헤란로1길" },
   ],
 };
 const restaurantDistrict: Record<string, string> = {
-  "양파이 강남점": "gangnam11", "고메램 강남점": "gangnam11", "세광양대창 강남역중앙점": "gangnam11", "차슈밍": "gangnam11", "가장맛있는족발 강남1호점": "gangnam11", "황해도 족발보쌈": "gangnam11", "족발야시장 신논현역점": "gangnam11", "중화객잔수 강남점": "gangnam11", "청기와타운": "gangnam45", "칸나 닭집": "gangnam45", "칸나칼국수&칸나닭집": "gangnam45", "잡어와묵은지": "gangnam45", "다미선": "gangnam45", "진스시": "gangnam45", "장서는날": "gangnam45", "이자카야나무 삼성타운점": "gangnam45", "양국": "yeoksam", "마노디셰프 강남점": "yeoksam", "일편등심 강남점": "yeoksam", "착한고기 강남역점": "yeoksam", "육랩 강남본점": "yeoksam", "강삼가든": "yeoksam", "육전식당 4호점": "yeoksam", "더막창스": "yeoksam", "청계숲양대창 강남직영점": "yeoksam", "어거스트힐 강남점": "yeoksam",
+  "양파이 강남점": "gangnam11", "고메램 강남점": "gangnam11", "세광양대창 강남역중앙점": "gangnam11", "차슈밍": "gangnam11", "가장맛있는족발 강남1호점": "gangnam11", "황해도 족발보쌈": "gangnam11", "족발야시장 신논현역점": "gangnam11", "중화객잔수 강남점": "gangnam11", "청기와타운": "gangnam45", "칸나 닭집": "gangnam45", "칸나칼국수&칸나닭집": "gangnam45", "잡어와묵은지": "gangnam45", "다미선": "gangnam45", "진스시": "gangnam45", "장서는날": "gangnam45", "이자카야나무 삼성타운점": "gangnam45", "창고43 강남점": "gangnam45", "진대감 강남역삼성타운점": "gangnam45", "도정육관 강남본점": "gangnam45", "한성양꼬치 강남2호점": "gangnam45", "양국": "yeoksam", "마노디셰프 강남점": "yeoksam", "일편등심 강남점": "yeoksam", "착한고기 강남역점": "yeoksam", "육랩 강남본점": "yeoksam", "강삼가든": "yeoksam", "육전식당 4호점": "yeoksam", "더막창스": "yeoksam", "청계숲양대창 강남직영점": "yeoksam", "어거스트힐 강남점": "yeoksam",
 };
 const officeWalkMinutes: Record<string, number> = {
-  "잡어와묵은지": 5, "다미선": 6, "진스시": 7, "가장맛있는족발 강남1호점": 7, "황해도 족발보쌈": 8, "족발야시장 신논현역점": 9, "청기와타운": 4, "강삼가든": 8, "육전식당 4호점": 12, "일편등심 강남점": 10, "착한고기 강남역점": 8, "육랩 강남본점": 9, "양파이 강남점": 8, "고메램 강남점": 7, "양국": 12, "세광양대창 강남역중앙점": 8, "더막창스": 10, "청계숲양대창 강남직영점": 6, "칸나 닭집": 4, "칸나칼국수&칸나닭집": 4, "중화객잔수 강남점": 8, "차슈밍": 8, "마노디셰프 강남점": 11, "어거스트힐 강남점": 7, "장서는날": 7, "이자카야나무 삼성타운점": 3,
+  "잡어와묵은지": 5, "다미선": 6, "진스시": 7, "가장맛있는족발 강남1호점": 7, "황해도 족발보쌈": 8, "족발야시장 신논현역점": 9, "청기와타운": 4, "강삼가든": 8, "육전식당 4호점": 12, "일편등심 강남점": 10, "착한고기 강남역점": 8, "육랩 강남본점": 9, "창고43 강남점": 3, "진대감 강남역삼성타운점": 5, "도정육관 강남본점": 5, "양파이 강남점": 8, "고메램 강남점": 7, "양국": 12, "세광양대창 강남역중앙점": 8, "더막창스": 10, "청계숲양대창 강남직영점": 6, "칸나 닭집": 4, "칸나칼국수&칸나닭집": 4, "중화객잔수 강남점": 8, "차슈밍": 8, "마노디셰프 강남점": 11, "어거스트힐 강남점": 7, "장서는날": 7, "이자카야나무 삼성타운점": 3,
 };
+void officeWalkMinutes;
 Object.values(restaurantGuide).flat().forEach((restaurant) => {
-  restaurant.note += ` · 인포텍코퍼레이션에서 도보 약 ${officeWalkMinutes[restaurant.name] ?? 8}분`;
+  restaurant.note += " · 인포텍코퍼레이션 출발 경로는 지도에서 확인";
 });
 
 export default function DinnerVotePage() {
@@ -167,8 +181,7 @@ export default function DinnerVotePage() {
   function setSelectedRestaurant(restaurant: Restaurant | null) {
     if (restaurant) {
       const district = restaurantDistrict[restaurant.name] ?? "gangnam45";
-      const walkMinutes = district === "gangnam11" ? [4, 6, 7] : district === "yeoksam" ? [8, 9, 10] : [3, 5, 7];
-      secondStops.splice(0, secondStops.length, ...secondStopsByDistrict[district].map((place, index) => ({ ...place, note: `${place.note} · ${restaurant.name}에서 도보 약 ${walkMinutes[index]}분` })));
+      secondStops.splice(0, secondStops.length, ...secondStopsByDistrict[district].map((place) => ({ ...place, note: `${place.note} · ${restaurant.name} 출발 경로는 지도에서 확인` })));
     }
     setSelectedRestaurantState(restaurant);
   }
