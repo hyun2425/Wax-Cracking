@@ -328,6 +328,7 @@ export default function Home() {
             <Link href="/hsj-ver">hsj.ver</Link>
             <Link href="/njjey-ver">njjey.ver</Link>
             <Link href="/ruby-gamja-walk-quest">ruby-gamja</Link>
+            <Link href="/red-panda">레서판다</Link>
             <Link href="/gomoku">gomoku</Link>
             <Link href="/catchmind">catchmind</Link>
             <Link href="/people-quiz">인물 퀴즈</Link>
