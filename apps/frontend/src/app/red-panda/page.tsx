@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 
 type Need = "hunger" | "fun" | "energy";
@@ -59,7 +60,6 @@ export default function RedPandaPage() {
   const level = Math.floor(xp / 100) + 1;
   const levelProgress = xp % 100;
   const mood = useMemo(() => Math.round((needs.hunger + needs.fun + needs.energy) / 3), [needs]);
-  const face = isSleeping ? "😴" : mood > 75 ? "🥰" : mood > 45 ? "🦊" : "🥺";
 
   function careFor(key: Need) {
     const action = actions.find((item) => item.key === key)!;
@@ -115,12 +115,10 @@ export default function RedPandaPage() {
               <div className="rounded-2xl bg-white/75 px-4 py-3 backdrop-blur"><p className="text-xs font-black text-[#a55f45]">LEVEL {level}</p><p className="text-lg font-black">숲속 꼬마</p></div>
               <div className="rounded-2xl bg-white/75 px-4 py-3 text-right backdrop-blur"><p className="text-xs font-black text-[#a55f45]">기분</p><p className="text-lg font-black">{mood}%</p></div>
             </div>
-            <div className="relative mt-8 flex h-64 items-center justify-center">
-              <div className="absolute bottom-0 h-12 w-64 rounded-[50%] bg-[#719a4e]/30 blur-md" />
-              <div className={`relative grid h-52 w-52 place-items-center rounded-[44%_44%_48%_48%] border-8 border-[#5a3429] bg-[#d65f3d] text-7xl shadow-[inset_18px_-15px_0_rgba(114,48,35,0.22),0_18px_20px_rgba(86,54,36,0.2)] transition-transform ${isSleeping ? "rotate-3 scale-95" : "hover:-rotate-2 hover:scale-[1.03]"}`}>
-                <span className="absolute -left-3 -top-5 h-20 w-20 rounded-full border-8 border-[#5a3429] bg-[#d65f3d]" /><span className="absolute -right-3 -top-5 h-20 w-20 rounded-full border-8 border-[#5a3429] bg-[#d65f3d]" />
-                <span className="relative z-10 grid h-36 w-38 place-items-center rounded-[48%] bg-[#fff4df]">{face}</span>
-                <span className="absolute -bottom-5 right-[-40px] h-20 w-32 -rotate-12 rounded-full border-8 border-[#5a3429] bg-[repeating-linear-gradient(130deg,#d65f3d_0_14px,#fff0d6_14px_25px)]" />
+            <div className="red-panda-meadow relative mt-6 h-72 overflow-hidden rounded-[26px] border border-white/45 bg-[#c8e7a8]/35">
+              <span className="absolute bottom-4 left-[8%] text-3xl">🌿</span><span className="absolute bottom-7 right-[12%] text-2xl">🌱</span><span className="absolute bottom-3 right-[34%] text-xl">🍄</span>
+              <div className={`red-panda-walker ${isSleeping ? "is-sleeping" : ""}`}>
+                <Image src="/red-panda/red-panda-walk.png" alt={`${name} 레서판다`} fill priority sizes="(max-width: 640px) 280px, 370px" />
               </div>
             </div>
             <p className="relative mx-auto mt-5 max-w-md rounded-2xl bg-white/80 px-5 py-4 text-center font-bold leading-6 shadow-sm">“{message}”</p>
@@ -140,6 +138,14 @@ export default function RedPandaPage() {
         </section>
         <button type="button" onClick={explore} className="mt-6 w-full rounded-3xl bg-[#5f8d51] px-6 py-5 text-lg font-black text-white shadow-[0_12px_24px_rgba(72,117,65,0.25)] transition hover:bg-[#527b46]">🌲 대나무 숲 탐험하기 <span className="ml-2 text-sm opacity-80">랜덤 보상 획득</span></button>
       </div>
+      <style jsx>{`
+        .red-panda-meadow::after { content: ""; position: absolute; inset: auto 0 0; height: 42px; background: repeating-linear-gradient(90deg, rgba(74,130,62,.32) 0 3px, transparent 3px 18px); opacity: .6; }
+        .red-panda-walker { position: absolute; bottom: 23px; left: -12%; width: 350px; height: 255px; animation: panda-stroll 11s ease-in-out infinite alternate; }
+        .red-panda-walker :global(img) { object-fit: contain; filter: drop-shadow(0 15px 10px rgba(74, 66, 36, .18)); }
+        .is-sleeping { animation-play-state: paused; transform: translateX(42%) scale(.84) rotate(5deg); transform-origin: bottom center; }
+        @keyframes panda-stroll { 0% { transform: translateX(0) translateY(0); } 25% { transform: translateX(42%) translateY(-5px); } 55% { transform: translateX(115%) translateY(0); } 78% { transform: translateX(164%) translateY(-5px) scaleX(-1); } 100% { transform: translateX(208%) translateY(0) scaleX(-1); } }
+        @media (max-width: 640px) { .red-panda-walker { width: 275px; height: 220px; left: -22%; animation-name: panda-stroll-small; } @keyframes panda-stroll-small { 0% { transform: translateX(0); } 100% { transform: translateX(130%) scaleX(-1); } } }
+      `}</style>
     </main>
   );
 }
