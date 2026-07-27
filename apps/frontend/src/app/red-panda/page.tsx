@@ -4,25 +4,27 @@ import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 
-type Need = "hunger" | "fun" | "energy";
+type Need = "hunger" | "fun" | "energy" | "clean";
 
 const actions: { key: Need; icon: string; label: string; detail: string; color: string }[] = [
   { key: "hunger", icon: "🎋", label: "대나무 주기", detail: "배고픔 +24", color: "#ef8b4d" },
   { key: "fun", icon: "🧶", label: "공놀이", detail: "즐거움 +22", color: "#d86363" },
   { key: "energy", icon: "🛏️", label: "낮잠 자기", detail: "체력 +26", color: "#5978b8" },
+  { key: "clean", icon: "🫧", label: "보금자리 청소", detail: "청결 +25", color: "#58aeb3" },
 ];
 
 const messages = {
   hunger: ["아삭아삭! 대나무가 제일 좋아.", "양손으로 꼭 잡고 맛있게 먹는 중!", "대나무 잎까지 남김없이 냠냠."],
   fun: ["데굴데굴! 공이 도망가요!", "꼬리가 풍성해질 만큼 신났어!", "한 번 더 놀자고 눈을 반짝여요."],
   energy: ["나무 위에서 포근하게 낮잠…", "하품 한 번, 기분 좋은 충전 완료!", "웅크리고 쉬니 체력이 돌아왔어."],
+  clean: ["뽀송뽀송! 깨끗한 보금자리가 마음에 들어요.", "발바닥까지 꼼꼼하게 닦았어요!", "향긋한 새 이불에서 꼬리를 말고 있어요."],
 };
 
 function clamp(value: number) {
   return Math.max(0, Math.min(100, value));
 }
 
-type SaveData = { name?: string; needs?: Record<Need, number>; coins?: number; xp?: number };
+type SaveData = { name?: string; needs?: Partial<Record<Need, number>>; coins?: number; xp?: number; careCount?: number };
 
 function getSavedGame(): SaveData {
   if (typeof window === "undefined") return {};
@@ -34,17 +36,18 @@ function getSavedGame(): SaveData {
 }
 
 export default function RedPandaPage() {
-  const [name, setName] = useState(() => getSavedGame().name ?? "모찌");
-  const [needs, setNeeds] = useState<Record<Need, number>>(() => getSavedGame().needs ?? { hunger: 68, fun: 62, energy: 74 });
+  const [name, setName] = useState(() => getSavedGame().name ?? "포코");
+  const [needs, setNeeds] = useState<Record<Need, number>>(() => ({ hunger: 68, fun: 62, energy: 74, clean: 80, ...getSavedGame().needs }));
   const [coins, setCoins] = useState(() => getSavedGame().coins ?? 18);
   const [xp, setXp] = useState(() => getSavedGame().xp ?? 35);
-  const [message, setMessage] = useState("모찌가 새 보금자리를 둘러보고 있어요.");
+  const [message, setMessage] = useState("포코가 새 보금자리를 둘러보고 있어요.");
   const [isSleeping, setIsSleeping] = useState(false);
   const [actionCount, setActionCount] = useState(0);
+  const [careCount, setCareCount] = useState(() => getSavedGame().careCount ?? 0);
 
   useEffect(() => {
-    window.localStorage.setItem("red-panda-care", JSON.stringify({ name, needs, coins, xp }));
-  }, [coins, name, needs, xp]);
+    window.localStorage.setItem("red-panda-care", JSON.stringify({ name, needs, coins, xp, careCount }));
+  }, [careCount, coins, name, needs, xp]);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -52,6 +55,7 @@ export default function RedPandaPage() {
         hunger: clamp(current.hunger - 2),
         fun: clamp(current.fun - 1),
         energy: clamp(current.energy - 1),
+        clean: clamp(current.clean - 2),
       }));
     }, 12000);
     return () => window.clearInterval(timer);
@@ -59,16 +63,18 @@ export default function RedPandaPage() {
 
   const level = Math.floor(xp / 100) + 1;
   const levelProgress = xp % 100;
-  const mood = useMemo(() => Math.round((needs.hunger + needs.fun + needs.energy) / 3), [needs]);
+  const mood = useMemo(() => Math.round((needs.hunger + needs.fun + needs.energy + needs.clean) / 4), [needs]);
+  const lifeStage = level >= 4 ? "숲 지킴이" : level >= 2 ? "꼬마 탐험가" : "아기 판다";
 
   function careFor(key: Need) {
     const action = actions.find((item) => item.key === key)!;
-    const gain = key === "hunger" ? 24 : key === "fun" ? 22 : 26;
+    const gain = key === "hunger" ? 24 : key === "fun" ? 22 : key === "energy" ? 26 : 25;
     const nextMessage = messages[key][actionCount % messages[key].length];
     setNeeds((current) => ({ ...current, [key]: clamp(current[key] + gain) }));
     setXp((current) => current + 14);
     setCoins((current) => current + 3);
     setActionCount((current) => current + 1);
+    setCareCount((current) => current + 1);
     setMessage(nextMessage);
     if (key === "energy") {
       setIsSleeping(true);
@@ -103,7 +109,7 @@ export default function RedPandaPage() {
           </div>
           <label className="rounded-2xl border border-[#f0d8ba] bg-white px-4 py-3 text-sm font-bold shadow-sm">
             이름
-            <input aria-label="레서판다 이름" className="ml-3 w-20 border-b border-[#e6caa9] bg-transparent text-center font-black outline-none" maxLength={8} value={name} onChange={(event) => setName(event.target.value || "모찌")} />
+            <input aria-label="레서판다 이름" className="ml-3 w-20 border-b border-[#e6caa9] bg-transparent text-center font-black outline-none" maxLength={8} value={name} onChange={(event) => setName(event.target.value || "포코")} />
           </label>
         </header>
 
@@ -112,7 +118,7 @@ export default function RedPandaPage() {
             <div className="absolute left-[-40px] top-16 h-44 w-44 rounded-full bg-[#8ac28a]/35 blur-2xl" />
             <div className="absolute right-[-50px] bottom-[-45px] h-56 w-56 rounded-full bg-[#f3b369]/35 blur-2xl" />
             <div className="relative flex items-start justify-between">
-              <div className="rounded-2xl bg-white/75 px-4 py-3 backdrop-blur"><p className="text-xs font-black text-[#a55f45]">LEVEL {level}</p><p className="text-lg font-black">숲속 꼬마</p></div>
+              <div className="rounded-2xl bg-white/75 px-4 py-3 backdrop-blur"><p className="text-xs font-black text-[#a55f45]">LEVEL {level}</p><p className="text-lg font-black">{lifeStage}</p></div>
               <div className="rounded-2xl bg-white/75 px-4 py-3 text-right backdrop-blur"><p className="text-xs font-black text-[#a55f45]">기분</p><p className="text-lg font-black">{mood}%</p></div>
             </div>
             <div className="red-panda-meadow relative mt-6 h-72 overflow-hidden rounded-[26px] border border-white/45 bg-[#c8e7a8]/35">
@@ -125,15 +131,15 @@ export default function RedPandaPage() {
           </div>
 
           <aside className="rounded-[32px] border border-[#f1d7b9] bg-white p-6 shadow-[0_16px_40px_rgba(157,91,52,0.1)]">
-            <h2 className="text-xl font-black">{name}의 오늘</h2>
+            <div className="flex items-center justify-between"><h2 className="text-xl font-black">{name}의 오늘</h2><span className="rounded-full bg-[#fff0d7] px-3 py-1 text-xs font-black text-[#aa6044]">돌봄 {careCount}회</span></div>
             <div className="mt-5 space-y-5">
-              {actions.map((action) => <div key={action.key}><div className="mb-2 flex justify-between text-sm font-black"><span>{action.icon} {action.key === "hunger" ? "배부름" : action.key === "fun" ? "즐거움" : "체력"}</span><span>{needs[action.key]}%</span></div><div className="h-3 overflow-hidden rounded-full bg-[#f4eadf]"><div className="h-full rounded-full transition-all duration-500" style={{ width: `${needs[action.key]}%`, background: action.color }} /></div></div>)}
+              {actions.map((action) => <div key={action.key}><div className="mb-2 flex justify-between text-sm font-black"><span>{action.icon} {action.key === "hunger" ? "배부름" : action.key === "fun" ? "즐거움" : action.key === "energy" ? "체력" : "청결"}</span><span>{needs[action.key]}%</span></div><div className="h-3 overflow-hidden rounded-full bg-[#f4eadf]"><div className="h-full rounded-full transition-all duration-500" style={{ width: `${needs[action.key]}%`, background: action.color }} /></div></div>)}
             </div>
             <div className="mt-8 border-t border-[#f1e2d2] pt-5"><div className="flex justify-between text-sm font-black"><span>다음 레벨까지</span><span>{levelProgress}/100</span></div><div className="mt-2 h-2 overflow-hidden rounded-full bg-[#f4eadf]"><div className="h-full rounded-full bg-[#8aaf58]" style={{ width: `${levelProgress}%` }} /></div></div>
           </aside>
         </section>
 
-        <section className="mt-6 grid gap-3 sm:grid-cols-3">
+        <section className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {actions.map((action) => <button key={action.key} type="button" onClick={() => careFor(action.key)} className="group rounded-3xl border border-[#f0d8ba] bg-white p-5 text-left shadow-sm transition hover:-translate-y-1 hover:shadow-lg"><span className="text-3xl">{action.icon}</span><strong className="mt-3 block text-lg">{action.label}</strong><span className="mt-1 block text-sm font-bold text-[#9a7467]">{action.detail} · 경험치 +14</span></button>)}
         </section>
         <button type="button" onClick={explore} className="mt-6 w-full rounded-3xl bg-[#5f8d51] px-6 py-5 text-lg font-black text-white shadow-[0_12px_24px_rgba(72,117,65,0.25)] transition hover:bg-[#527b46]">🌲 대나무 숲 탐험하기 <span className="ml-2 text-sm opacity-80">랜덤 보상 획득</span></button>
